@@ -220,11 +220,11 @@ class SmartestInstallationStatusHelper{
                         $sql = str_replace('%SITENAME%', $sitename, $sql);
                         $sql = str_replace('%DIRECTORYNAME%', substr(SmartestStringHelper::toCamelCase($sitename), 0, 64), $sql);
                         $sql = str_replace('%HOSTNAME%', $hostname, $sql);
-                        $sql = str_replace('%HOMEPAGEWEBID%', SmartestStringHelper::random(32), $sql);
-                        $sql = str_replace('%ERRORPAGEWEBID%', SmartestStringHelper::random(32), $sql);
-                        $sql = str_replace('%SEARCHPAGEWEBID%', SmartestStringHelper::random(32), $sql);
-                        $sql = str_replace('%TAGPAGEWEBID%', SmartestStringHelper::random(32), $sql);
-                        $sql = str_replace('%USERPAGEWEBID%', SmartestStringHelper::random(32), $sql);
+                        $sql = str_replace('%HOMEPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
+                        $sql = str_replace('%ERRORPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
+                        $sql = str_replace('%SEARCHPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
+                        $sql = str_replace('%TAGPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
+                        $sql = str_replace('%USERPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
                         
                         // Attempt to create site dir
                         $site_dir = SM_ROOT_DIR.'Sites/'.substr(SmartestStringHelper::toCamelCase($sitename), 0, 64).'/';

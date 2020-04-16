@@ -680,6 +680,8 @@ class Templates extends SmartestSystemApplication{
 		$tlh = new SmartestTemplatesLibraryHelper;
 		$template_types = $tlh->getTypes();
         $this->send($template_types, 'template_types');
+        
+        $this->send($show_form, 'show_form');
 	    
 	    // $cat = $h->getTypesByCategory($non_template_categories);
 	    // $types = $cat['templates']['types'];
