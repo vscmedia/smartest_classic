@@ -6,6 +6,7 @@ class SmartestPageRenderingDataRequestHandler implements ArrayAccess{
 
     protected $_page;
     protected $_all_tags = null;
+    protected $_viewable_models = null;
     protected $_site;
     protected $_navigation_handler = null;
     protected $_search_info = null;
@@ -48,6 +49,14 @@ class SmartestPageRenderingDataRequestHandler implements ArrayAccess{
     	    $this->_all_tags = $du->getTags();
         }
         return $this->_all_tags;
+    }
+    
+    public function getViewableModels(){
+        if(!$this->_viewable_models){
+            $du = new SmartestDataUtility;
+    	    $this->_viewable_models = $du->getModelsWithMetapageOnSiteId($this->getSite()->getId());
+        }
+        return $this->_viewable_models;
     }
     
     public function getPrincipalItem(){
@@ -137,7 +146,8 @@ class SmartestPageRenderingDataRequestHandler implements ArrayAccess{
         
             case "site":
             return $this->getSite();
-        
+            
+            case "tags":
             case "all_tags":
             return $this->getAllTags();
             
@@ -155,6 +165,9 @@ class SmartestPageRenderingDataRequestHandler implements ArrayAccess{
             case "authors":
             case "users":
             return $this->_page->getAuthors();
+            
+            case "viewable_models":
+            return $this->getModelsWithMetapageOnSiteId();
         
             case "fields":
             return $this->_page->getPageFieldDefinitions();

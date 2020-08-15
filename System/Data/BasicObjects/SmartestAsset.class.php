@@ -1078,6 +1078,16 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
                         $sv = '';
                     }
                     
+                    if($params[$rxp['name']]['datatype'] == "SM_DATATYPE_NUMERIC"){
+                        if(isset($rxp['min']) && isset($rxp['max']) && is_numeric($rxp['min'])  && is_numeric($rxp['max'])){
+                            $params[$rxp['name']]['use_slider'] = true;
+                            $params[$rxp['name']]['min'] = $rxp['min'];
+                            $params[$rxp['name']]['max'] = $rxp['max'];
+                        }else{
+                            $params[$rxp['name']]['use_slider'] = false;
+                        }
+                    }
+                    
                     $params[$rxp['name']]['required'] = isset($rxp['required']) && SmartestStringHelper::toRealBool($rxp['required']);
                 
                     $params[$rxp['name']]['value'] = SmartestDataUtility::objectize($sv, $rxp['type']);
@@ -1093,6 +1103,10 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
                         $params[$rxp['name']]['options'] = new SmartestFixedOptionsList($rxp['options'], $rxp['type']);
                     }else{
                         $params[$rxp['name']]['has_options'] = false;
+                    }
+                    
+                    if(isset($rxp['hint'])){
+                        $params[$rxp['name']]['hint'] = $rxp['hint'];
                     }
                     
                     // print_r($params[$rxp['name']]);

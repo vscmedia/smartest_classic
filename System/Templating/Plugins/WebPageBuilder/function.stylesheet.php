@@ -11,8 +11,8 @@ function smarty_function_stylesheet($params, &$smartest_engine){
             $smartest_engine->setStylesheetIncluded($file);
             
             $a = new SmartestRenderableAsset;
-            
             if($a->findBy('url', $file)){
+                // return "found";
                 $a->setDraftMode($smartest_engine->getDraftMode());
                 return $a->render();
             }else{

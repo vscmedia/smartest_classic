@@ -1,0 +1,28 @@
+# Used by Smartest for podcast setup
+---
+modelkit: 
+  label: Podcast structure
+  description: "A model for podcast episodes"
+  name: Podcast episode
+  plural: Podcast episodes
+  name_field_label: Title
+  hidden: true
+  long_id_format: _STD
+  default_thumbnail_property: thumbnail_image
+  default_sort_property: date_published
+  default_sort_dir: DESC
+  properties: 
+    date_published: 
+      label: Date published
+      type: SM_DATATYPE_DATE
+    synopsis: 
+      label: Synopsis
+      type: SM_DATATYPE_ML_TEXT
+    thumbnail_image: 
+      label: Episode graphic
+      type: SM_DATATYPE_ASSET
+      filetype: SM_ASSETCLASS_STATIC_IMAGE
+    enclosure: 
+      label: Main audio file
+      type: SM_DATATYPE_ASSET
+      filetype: SM_ASSETCLASS_SOUND

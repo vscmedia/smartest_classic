@@ -8,9 +8,21 @@
     <div class="edit-form-row">
       <div class="form-section-label">{$parameter.label}</div>
       {if $parameter.datatype == 'SM_DATATYPE_BOOLEAN'}
+      
       {capture name="name" assign="name"}params[{$parameter_name}]{/capture}
       {capture name="param_id" assign="param_id"}asset-parameter-{$parameter_name}{/capture}
       {boolean name=$name id=$param_id value=$parameter.value}
+      
+      {elseif $parameter.datatype == 'SM_DATATYPE_NUMERIC'}
+      
+        {if $parameter.use_slider}
+        {capture name="name" assign="name"}params[{$parameter_name}]{/capture}
+        {capture name="param_id" assign="param_id"}asset-parameter-{$parameter_name}{/capture}
+        {slider name=$name value=$parameter.value min=$parameter.min max=$parameter.max value_unit="px"}
+        {else}
+        <input type="number" name="params[{$parameter_name}]" value="{$parameter.value}" />
+        {/if}
+        
       {else}
       {if $parameter.has_options}
       <select name="params[{$parameter_name}]">
@@ -22,6 +34,9 @@
       {else}
       <input type="text" name="params[{$parameter_name}]" value="{$parameter.value}" />
       {/if}
+      {/if}
+      {if $parameter.hint}
+      <div class="form-hint">{$parameter.hint}{if $parameter.use_slider && $parameter.datatype == 'SM_DATATYPE_NUMERIC'} (min {$parameter.min}, max  {$parameter.max}){/if}</div>
       {/if}
     </div>
     {/foreach}

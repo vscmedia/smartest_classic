@@ -772,8 +772,8 @@ class Sets extends SmartestSystemApplication{
 	    
 	    if($set->find($set_id)){
 	        
-            if(!strlen($set->getFeedNonce())){
-                $set->setFeedNonce(SmartestStringHelper::random(16));
+            if(!strlen($set->getFeedNonce()) || preg_match('/[^a-zA-Z0-9]/', $set->getFeedNonce())){
+                $set->setFeedNonce(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
                 $set->save();
             }
             

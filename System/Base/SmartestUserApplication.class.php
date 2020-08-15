@@ -3,7 +3,43 @@
 class SmartestUserApplication extends SmartestBaseApplication{
     
     protected $_default_background_page;
-
+    
+    public function __smartestBaseUserApplicationInit(){
+        
+        // Automatically handle site lookup by domain name, using data from quince.yml
+        if($this->getRequest()->hasMeta('require_domain')){
+            if($this->getRequest()->getMeta('require_domain') == SmartestBaseApplication::ANY_VALID_DOMAIN){ // If the system value is provided
+                if(!$this->lookupSiteDomain()){
+                    // the domain is not found, so this forward will trigger Smartest's 'domain not recognised' page
+                    $this->forward('website', 'renderPage');
+                }
+            }elseif(strlen($this->getRequest()->getMeta('require_domain'))){ // The the meta has another specific value
+                
+                $site_exists = $this->lookupSiteDomain();
+                
+                if($site_exists){
+                    if($this->requireSiteByDomain($this->getRequest()->getMeta('require_domain'))){
+                        // it is a valid website, and it matches the one specified in the quince.yml file
+                    }else{
+        		        // it is a valid website but not the one you want - somebody has loaded the same request string but with the hostname of a different website on this install. Site a site has been found, this forward will trigger that site's 404 page
+                        $this->forward('website', 'renderPage');
+        		    }
+                }else{
+                    $this->forward('website', 'renderPage');
+                }
+                
+            }else{
+                $this->lookupSiteDomain();
+            }
+        }else{
+            // Performs the standard lookup, which does not stop if no site is found
+            $this->lookupSiteDomain();
+        }
+        
+        $this->__smartestApplicationInit();
+        
+	}
+    
     protected function __userModulePreConstruct(){
         $GLOBALS['user_action_has_page'] = false;
         $GLOBALS['user_action_page_manually_assigned'] = false;

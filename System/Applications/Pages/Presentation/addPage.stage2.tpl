@@ -308,23 +308,23 @@
       
     	<div class="edit-form-row">
         <div class="form-section-label">Search terms</div>
-        <textarea name="page_search_field" style="width:500px;height:60px">{$newPage.search_field}</textarea>
+        {textarea_input name="page_search_field" style="width:500px;height:60px" placeholder="e.g. chocolate, fine wines, caviar" value=$newPage.search_field form_hint="Which words should a user be searching for when this page is found?" limit="50"}
       </div>
   	
     	<div class="edit-form-row">
         <div class="form-section-label">Page Description</div>
-        <textarea name="page_description" style="width:500px;height:60px">{$newPage.meta_description}</textarea>
+        {textarea_input name="page_description" style="width:500px;height:60px" value=$newPage.description form_hint="Used in templates. So in a list of pages where you have descriptions of each page for example, this text can be used to describe to the user what this page will contain." limit="255" word_count="true"}
       </div>
   	
     	<div class="edit-form-row">
         <div class="form-section-label">Meta Description</div>
-        <textarea name="page_meta_description" style="width:500px;height:60px">{$newPage.meta_description}</textarea>
+        {textarea_input name="page_meta_description" style="width:500px;height:60px" value=$newPage.meta_description form_hint="The description text written into any description meta tags, for external services such as search engines and social media platforms to display." limit="155" word_count="true"}
       </div>
     
-      <div class="edit-form-row">
+      {* <div class="edit-form-row">
         <div class="form-section-label">Meta Keywords</div>
         <textarea name="page_keywords" style="width:500px;height:60px">{$newPage.keywords}</textarea>
-      </div>
+      </div> *}
     {/if}
     
       <div class="edit-form-row">

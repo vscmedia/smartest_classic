@@ -19,8 +19,10 @@ function smarty_function_email_input($params, &$smartest_engine){
             }else{
                 $input->setParameter('value', new SmartestString($params['value']));
             }
+            $input->setParameter('has_value', true);
         }else{
             $input->setParameter('value', null);
+            $input->setParameter('has_value', false);
         }
         
         $smartest_engine->assign('_input_data', $input);

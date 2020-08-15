@@ -12,17 +12,10 @@
 
 <?sm:else:?>
 
-<?sm:* <object width="<?sm:if $render_data.width:?><?sm:$render_data.width:?>px<?sm:else:?>290px<?sm:/if:?>" height="16"> 
-  <param name="kioskmode" value="true"> 
-  <param name="src" value="<?sm:$domain:?>Resources/Assets/<?sm:$asset_info.url:?>"> 
-  <param name="autoplay" value="false"> 
-  <param name="controller" value="true"> 
-  <embed src="<?sm:$domain:?>Resources/Assets/<?sm:$asset_info.url:?>" type="video/quicktime" height="16" width="<?sm:if $render_data.width:?><?sm:$render_data.width:?><?sm:else:?>290<?sm:/if:?>" controller="true" autoplay="false" kioskmode="true"> 
-</object> *:?>
-
-<audio controls style="width:<?sm:if $render_data.width:?><?sm:$render_data.width:?>px<?sm:else:?>290px<?sm:/if:?>" height="16">
-  <source src="<?sm:$domain:?>Resources/Assets/<?sm:$asset_info.encoded_url:?>" type="audio/mpeg">
+<audio controls style="width:<?sm:if $render_data.width:?><?sm:$render_data.width:?>px<?sm:else:?>290px<?sm:/if:?>" height="16" id="<?sm:$render_data.html_id:?>">
+  <source src="<?sm:$domain:?>Resources/Assets/<?sm:$asset_info.encoded_url:?>" type="<?sm:$asset_info.mime_type:?>">
   Your browser does not support the audio element.
+  <!--SMARTEST AUDIO PRESENT-->
 </audio>
 
 <?sm:/if:?>

@@ -341,15 +341,15 @@ class SmartestItemPropertyValue extends SmartestBaseItemPropertyValue{
     }
     
     public function getContent(){
-        
         return $this->getValueObject();
-        
     }
     
     public function getDraftContent(){
-        
         return $this->getValueObject(true);
-        
+    }
+    
+    public function getContentWithMode($draft_mode=false){
+        return $this->getValueObject($draft_mode);
     }
     
     public function getInfoField($field_name){

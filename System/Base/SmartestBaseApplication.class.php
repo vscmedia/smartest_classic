@@ -30,6 +30,8 @@ class SmartestBaseApplication extends QuinceBase{
 	protected $_cached_global_preferences = array();
 	protected $_preferences_helper;
 	protected $_site;
+    
+    const ANY_VALID_DOMAIN = 'SM_ANY_VALID_DOMAIN';
 	
 	private $_user_loaded_classes;
 	
@@ -190,22 +192,48 @@ class SmartestBaseApplication extends QuinceBase{
 	
 	private function _callOptionalConstructors(){
 	    
+	    // // Called by all system applications
+	    // if($this->isSystemApplication() && method_exists($this, "__systemModulePreConstruct")){
+		//     $this->__systemModulePreConstruct();
+	    // }
+	    // 
+	    // // Called by all system applications
+	    // if($this->isUserApplication() && method_exists($this, "__userModulePreConstruct")){
+		//     $this->__userModulePreConstruct();
+	    // }
+	    // 
+	    // // Called by the individual applications
+	    // if(method_exists($this, "__smartestApplicationInit")){
+		//     $this->__smartestApplicationInit();
+	    // }
+        
 	    // Called by all system applications
 	    if($this->isSystemApplication() && method_exists($this, "__systemModulePreConstruct")){
 		    $this->__systemModulePreConstruct();
 	    }
 	    
-	    // Called by all system applications
+	    // Called by all user applications
 	    if($this->isUserApplication() && method_exists($this, "__userModulePreConstruct")){
 		    $this->__userModulePreConstruct();
 	    }
 	    
 	    // Called by the individual applications
-	    if(method_exists($this, "__smartestApplicationInit")){
-		    $this->__smartestApplicationInit();
+        if($this->isUserApplication()){
+            if(method_exists($this, "__smartestBaseUserApplicationInit")){
+                $this->__smartestBaseUserApplicationInit();
+            }else{
+                $this->__smartestApplicationInit();
+            }
+	    }else{
+	        $this->__smartestApplicationInit();
 	    }
 	    
 	}
+    
+    // Implemented here just so that it can be called without error
+    protected function __smartestApplicationInit(){
+        
+    }
 	
 	private function _loadSettings(){
 	    

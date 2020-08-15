@@ -64,6 +64,11 @@ module:
       action: getDataSetFeed
       params:
         format: itunes
+    set_kml_feed:
+      url: /feeds/kml/:nonce/:set_name.kml
+      action: getDataSetFeed
+      params:
+        format: kml
     set_public_json_feed:
       url: /feeds/json/:nonce/:set_name.json
       action: getDataSetFeed

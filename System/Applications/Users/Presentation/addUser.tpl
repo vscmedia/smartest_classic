@@ -155,6 +155,12 @@
       <option value="SMARTEST">Smartest CMS account</option>
       <option value="ORDINARY">Ordinary user account</option>
     </select>
+    
+    {* <ul class="round-buttons-list" id="acct-type-options">
+      <li><a data-option="SMARTEST" href="#smartest" class="selected"><i class="fa fa-cube"></i></a></li>
+      <li><a data-option="ORDINARY" href="#ordinary"><i class="fa fa-lock"></i></a></li>
+    </ul> *} 
+    
     <script type="text/javascript">
     {literal}
       $('service-changer').observe('change', function(){
@@ -381,12 +387,12 @@
   
   <div class="edit-form-row">
     <div class="form-section-label">User's website address, if not this website </div>
-    http://<input type="text" style="width:360px" name="user_website" />
+    <input type="text" style="width:360px" name="user_website" placeholder="https://" />
   </div>
   
   <div class="edit-form-row">
     <div class="form-section-label">About the user </div>
-    <textarea name="user_bio" style="width:500px;height:60px">Share a little biographical information to fill out your profile. This may be shown publicly.</textarea>
+    {textarea_input name="user_bio" style="width:500px;height:60px" form_hint="Share a little biographical information to fill out your profile. This may be shown publicly."}
   </div>
 
   <div class="edit-form-row">

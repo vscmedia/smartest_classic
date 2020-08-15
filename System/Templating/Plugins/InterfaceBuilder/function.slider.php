@@ -7,6 +7,7 @@ function smarty_function_slider($params, &$smartest_engine){
         $slider = new SmartestParameterHolder('Slider Parameters: '.$params['name']);
         $slider->setParameter('name', $params['name']);
         $slider->setParameter('id', SmartestStringHelper::toSlug($params['name']));
+        $slider->setParameter('varname', SmartestStringHelper::toCamelCase($params['name']));
         
         if(isset($params['value'])){
             $slider->setParameter('value', $params['value']);

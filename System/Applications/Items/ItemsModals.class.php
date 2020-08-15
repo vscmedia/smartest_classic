@@ -814,7 +814,7 @@ class ItemsModals extends SmartestSystemApplication{
 	        if($model->getSiteId() == '0'){
 	            $this->send(new SmartestString('Not set'), 'main_site_name');
             }else{
-                $this->send(new SmartestString($model->getMainSite()->getName()), 'main_site_name');
+                $this->send(new SmartestString($model->getMainSite()->getInternalLabel()), 'main_site_name');
             }
 	        
 	        $this->send($model->getAvailableDescriptionProperties(), 'description_properties');
@@ -843,7 +843,9 @@ class ItemsModals extends SmartestSystemApplication{
 	    
 	    if(is_object($item)){
 	        
-	        $this->setFormReturnUri();
+            if(!$item->isPublished()){
+                $item->setDraftMode(true);
+            }
 	        
 	        $this->send($item->getModel()->getMetaPages(), 'metapages');
 	        $this->send(($this->getUser()->hasToken('modify_items') && $this->getRequestParameter('enable_ajax')), 'user_can_modify_items');
@@ -877,14 +879,14 @@ class ItemsModals extends SmartestSystemApplication{
 		        $this->send(true, 'has_page');
 		        $this->send($page, 'page');
 		    }
-		    
-		    $sets = $item->getItem()->getCurrentStaticSets();
+            
+            $sets = $item->getItem()->getCurrentStaticSets();
 		    $this->send($sets, 'sets');
 		    
 		    $possible_sets = $item->getItem()->getPossibleSets();
 		    $this->send($possible_sets, 'possible_sets');
 		    
-		    $this->setTitle($item->getModel()->getName().' Information | '.$item->getName());
+		    // $this->setTitle($item->getModel()->getName().' Information | '.$item->getName());
 		    $this->send($item, 'item');
 		    
 		    $recent = $this->getUser()->getRecentlyEditedItems($this->getSite()->getId(), $item->getItem()->getItemclassId());

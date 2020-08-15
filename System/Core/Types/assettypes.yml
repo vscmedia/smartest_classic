@@ -428,6 +428,7 @@ type:
     icon: script.png
     fa_iconname: font
     parsable: false
+    deprecated: true
     show_preview_edit_link: false
     input_options:
       - SM_ASSETINPUTTYPE_BROWSER_UPLOAD
@@ -454,6 +455,8 @@ type:
     class: SmartestAsset
     icon: script.png
     fa_iconname: font
+    hidden: true
+    deprecated: true
     parsable: false
     show_preview_edit_link: false
     input_options:
@@ -475,8 +478,8 @@ type:
   SM_ASSETTYPE_MP3:
     id: SM_ASSETTYPE_MP3
     category: embedded
-    label: MP3 Audio
-    description: A sound file in MPEG Layer-3 format
+    label: MPEG Audio
+    description: A sound file in MPEG Layer-3 or MPEG4 (AAC) format
     class: SmartestAsset
     parsable: false
     icon: music.png
@@ -493,8 +496,11 @@ type:
       template: System/Presentation/WebPageBuilder/display.mp3_audio.tpl
     suffix:
       - {mime: audio/mpeg, _content: mp3}
+      - {mime: audio/aac, _content: aac}
+      - {mime: audio/mp4, _content: m4a}
     param:
-      - {name: width, label: "Width", type: SM_DATATYPE_NUMERIC, required: true, default: 222}
+      - {name: width, label: "Width", type: SM_DATATYPE_NUMERIC, required: true, default: 300, hint: "how wide should the controls be, in pixels", min: 200, max: 600}
+      - {name: html_id, label: "HTML ID", type: SM_DATATYPE_SL_TEXT, required: false, hint: "The ID that the element has, in HTML"}
       
   SM_ASSETTYPE_OGG_VORBIS:
     id: SM_ASSETTYPE_OGG_VORBIS
@@ -518,7 +524,8 @@ type:
     suffix:
       - {mime: audio/ogg, _content: ogg}
     param:
-      - {name: html_id, label: "HTML ID", type: SM_DATATYPE_SL_TEXT, required: false}
+      - {name: width, label: "Width", type: SM_DATATYPE_NUMERIC, required: true, default: 300, hint: "how wide should the controls be, in pixels", min: 200, max: 600}
+      - {name: html_id, label: "HTML ID", type: SM_DATATYPE_SL_TEXT, required: false, hint: "The ID that the element has, in HTML"}
   
 #  SM_ASSETTYPE_HTML5_AUDIO:
 #    id: SM_ASSETTYPE_HTML5_AUDIO
@@ -652,6 +659,8 @@ type:
     description: A file in Flash Video format
     class: SmartestAsset
     parsable: false
+    hidden: true
+    deprecated: true
     fa_iconname: file-o
     icon: page_white_flash.png
     input_options:
@@ -677,6 +686,8 @@ type:
     icon: page_white_flash.png
     fa_iconname: file-o
     class: SmartestAsset
+    hidden: true
+    deprecated: true
     parsable: false
     captionable: true
     input_options:
@@ -705,6 +716,7 @@ type:
     class: SmartestAsset
     parsable: false
     captionable: true
+    deprecated: true
     input_options:
       - SM_ASSETINPUTTYPE_FTP_UPLOAD
       - SM_ASSETINPUTTYPE_BROWSER_UPLOAD

@@ -163,6 +163,7 @@ class SmartestResponse{
         	'System/Templating/SmartestTemplateHelper.class.php',
         	'System/Base/SmartestBaseProcess.class.php',
         	'System/Base/SmartestBaseApplication.class.php',
+            'System/Base/SmartestBaseUserApplication.class.php',
         	'System/Base/SmartestSystemApplication.class.php',
         	'System/Base/SmartestUserApplication.class.php',
         	'System/Data/SmartestParameterHolderValuePresenceChecker.class.php',

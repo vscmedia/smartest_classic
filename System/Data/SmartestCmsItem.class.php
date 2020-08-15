@@ -1094,10 +1094,10 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
 	    if(!$basic_info_only){
 	        foreach($this->getProperties() as $p){
                 $vn = $p->getVarname();
-                $val = $p->getData()->getContent();
+                $val = $p->getData()->getContentWithMode($this->getDraftMode());
                 if(in_array($p->getDatatype(), array('SM_DATATYPE_TEMPLATE','SM_DATATYPE_ASSET','SM_DATATYPE_CMS_ITEM'))){
-                    if($val->getId()){
-                        $obj->$vn = $p->getData()->getContent()->__toSimpleObjectForParentObjectJson();
+                    if(is_object($val) && $val->getId()){
+                        $obj->$vn = $p->getData()->getContentWithMode($this->getDraftMode())->__toSimpleObjectForParentObjectJson();
                     }else{
                         $obj->$vn = null;
                     }

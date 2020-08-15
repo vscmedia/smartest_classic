@@ -160,6 +160,17 @@ class Desktop extends SmartestSystemApplication{
             $this->redirect('/smartest');
 	    }
 	}
+    
+    public function createFirstSite(){
+        
+        // There needs to be serious security for this endpoint:
+        // 1) URL token needs to have been set by installer
+        // 2) There need to be NO sites currently in the install, checked with a hard SQL query
+        // 3) There needs to be NO installation receipt file already saved to System/Cache/Settings/
+        
+        // If these conditions are met, allow site creation
+        
+    }
 	
 	public function buildSite($get, $post){
 	    

@@ -483,6 +483,16 @@
         <input template="System/Presentation/InterfaceBuilder/Inputs/url.tpl" />
     </type>
     
+    <type id="SM_DATATYPE_PLACEMARK" valuetype="string">
+        <label>Geographical coordinates</label>
+        <description>Pair of integers that can be used to position something on a page or graphic</description>
+        <usage></usage>
+        <class>SmartestGeoPoint</class>
+        <long>true</long>
+        <render template="System/Presentation/WebPageBuilder/property.default.tpl" />
+        <input template="System/Presentation/InterfaceBuilder/Inputs/lat_long.tpl" />
+    </type>
+    
     <type id="SM_DATATYPE_COUNTRY" valuetype="string">
         <label>Country</label>
         <description>A country of the world. Uses the ISO 3166-1 alpha-2 standard.</description>

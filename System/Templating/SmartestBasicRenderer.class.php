@@ -242,7 +242,7 @@ class SmartestBasicRenderer extends SmartestEngine{
                                 // Render a <link> or <script> tag that points to a method on the CMSFrontEnd app that will parse the dynamic CSS or JS
                                 // The 'nonce' part will prevent caching by making the URL different if the content is different
                                 $address = 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$this->getSite()->getId().'&draft=true';
-                            
+                                
                                 ob_start();
                                 $this->assign('sass_web_path', $address);
                                 
@@ -266,7 +266,7 @@ class SmartestBasicRenderer extends SmartestEngine{
                                     try{
                                         $compiled_css = $scss->compile($raw_scss);
                                     }catch(Exception $e){
-                                        $compiled_css = "/** SCSS Error: ".$e->getMessage()." **/";
+                                        $compiled_css = "/** SCSS Error: ".$e->getMessage().' **'.'/';
                                     }
                                     
                                 }
@@ -332,9 +332,9 @@ class SmartestBasicRenderer extends SmartestEngine{
                             
                             } // End of draft-mode block
                             
-                        }else{ // is brower instruction other than CSS
+                        }else{ 
                             
-                            
+                            // is browser instruction other than dynamic CSS that uses a text fragment
                             
                         }
                         
@@ -382,6 +382,12 @@ class SmartestBasicRenderer extends SmartestEngine{
                         }
                     
                     }else{
+                        
+                        // it's not a binary image, and it doesn't use a text fragment
+                        
+                        if($this->_asset->usesLocalFile()){
+                            $render_data['hash'] = substr(md5_file($this->_asset->getFullPathOnDisk()), 0, 8);
+                        }
                         
                         // TODO: Sort out Px vs Percentages in widths
                     

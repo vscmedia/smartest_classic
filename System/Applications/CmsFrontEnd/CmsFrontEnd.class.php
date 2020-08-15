@@ -452,6 +452,10 @@ class CmsFrontEnd extends SmartestSystemApplication{
                         }
                         break;
                         
+                        case "kml":
+                        
+                        break;
+                        
                         case "json":
                         if($set->getSyndicateAsJson()){
                             $members = $set->getMembers();
@@ -474,6 +478,7 @@ class CmsFrontEnd extends SmartestSystemApplication{
                             }
                             exit;
                         }else{
+                            // output a valid JSON response so that software relying on the feed will not break
                             header('Content-type: application/json');
                             echo '{}';
                             exit;
@@ -669,7 +674,7 @@ class CmsFrontEnd extends SmartestSystemApplication{
 	    
 	}
 	
-	private function renderNotFoundPage(){
+	private function renderNotFoundPage($message=null){
 	    
         $draft_mode = ($this->getRequest()->getAction() == 'renderEditableDraftPage');
         

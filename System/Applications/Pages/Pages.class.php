@@ -2238,7 +2238,7 @@ class Pages extends SmartestSystemApplication{
             if($page->getType() == 'NORMAL'){
                 if(!$this->getSite()->pageIdIsSpecial($page->getId())){
                     $page->setSearchField(strip_tags($this->getRequestParameter('page_search_field')));
-                    $page->setKeywords(strip_tags($this->getRequestParameter('page_keywords')));
+                    // $page->setKeywords(strip_tags($this->getRequestParameter('page_keywords')));
                     $page->setDescription(strip_tags($this->getRequestParameter('page_description')));
                     $page->setMetaDescription(strip_tags($this->getRequestParameter('page_meta_description')));
                     $page->setIconImageId($this->getRequestParameter('page_icon_image_id'));

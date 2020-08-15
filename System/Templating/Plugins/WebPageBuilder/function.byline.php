@@ -36,13 +36,12 @@ function smarty_function_byline($params, &$smartest_engine){
                     $byline .= '<a rel="author" href="'.$request_data->getParameter('domain').'author/'.$authors[$i]['username'].'" class="sm-link-internal sm-link-byline">'.$authors[$i]['full_name'].'</a>';
                 }
             }else{
-                $byline .= $authors[$i]['full_name'];
+                $byline .= '<span class="author sm-byline">'.$authors[$i]['full_name'].'</span>';
             }
             
             if(isset($authors[$i+2])){
                 $byline .= ', ';
             }else if(isset($authors[$i+1])){
-                // var_dump($authors[$i+1]);
                 $byline .= ' and ';
             }
             

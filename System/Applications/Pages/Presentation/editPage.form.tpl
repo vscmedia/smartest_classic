@@ -139,7 +139,7 @@
   
   {if !$is_special_page}
   
-  {if $page.type == "NORMAL"}
+  {if $page.type == "NORMAL" && !$ishomepage}
   <div class="edit-form-row">
     <div class="form-section-label">Section</div>
     <input type="checkbox" name="page_is_section" id="page_is_section" value="true"{if $page.is_section=='1'} checked="checked"{/if} />
@@ -552,8 +552,7 @@
   
   {if !$ishomepage}
   <div class="edit-form-row">
-    <div class="form-section-label">Parent Page</div>
-    {$page.parent}
+    <div class="form-section-label">Parent page</div>
     <select name="page_parent">
       {foreach from=$parent_pages item="p_page"}
         {if $p_page.id != $page.id}
@@ -597,23 +596,26 @@
   
   <div class="edit-form-row">
     <div class="form-section-label">Search terms</div>
-      <textarea name="page_search_field" style="width:500px;height:60px">{$page.search_field}</textarea>
+    {textarea_input name="page_search_field" style="width:500px;height:60px" placeholder="e.g. chocolate, fine wines, caviar" value=$page.search_field form_hint="Which words should a user be searching for when this page is found?" limit="50"}
   </div>
   
   <div class="edit-form-row">
-    <div class="form-section-label">Page Description</div>
-      <textarea name="page_description" style="width:500px;height:60px">{$page.description}</textarea>
+    <div class="form-section-label">Page description</div>
+    {textarea_input name="page_description" style="width:500px;height:60px" value=$page.description form_hint="Used in templates. So in a list of pages where you have descriptions of each page for example, this text can be used to describe to the user what this page will contain." limit="255" word_count="true"}
   </div>
   
   <div class="edit-form-row">
-    <div class="form-section-label">Meta Description</div>
-      <textarea name="page_meta_description" style="width:500px;height:60px">{$page.meta_description}</textarea>
+    <div class="form-section-label">Meta description</div>
+    {textarea_input name="page_meta_description" style="width:500px;height:60px" value=$page.meta_description form_hint="The description text written into any description meta tags, for external services such as search engines and social media platforms to display." limit="155" word_count="true"}
   </div>
     
-  <div class="edit-form-row">
-      <div class="form-section-label">Meta Keywords</div>
-      <textarea name="page_keywords" style="width:500px;height:100px">{$page.keywords}</textarea>
-    </div>
+  {* <div class="edit-form-row">
+    <div class="form-section-label">Meta keywords</div>
+    <textarea name="page_keywords" style="width:500px;height:40px">{$page.keywords}</textarea>
+    <div class="form-hint">Seldom-used. A standard HTML meta tag for providing the client with a list of keywords related to the page.</div>
+  </div> *}
+  
+  <div class="v-spacer"></div>
     
   {/if}{* if the page is not a meta page *}
   

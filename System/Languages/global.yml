@@ -3,7 +3,7 @@ strings:
     home: Home
     pages: Pages
     items: Items
-    files: Media library
+    files: Media
     templates: Templates
     users: Users
     metadata: "Meta-data"

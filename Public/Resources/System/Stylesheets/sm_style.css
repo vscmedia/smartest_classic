@@ -442,6 +442,36 @@ div.ui-message.access-msg div.ui-message-inner{
     border:1px solid #999;
 }
 
+textarea{
+    outline: none;
+    resize: none;
+    overflow: auto;
+    border:1px solid #ccc;
+    border-radius:4px;
+    font-family: lucida grande,verdana,sans-serif;
+    font-size:1.2em;
+    padding:3px;
+    box-sizing:border-box;
+}
+
+textarea::placeholder{
+    color:#ddd;
+    font-style:italic;
+}
+
+span.length-warn{
+    transition:color 0.5s;
+    font-size:1.5em;
+}
+
+span.length-warn.warning{
+    color:#f70;
+}
+
+span.length-warn.invalid{
+    color:#e30;
+}
+
 .textarea-holder{
     border:1px solid #999;
 }
@@ -583,7 +613,7 @@ div.edit-form-row{
     
 }
 
-div.edit-form-row input[type="text"], div.edit-form-row input[type="password"], div.special-box input[type="text"], table.info-table tr td input[type="text"]{
+div.edit-form-row input[type="text"], div.edit-form-row input[type="password"], div.special-box input[type="text"], table.info-table tr td input[type="text"], div.edit-form-row input[type="number"]{
 	font-size:18px;
 	color:#666;
 	border:1px solid #ccc;
@@ -591,21 +621,21 @@ div.edit-form-row input[type="text"], div.edit-form-row input[type="password"], 
 	-moz-border-radius: 4px;
 }
 
-div.edit-form-row input[type="text"]::placeholder, div.special-box input[type="text"]::placeholder, table.info-table tr td input[type="text"]::placeholder{
+div.edit-form-row input[type="text"]::placeholder, div.special-box input[type="text"]::placeholder, table.info-table tr td input[type="text"]::placeholder, div.edit-form-row input[type="number"]::placeholder{
   color:#ccc;
   font-style:italic;
 }
 
-div.edit-form-row input[type="text"]:hover, div.edit-form-row input[type="password"]:hover, div.special-box input[type="text"]:hover, table.info-table tr td input[type="text"]:hover{
+div.edit-form-row input[type="text"]:hover, div.edit-form-row input[type="password"]:hover, div.special-box input[type="text"]:hover, table.info-table tr td input[type="text"]:hover, div.edit-form-row input[type="number"]:hover{
     border-color:#999;
 }
 
-div.edit-form-row input[type="text"].unfilled, div.edit-form-row input[type="password"].unfilled, table.info-table tr td input[type="text"].unfilled{
+div.edit-form-row input[type="text"].unfilled, div.edit-form-row input[type="password"].unfilled, table.info-table tr td input[type="text"].unfilled, div.edit-form-row input[type="number"].unfilled{
     color:#ccc;
     font-style:italic;
 }
 
-div.edit-form-row input[type="text"].error, div.edit-form-row input[type="password"].error, table.info-table tr td input[type="text"].error{
+div.edit-form-row input[type="text"].error, div.edit-form-row input[type="password"].error, table.info-table tr td input[type="text"].error, div.edit-form-row input[type="number"].error{
     color:#c30;
     border:2px solid #c30;
     font-style:italic;

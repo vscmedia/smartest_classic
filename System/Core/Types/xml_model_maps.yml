@@ -1,0 +1,41 @@
+maps:
+  rss:
+    id: SM_XMLMAPPING_RSS
+    description: Syndicate items for use in an RSS feed
+    required_values:
+      - title:
+          accepts: [SM_BUILTIN_ITEM_NAME, SM_DATATYPE_SL_TEXT]
+      - description:
+          accepts: [SM_DATATYPE_ML_TEXT, SM_ASSETTYPE_RICH_TEXT, SM_ASSETTYPE_PLAIN_TEXT, SM_ASSETTYPE_TEXTILE_TEXT, SM_ASSETTYPE_HTML_FRAGMENT]
+      - author:
+          accepts: [SM_BUILTIN_ITEM_AUTHORS, SM_DATATYPE_SL_TEXT]
+      - date:
+          accepts: [SM_BUILTIN_ITEM_DATE, SM_DATATYPE_DATE]
+  podcast:
+    id: SM_XMLMAPPING_PODCAST
+    description: Syndicate items for use in a podcast
+    required_values:
+      - title:
+          accepts: [SM_BUILTIN_ITEM_NAME, SM_DATATYPE_SL_TEXT]
+      - description:
+          accepts: [SM_DATATYPE_ML_TEXT, SM_ASSETTYPE_RICH_TEXT, SM_ASSETTYPE_PLAIN_TEXT, SM_ASSETTYPE_TEXTILE_TEXT]
+      - author:
+          accepts: [SM_BUILTIN_ITEM_AUTHORS, SM_DATATYPE_SL_TEXT]
+      - date:
+          accepts: [SM_BUILTIN_ITEM_DATE, SM_DATATYPE_DATE]
+      - enclosure:
+          accepts: [SM_ASSETTYPE_MP3, SM_ASSETTYPE_OGG_VORBIS, SM_ASSETCLASS_SOUND]
+      - episode_img:
+          accepts: [SM_ASSETTYPE_PNG_IMAGE, SM_ASSETTYPE_JPEG_IMAGE]
+      - explicit:
+          accepts: [SM_DATATYPE_BOOLEAN]
+  kml:
+    id: SM_XMLMAPPING_KML
+    description: Syndicate items for use on a map
+    required_values:
+      - title:
+          accepts: [SM_BUILTIN_ITEM_NAME, SM_DATATYPE_SL_TEXT]
+      - description:
+          accepts: [SM_DATATYPE_ML_TEXT, SM_ASSETTYPE_RICH_TEXT, SM_ASSETTYPE_PLAIN_TEXT, SM_ASSETTYPE_TEXTILE_TEXT, SM_ASSETTYPE_HTML_FRAGMENT, SM_ASSETTYPE_OEMBED_URL]
+      - placemark:
+          accepts: [SM_DATATYPE_PLACEMARK]

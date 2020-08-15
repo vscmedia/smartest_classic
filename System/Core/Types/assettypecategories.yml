@@ -5,6 +5,13 @@ categories:
     label: "Text & markup"
     has_system_files: true
     importable: true
+    sub_categories:
+      - common_text:
+          id: SM_ASSETTYPESUBCAT_COMMON_TEXT
+          short_name: user_text_common
+      - special:
+          id: SM_ASSETTYPESUBCAT_SPECIAL_TEXT
+          short_name: user_text_special
   image:
     id: SM_ASSETTYPECAT_IMAGES
     short_name: image
@@ -12,10 +19,14 @@ categories:
     has_system_files: true
     importable: true
     gallery: true
+    sub_categories:
+      - binary:
+          id: 
+      - special
   embedded:
     id: SM_ASSETTYPECAT_EMBEDDED_MEDIA
     short_name: embedded
-    label: "Movies and embedded media"
+    label: "Video &amp; audio"
     has_system_files: true
     importable: true
     gallery: true
