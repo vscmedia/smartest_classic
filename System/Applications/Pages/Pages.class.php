@@ -2241,7 +2241,7 @@ class Pages extends SmartestSystemApplication{
                     // $page->setKeywords(strip_tags($this->getRequestParameter('page_keywords')));
                     $page->setDescription(strip_tags($this->getRequestParameter('page_description')));
                     $page->setMetaDescription(strip_tags($this->getRequestParameter('page_meta_description')));
-                    $page->setIconImageId($this->getRequestParameter('page_icon_image_id'));
+                    $page->setIconImageId(is_numeric($this->getRequestParameter('page_icon_image_id')) ? $this->getRequestParameter('page_icon_image_id') : 0);
                 }else if($page->getId() == $this->getSite()->getErrorPageId()){
                     $page->setMetaDescription(strip_tags($this->getRequestParameter('page_meta_description')));
                 }else if($page->getId() == $this->getSite()->getHoldingPageId()){
@@ -3867,7 +3867,7 @@ class Pages extends SmartestSystemApplication{
 	            }else if($definition->loadForUpdate($placeholder->getName(), $page, null, $instance_name)){
 	                
 	                // update placeholder
-	                $definition->setDraftAssetId(null);
+	                $definition->setDraftAssetId(0);
 	                $definition->save();
 	                $this->addUserMessageToNextRequest('The draft placeholder definition was removed. Next time the page is published, the placeholder will be emptied.', SmartestUserMessage::SUCCESS);
 	                

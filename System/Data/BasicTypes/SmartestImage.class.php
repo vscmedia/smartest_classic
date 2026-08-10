@@ -755,6 +755,7 @@ class SmartestImage extends SmartestFile{
             
 	        case "absolute_web_path":
             case "absolute_uri":
+            // TODO: change the HTTP/HTTPS bit here
 	        return 'http://'.$_SERVER['HTTP_HOST'].$this->getWebPath();
 	        
 	        case "og_meta":

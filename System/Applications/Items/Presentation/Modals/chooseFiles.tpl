@@ -2,14 +2,12 @@
   
   <div id="file-selection-area">
   
-    <h3>Define property <strong>{$property.name}</strong> for item '{$item.name}'</h3>
-  
     <form action="{$domain}ajax:{$section}/updateFilesSelection" method="post" id="update-selected-files-form">
     
       <input type="hidden" name="item_id" value="{$item.id}" />
       <input type="hidden" name="property_id" value="{$property.id}" />
     
-      <div class="instruction">Check the boxes next to the files you'd like to choose</div>
+      <div class="instruction">Check the boxes next to the files you'd like to choose.<!--<a class="button" href="#upload">Upload file</a>--></div>
     
       <div class="special-box">Search: <input type="text" id="search-query" name="sq" /></div>
     

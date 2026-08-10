@@ -540,4 +540,39 @@ ul.options-list li a.selected-option img{
 	width:16px;
 }
 
-
+@media (prefers-color-scheme: dark) {
+    
+    ul.options-grid li, ul.options-list li{
+    	background-color:transparent;
+    	border:0;
+    }
+    
+    ul.options-grid li a.option, ul.options-list li a.option{
+        color:#fff;
+    }
+    
+    ul.options-grid li a.option{
+        border-color:#555;
+    }
+    
+    ul.options-grid li a.option:hover, ul.options-list li a.option:hover{
+        color:#fff;
+        border-color:#666;
+        background-color:#555;
+    }
+    
+    ul.options-list li a.option:hover i.fa{
+        color:#fff;
+    }
+    
+    ul.options-grid li a.selected-option{
+        color:#fff;
+        /* border-color:#555; */
+    }
+    
+    ul.options-grid li a.selected-option:hover{
+        /* border-color:#666;
+        background-color:#555; */
+    }
+    
+}

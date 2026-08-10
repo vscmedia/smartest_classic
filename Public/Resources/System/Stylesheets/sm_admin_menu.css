@@ -188,3 +188,19 @@ body.nav-contracted #admin-menu ul li a span.option-holder span.option-name{
 #admin-menu ul li.break{
     margin-top:10px;
 }
+
+@media (prefers-color-scheme: dark) {
+    
+    #admin-menu{
+        background:#444!important;
+    }
+    
+    #admin-menu ul li.off a, #admin-menu ul li.on a{
+    	color: #fff;
+    }
+    
+    #admin-menu ul li.off:hover{
+        background-color:#4f4f4f;
+    }
+    
+}

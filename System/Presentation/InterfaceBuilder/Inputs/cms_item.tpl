@@ -5,7 +5,12 @@
       <option value="{$foreign_item.id}"{if $_input_data.value.id==$foreign_item.id} selected="selected"{/if}>{$foreign_item.name}{if $foreign_item.deleted} (DELETED){/if}</option>
   {/foreach}
       {if $_input_data.show_new_field}<option value="NEW">New...</option>{/if}
-  </select>{if $_input_data.show_new_field}<span id="{$_input_data.id}-container-{$_input_data.host_item_id}-loading"></span>{/if}
+  </select>
+  {if $_input_data.show_new_field}
+  <input type="hidden" value="{$_input_data.id}" id="{$_input_data.id}-non-new-value" />
+  <a href="#new-item" id="{$_input_data.id}-new-button" class="button round"><i class="fa fa-plus"></i></a>
+  <span id="{$_input_data.id}-container-{$_input_data.host_item_id}-loading"></span>
+  {/if}
   
   {if $_input_data.show_new_field}<div id="{$_input_data.id}-new-item-form-holder" style="padding-top:5px;display:none" class="edit-form-sub-row">
     <input type="text" name="{$_input_data.id}_new_item_name" id="{$_input_data.id}-new-item-name" />
@@ -20,14 +25,22 @@
 <script type="text/javascript">
 
 {literal}(function(ID, propertyID, hostItemId){
-
-  $(ID).observe('change', function(){
+  
+  $(ID).observe('change', function(e){
     if(this.value == 'NEW'){
       $(ID+'-new-item-form-holder').show();
       $(ID+'-new-item-name').activate();
     }else{
+      $(ID+'-non-new-value').value = this.value;
       $(ID+'-new-item-form-holder').hide();
     }
+  });
+  
+  $(ID+'-new-button').observe('click', function(e){
+    $(ID+'-non-new-value').value = $(ID).value;
+    $(ID).value = 'NEW';
+    $(ID+'-new-item-form-holder').show();
+    $(ID+'-new-item-name').activate();
   });
   
   $(ID+'-new-item-save-button').observe('click', function(){
@@ -39,7 +52,7 @@
     // cancel
     $(ID+'-new-item-form-holder').hide();
     $(ID+'-new-item-name').blur();
-    $(ID).selectedIndex = 0;
+    $(ID).value = $(ID+'-non-new-value').value;
   });
   
   $(ID+'-new-item-name').observe('keyup', function(e){

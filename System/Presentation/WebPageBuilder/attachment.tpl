@@ -1,7 +1,7 @@
 <?sm:if $sm_user_agent.is_unsupported_browser:?><?sm:/if:?>
 
 <?sm:if !$_textattachment.float:?><div class="sm-attachment-outer <?sm:$_textattachment.alignment:?>"><?sm:/if:?>
-<figure class="sm-attachment<?sm:if $_textattachment.float:?> float<?sm:else:?> nofloat<?sm:/if:?> <?sm:$_textattachment.alignment:?><?sm:if $_textattachment.border :?> sm-border<?sm:/if:?>" style="">
+<figure class="sm-attachment<?sm:if $_textattachment.float:?> float<?sm:else:?> nofloat<?sm:/if:?> <?sm:$_textattachment.alignment:?><?sm:if $_textattachment.border :?> sm-border<?sm:/if:?>" style="width:<?sm:$_textattachment.div_width:?>px">
 
 <?sm:* $_textattachment.asset.render_data_debug *:?>
 

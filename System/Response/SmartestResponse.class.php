@@ -475,6 +475,16 @@ class SmartestResponse{
         	        }
                     
                 }
+                
+                if($GLOBALS['_site'] instanceof SmartestSite){
+                    if(is_file($GLOBALS['_site']->getDirectory().'Library/Actions/SiteActions.class.php')){
+                        include $GLOBALS['_site']->getDirectory().'Library/Actions/SiteActions.class.php';
+                        $actions_object = new SiteActions;
+                        if(method_exists($actions_object, 'loadCMSPage')){
+                            $actions_object->loadCMSPage();
+                        }
+                    }
+                }
 	    
     	    }else if($this->isSystemClass() && SmartestSession::hasData('current_open_project')){
     	        // Logged in to Smartest and working with objects in the backend

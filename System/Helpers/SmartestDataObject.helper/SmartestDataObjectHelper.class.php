@@ -64,7 +64,7 @@ class SmartestDataObjectHelper{
 	    
 	    $raw_types = $data;
 	    $types = array();
-	    
+	    // var_dump($raw_types);
 	    foreach($raw_types as $raw_type){
 	        
 	        $types[$raw_type['name']] = $raw_type;

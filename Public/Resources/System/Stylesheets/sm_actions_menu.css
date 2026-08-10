@@ -55,3 +55,11 @@ ul.invisible-actions-list li{
 	min-height:18px;
 	padding: 2px 0 2px 0;
 }
+
+@media (prefers-color-scheme: dark) {
+    
+    li.permanent-action a, li.permanent-action a i.fa, li.permanent-action a i.flaticon{
+    	color:#fff;
+    }
+    
+}

@@ -709,8 +709,8 @@ class SmartestTemplateAsset extends SmartestAsset{
 	    $regex1 = '/<link rel="stylesheet" href="([^"]+(Resources\/Stylesheets\/([^"]+)))"/mi';
 	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
 	    
-	    $regex1 = '/<\?sm:stylesheet file="([^"]+)"/mi';
-	    $result = preg_match_all($regex1, $this->getContent(), $matches2);
+	    $regex2 = '/<\?sm:stylesheet file="([^"]+)"/mi';
+	    $result = preg_match_all($regex2, $this->getContent(), $matches2);
 	    
 	    $stylesheets = array();
 	    

@@ -246,6 +246,14 @@ class SmartestModel extends SmartestBaseModel{
 	        return null;
 	    }
 	}
+    
+    public function getSyndicationSettingValue($syndication_type, $setting_name){
+        
+    }
+    
+    public function setSyndicationSettingValue($syndication_type, $setting_name, $value){
+        
+    }
 	
 	public function delete($remove=false){
 	    
@@ -409,6 +417,9 @@ class SmartestModel extends SmartestBaseModel{
 	        
 	        case 'default_sort_property_dir':
 	        return $this->getDefaultSortPropertyDirection();
+            
+            case 'enable_summary_tab':
+            return SmartestStringHelper::toRealBool($this->getSettingValue('enable_summary_tab'));
 	        
 	        case '_english_indefinite_article':
 	        $n = $this->getName();
@@ -881,6 +892,29 @@ class SmartestModel extends SmartestBaseModel{
         $sql = "SELECT page_id FROM Pages WHERE page_type='ITEMCLASS' AND page_dataset_id='".$this->_properties['id']."' AND page_deleted != 'TRUE' AND page_site_id='".$site_id."'";
         $result = $this->database->queryToArray($sql);
         return (bool) count($result);
+        
+    }
+    
+    public function getItemSummaryTemplateForCurrentSite(){
+        
+        $model_varname = SmartestStringHelper::toVarName($this->getName());
+        $site_pres_dir = SM_ROOT_DIR.'Sites/'.$this->getCurrentSite()->getDirectoryName().'/Presentation/';
+        
+        if(is_file($site_pres_dir.$model_varname.'_summary.tpl')){
+            $template = $site_pres_dir.$model_varname.'_summary.tpl';
+        }elseif(is_file($site_pres_dir.'model'.$this->getId().'_item_summary.tpl')){
+            $template = $site_pres_dir.'model'.$this->getId().'_item_summary.tpl';
+        }elseif(is_file(SM_ROOT_DIR.'Presentation/Interface/'.$model_varname.'_summary.tpl')){
+            $template = SM_ROOT_DIR.'Presentation/Interface/'.$model_varname.'_summary.tpl';
+        }elseif(is_file(SM_ROOT_DIR.'Presentation/Interface/model'.$this->getId().'_item_summary.tpl')){
+            $template = SM_ROOT_DIR.'Presentation/Interface/model'.$this->getId().'_item_summary.tpl';
+        }elseif(is_file(SM_ROOT_DIR.'Presentation/Interface/item_summary.tpl')){
+            $template = SM_ROOT_DIR.'Presentation/Interface/item_summary.tpl';
+        }else{
+            $template = SM_ROOT_DIR.'System/Applications/Items/Presentation/itemSummary.default.tpl';
+        }
+        
+        return $template;
         
     }
     

@@ -1305,6 +1305,8 @@ class Items extends SmartestSystemApplication{
 	        
 	        $num_items_on_site = count($model->getSimpleItems($this->getSite()->getId()));
 	        $num_items_all_sites = count($model->getSimpleItems());
+            
+            $this->send(SmartestStringHelper::toRealBool($model->getSettingValue('enable_summary_tab')), 'enable_summary_tab');
 	        
 	        $file_path = substr($model->getClassFilePath(), strlen(SM_ROOT_DIR));
 	        $this->send($file_path, 'class_file');
@@ -1410,7 +1412,7 @@ class Items extends SmartestSystemApplication{
 	        
     	        if($this->getRequestParameter('itemclass_default_metapage_id')){
     	            if(is_numeric($this->getRequestParameter('itemclass_default_metapage_id'))){
-    	                $model->setDefaultMetaPageId($this->getSite()->getId(), (int) $this->getRequestParameter('itemclass_default_metapage_id'));
+    	                $model->setDefaultMetaPageId((int) $this->getSite()->getId(), (int) $this->getRequestParameter('itemclass_default_metapage_id'));
                     }else if($this->getRequestParameter('itemclass_default_metapage_id') == 'NONE'){
                         $model->clearDefaultMetaPageId($this->getSite()->getId());
                     }
@@ -1435,12 +1437,12 @@ class Items extends SmartestSystemApplication{
                 }
                 
                 if(is_numeric($this->getRequestParameter('itemclass_default_description_property_id')) && $this->getRequestParameter('itemclass_default_description_property_id') > 1){
-                    $model->setDefaultDescriptionPropertyId($this->getRequestParameter('itemclass_default_description_property_id'));
+                    $model->setDefaultDescriptionPropertyId((int) $this->getRequestParameter('itemclass_default_description_property_id'));
                 }
                 
                 if($model->getType() == 'SM_ITEMCLASS_MODEL'){
                     if($this->getRequestParameter('itemclass_default_sort_property_id')){
-                        $model->setDefaultSortPropertyId($this->getRequestParameter('itemclass_default_sort_property_id'));
+                        $model->setDefaultSortPropertyId((int) $this->getRequestParameter('itemclass_default_sort_property_id'));
                         $model->setDefaultSortPropertyDirection($this->getRequestParameter('itemclass_default_sort_direction'));
                     }
                 }else{
@@ -1448,25 +1450,25 @@ class Items extends SmartestSystemApplication{
                     $model->setSubModelManualOrdering($manual_ordering);
                     if(!$manual_ordering){
                         if($this->getRequestParameter('itemclass_default_sort_property_id')){
-                            $model->setDefaultSortPropertyId($this->getRequestParameter('itemclass_default_sort_property_id'));
+                            $model->setDefaultSortPropertyId((int) $this->getRequestParameter('itemclass_default_sort_property_id'));
                             $model->setDefaultSortPropertyDirection($this->getRequestParameter('itemclass_default_sort_direction'));
                         }
                     }
                 }
 
                 if(is_numeric($this->getRequestParameter('itemclass_default_thumbnail_property_id'))){
-                    $model->setDefaultThumbnailPropertyId($this->getRequestParameter('itemclass_default_thumbnail_property_id'));
+                    $model->setDefaultThumbnailPropertyId((int) $this->getRequestParameter('itemclass_default_thumbnail_property_id'));
                 }
                 
                 if(is_numeric($this->getRequestParameter('itemclass_default_date_property_id'))){
-                    $model->setDefaultDatePropertyId($this->getRequestParameter('itemclass_default_date_property_id'));
+                    $model->setDefaultDatePropertyId((int) $this->getRequestParameter('itemclass_default_date_property_id'));
                 }
                 
                 if($this->getRequestParameter('itemclass_primary_property_id')){
                     if(is_numeric($this->getRequestParameter('itemclass_primary_property_id'))){
-                        $model->setPrimaryPropertyId($this->getRequestParameter('itemclass_primary_property_id'));
+                        $model->setPrimaryPropertyId((int) $this->getRequestParameter('itemclass_primary_property_id'));
                     }else if($this->getRequestParameter('itemclass_primary_property_id') == 'NONE'){
-                        $model->setPrimaryPropertyId('');
+                        $model->setPrimaryPropertyId(0);
                     }
                 }
             
@@ -1481,6 +1483,8 @@ class Items extends SmartestSystemApplication{
                 }
                 
                 $model->setIsHidden((int) _b($this->getRequestParameter('itemclass_is_hidden')));
+                
+                $model->setSettingValue('enable_summary_tab', (int) SmartestStringHelper::toRealBool($this->getRequestParameter('enable_summary_tab')));
         
                 // $model->setColor($this->getRequestParameter('itemclass_color'));
                 // }
@@ -1513,7 +1517,7 @@ class Items extends SmartestSystemApplication{
                         $new_site_id = $this->getSite()->getId();
                     }
                 
-                    $model->setSiteId($new_site_id);
+                    $model->setSiteId((int) $new_site_id);
                 
                 }
             
@@ -1823,8 +1827,45 @@ class Items extends SmartestSystemApplication{
         }
 	    
 	}
+    
+    public function itemSummary(){
+        
+		$item_id = $this->getRequestParameter('item_id');
+		
+		$item = SmartestCmsItem::retrieveByPk($item_id);
+        
+        if(is_object($item)){
+            
+            $item->setDraftMode(true);
+            
+            if(($item->getItem()->getCreatedbyUserid() != $this->getUser()->getId()) && !$this->getUser()->hasToken('modify_items') || $item->getItem()->getIsHeld() && $item->getItem()->getHeldBy() != $this->getUser()->getId() && !$this->getUser()->hasToken('edit_held_items')){
+                $this->send(false, 'allow_edit');
+            }else{
+                $this->send(true, 'allow_edit');
+            }
+            
+            $this->send($item, 'item');
+            $this->send($item->getModel(), 'model');
+            $this->setTitle($item->getModel()->getName().' | '.$item->getName());
+            
+            // If the item is a sub-item of another item, send that information
+            if($item->getModel()->getType() == 'SM_ITEMCLASS_MT1_SUB_MODEL'){
+                $this->send($item->getParentItem(), 'parent_item');
+                $this->send($item->getModel()->getParentModel(), 'parent_model');
+            }
+            
+            $this->send($item->getModel()->getItemSummaryTemplateForCurrentSite(), 'item_summary_tpl');
+            
+        }else{
+	        
+	        $this->addUserMessageToNextRequest("The item ID was not recognized.", SmartestUserMessage::ERROR);
+	        $this->redirect('/smartest/models');
+	        
+	    }
+        
+    }
 	
-	public function editItem($get, $post){
+	public function editItem(){
 		
         if(!$this->requestParameterIsSet('from')){
             // $this->setFormReturnUri();
@@ -1926,7 +1967,7 @@ class Items extends SmartestSystemApplication{
 		
 	}
 	
-	public function updateItem($get, $post){  
+	public function updateItem(){  
 		
 		if($this->getUser()->hasToken('modify_items')){
 		
@@ -1949,7 +1990,7 @@ class Items extends SmartestSystemApplication{
 		        
 		        $item->getItem()->setLanguage(SmartestStringHelper::sanitize($this->getRequestParameter('item_language')));
 		        $item->getItem()->setSearchField(SmartestStringHelper::sanitize($this->getRequestParameter('item_search_field')));
-		        $item->getItem()->setMetapageId($this->getRequestParameter('item_metapage_id'));
+		        $item->getItem()->setMetapageId($mpage_id = $this->getRequestParameter('item_metapage_id') ? $mpage_id : 0);
         		// $item->getItem()->setModified(time());
                 
                 if($item->getItem()->getPublic() == 'FALSE' && $this->getRequestParameter('item_publish_scheduled') == '1'){
@@ -2021,7 +2062,7 @@ class Items extends SmartestSystemApplication{
 	
 	}
 	
-	public function addTodoItem($get){
+	public function addTodoItem(){
 	    
 	    $item_id = (int) $this->getRequestParameter('item_id');
 	    $item = new SmartestItem;

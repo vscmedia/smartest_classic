@@ -1,1 +1,2 @@
-<object type="image/svg+xml" data="<?sm:$domain:?>Resources/Images/<?sm:$asset_info.url:?>" width="<?sm:$render_data.width:?>" height="<?sm:$render_data.height:?>" name="<?sm:$asset_info.stringid:?>">Your browser does not support SVG</object>
+<?sm:*<object type="image/svg+xml" data="<?sm:$domain:?>Resources/Images/<?sm:$asset_info.url:?>" width="<?sm:$render_data.width:?>" height="<?sm:$render_data.height:?>" name="<?sm:$asset_info.stringid:?>">Your browser does not support SVG</object>*:?>
+<img src="<?sm:$domain:?>Resources/Images/<?sm:$asset_info.url:?>" alt="<?sm:$render_data.alt_text:?>" />

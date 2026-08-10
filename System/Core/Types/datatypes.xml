@@ -14,6 +14,7 @@
         <parameters>
           <param name="autocomplete" label="Auto-complete" type="SM_DATATYPE_BOOLEAN" default="true" usage="itemproperty" />
           <param name="require_unique" label="Require unique values" type="SM_DATATYPE_BOOLEAN" default="false" usage="itemproperty" />
+          <param name="pattern" label="Validate using a given pattern" type="SM_DATATYPE_SL_TEXT" default="" usage="itemproperty,field,dropdown" />
         </parameters>
     </type>
     

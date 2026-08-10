@@ -5,7 +5,6 @@ module:
   longname: Items Manager
   default_action: getItemClasses
   aliases:
-    - {url: /smartest/data, action: getItemClasses}
     - {url: /smartest/items, action: getItemClasses}
     - {url: /smartest/item/tags/:item_id, action: itemTags}
     - {url: /smartest/item/related/:item_id, action: relatedContent}

@@ -146,7 +146,7 @@ class Settings extends SmartestSystemApplication{
                     $file->setIsHidden(1);
                     $file->save();
                     
-                    $site->setLogoImageAssetId($file->getId());
+                    $site->setLogoImageAssetId((int) $file->getId());
                     $site->save();
                     
                     $site_logos_group = new SmartestAssetGroup;
@@ -156,7 +156,7 @@ class Settings extends SmartestSystemApplication{
                     }
                 }
 	        }else{
-	            $site->setLogoImageAssetId($this->getRequestParameter('site_logo_image_asset_id'));
+	            $site->setLogoImageAssetId((int) $this->getRequestParameter('site_logo_image_asset_id'));
 	            $site->save();
 	        }
             
@@ -177,11 +177,11 @@ class Settings extends SmartestSystemApplication{
                 $file->setIsHidden(1);
                 $file->save();
                 
-                $site->setFaviconId($file->getId());
+                $site->setFaviconId((int) $file->getId());
                 $site->save();
                 
             }else{
-                $site->setFaviconId($this->getRequestParameter('site_favicon_asset_id'));
+                $site->setFaviconId((int) $this->getRequestParameter('site_favicon_asset_id'));
                 $site->save();
             }
 	        
@@ -452,206 +452,7 @@ class Settings extends SmartestSystemApplication{
         
     }
     
-    public function listTags(){
-	    
-	    $this->setFormReturnUri();
-        $this->setFormReturnDescription('tags list');
-        
-	    $du = new SmartestDataUtility;
-	    $tags = $du->getTagsAsArrays();
-	    $this->send($tags, 'tags');
-        $this->send($this->getUser()->hasToken('delete_tags'), 'allow_delete_tags');
-        $this->send($this->getUser()->hasToken('edit_tags'), 'allow_edit_tags');
-	    
-	}
-    
-	public function addTag(){
-	    
-	    if(is_numeric($this->getRequestParameter('item_id'))){
-	        $item = new SmartestItem;
-	        if($item->find($this->getRequestParameter('item_id'))){
-	            $this->send($item, 'item');
-	            if($this->getRequestParameter('page_webid')){
-	                $this->send($this->getRequestParameter('page_webid'), 'page_webid');
-	            }
-	        }
-	    }
-	    
-	    if(is_numeric($this->getRequestParameter('page_id'))){
-	        $page = new SmartestPage;
-	        if($page->find($this->getRequestParameter('page_id'))){
-	            $this->send($page, 'page');
-	        }
-	    }
-	    
-	    if(is_numeric($this->getRequestParameter('asset_id'))){
-	        $asset = new SmartestAsset;
-	        if($asset->find($this->getRequestParameter('asset_id'))){
-	            $this->send($asset, 'asset');
-	        }
-	    }
-	    
-	}
-	
-	public function insertTag(){
-	    
-	    $proposed_tags = SmartestStringHelper::fromSeparatedStringList($this->getRequestParameter('tag_label')); // Separates by commas or semicolons
-	    
-	    $num_new_tags = 0;
-	    $tag_item = false;
-	    
-	    if($this->getRequestParameter('tag_item') && is_numeric($this->getRequestParameter('item_id'))){
-	        $item = new SmartestItem;
-	        if($item->find($this->getRequestParameter('item_id'))){
-	            $tag_item = true;
-	        }
-	    }
-	    
-	    if($this->getRequestParameter('tag_page') && is_numeric($this->getRequestParameter('page_id'))){
-	        $page = new SmartestPage;
-	        if($page->find($this->getRequestParameter('page_id'))){
-	            $tag_page = true;
-	        }
-	    }
-	    
-	    if($this->getRequestParameter('tag_asset') && is_numeric($this->getRequestParameter('asset_id'))){
-	        $asset = new SmartestAsset;
-	        if($asset->find($this->getRequestParameter('asset_id'))){
-	            $tag_asset = true;
-	        }
-	    }
-	    
-	    foreach($proposed_tags as $tag_label){
-	        
-	        $tag_name = SmartestStringHelper::toSlug($tag_label, true);
-	        
-	        if(strlen($tag_label) && strlen($tag_name)){
-	        
-        	    $tag = new SmartestTag;
-        	    $existing_tags = array();
-	    
-        	    if($tag->hydrateBy('name', $tag_name)){
-        	        // $this->addUserMessageToNextRequest("A tag with that name already exists.", SmartestUserMessage::WARNING);
-        	        $existing_tags[] = "'".$tag_label."'";
-        	    }else{
-        	        $tag->setName($tag_name);
-        	        $tag->setLabel(SmartestStringHelper::toTitleCase($tag_label)); // Capitalises first letter of words for neatness
-        	        $tag->save();
-        	        
-        	        if($tag_item){
-        	            $item->tag($tag->getId());
-        	        }
-        	        if($tag_page){
-        	            $page->tag($tag->getId());
-        	        }
-        	        if($tag_asset){
-        	            $asset->tag($tag->getId());
-        	        }
-        	        $num_new_tags++;
-        	    }
-    	    
-	        }
-	    
-        }
-        
-        $message = $num_new_tags.' tag successfully added.';
-        
-        if(count($existing_tags)){
-            $message .= ' Tags '.SmartestStringHelper::toCommaSeparatedList($existing_tags).' already existed.';
-            $type = SmartestUserMessage::INFO;
-        }else{
-            $type = SmartestUserMessage::SUCCESS;
-        }
-        
-        $this->addUserMessageToNextRequest($message, $type);
-        
-        if($tag_item){
-            $url = '/datamanager/itemTags?item_id='.$item->getId();
-            if($this->getRequestParameter('page_webid')){
-                $url .= '&page_id='.$this->getRequestParameter('page_webid');
-            }
-            $this->redirect($url);
-        }
-        
-        if($tag_page){
-            // $page->tag($tag->getId());
-            $this->redirect('/websitemanager/pageTags?page_id='.$page->getWebId());
-        }
-        
-        if($tag_asset){
-            // $asset->tag($tag->getId());
-            $this->redirect('/assets/assetTags?asset_id='.$asset->getId());
-        }
-        
-        $this->formForward();
-	    
-	}
-    
-    public function editTag(){
-        
-        $tag = new SmartestTag;
-        
-        if($this->getUser()->hasToken('edit_tags')){
-            if($tag->find($this->getRequestParameter('tag_id'))){
-                
-                $this->send($tag, 'tag');
-                $this->setTitle('Edit tag: '.$tag->getLabel());
-                $this->send($tag->getDescriptionTextAssetForEditor(), 'desc_text_editor_content');
-                
-                if($this->requestParameterIsSet('page_id')){
-                    
-                    $page = new SmartestTagPage;
-                    
-                    if($page->smartFind($this->getRequestParameter('page_id'))){
-                        if($page->getId() == $this->getSite()->getTagPageId()){
-                            $this->send(true, 'show_edit_tabs');
-                            $this->send($page, 'page');
-                            $this->send($page->isEditableByUserId($this->getUser()->getId()), 'page_is_editable');
-                            $this->send($this->getUser()->hasToken('edit_tags'), 'allow_tag_edit');
-                        }else{
-                            // echo "not tag page";
-                        }
-                    }else{
-                        // echo "page not found";
-                    }
-                    
-                }else{
-                    // echo "no page ID";
-                }
-                
-            }
-        }
-        
-    }
-    
-    public function updateTag(){
-        
-        $tag = new SmartestTag;
-        
-        if($this->getUser()->hasToken('edit_tags')){
-            if($tag->find($this->getRequestParameter('tag_id'))){
-                
-                $tag->setLabel(strip_tags($this->getRequestParameter('tag_label')));
-                $tag->setName(SmartestStringHelper::toSlug($this->getRequestParameter('tag_name')));
-                $tag->setFeatured(SmartestStringHelper::toRealBool($this->getRequestParameter('tag_featured')));
-                $tag->setIconImageAssetId($this->getRequestParameter('tag_icon_image'));
-                
-                $tag->updateDescriptionTextAssetFromEditor($this->getRequestParameter('tag_description'));
-                
-                $tag->save();
-                
-                $this->addUserMessageToNextRequest('The tag has been updated.', SmartestUserMessage::SUCCESS);
-                
-            }
-        }else{
-            $this->addUserMessageToNextRequest('You do not have permission to modify tags.', SmartestUserMessage::ACCESS_DENIED);
-        }
-        
-        $this->handleSaveAction();
-        
-    }
-	
-	public function getTaggedObjects(){
+    public function getTaggedObjects(){
 	    
 	    $tag_identifier = SmartestStringHelper::toSlug($this->getRequestParameter('tag'));
 	    $tag = new SmartestTag;

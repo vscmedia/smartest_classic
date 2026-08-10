@@ -103,6 +103,16 @@
       </div>
       {/if}
       
+      <div class="edit-form-row">
+        <div class="form-section-label">Enable item summary tab</div>
+        {if $can_edit_model}
+          {boolean name="enable_summary_tab" value=$enable_summary_tab}
+        {else}
+          {if $enable_summary_tab}Enabled{else}Disabled{/if}
+        {/if}
+        <div class="form-hint">The item summary tab allows the items you create to be viewed and the information inspected without editing or publishing it</div>
+      </div>
+      
       {if count($metapages)}
       <div class="edit-form-row">
         {if !$model.default_metapage_id}<div class="warning">{/if}

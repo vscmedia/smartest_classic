@@ -118,7 +118,7 @@ class SmartestSiteCreationHelper{
 	    $home_page->setTitle('Home');
 	    $home_page->setName('home');
 	    $home_page->setDraftTemplate($master_template);
-	    $home_page->setWebid(SmartestStringHelper::random(32));
+	    $home_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $home_page->setSiteId($site->getId());
 	    $home_page->setCreatedbyUserid($u->getId());
 	    $home_page->setOrderIndex(0);
@@ -137,7 +137,7 @@ class SmartestSiteCreationHelper{
 	    $error_page->setDraftTemplate($master_template);
 	    $error_page->setLiveTemplate($master_template);
 	    $error_page->setParent($home_page->getId());
-	    $error_page->setWebid(SmartestStringHelper::random(32));
+	    $error_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $error_page->setCreatedbyUserid($u->getId());
 	    $error_page->setOrderIndex(1024);
 	    $error_page->setIsPublished('TRUE');
@@ -153,7 +153,7 @@ class SmartestSiteCreationHelper{
 	    $search_page->setDraftTemplate($master_template);
 	    $search_page->setLiveTemplate($master_template);
 	    $search_page->setParent($home_page->getId());
-	    $search_page->setWebid(SmartestStringHelper::random(32));
+	    $search_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $search_page->setCreatedbyUserid($u->getId());
 	    $search_page->setOrderIndex(1022);
 	    $search_page->save();
@@ -167,7 +167,7 @@ class SmartestSiteCreationHelper{
 	    $tag_page->setDraftTemplate($master_template);
 	    $tag_page->setLiveTemplate($master_template);
 	    $tag_page->setParent($home_page->getId());
-	    $tag_page->setWebid(SmartestStringHelper::random(32));
+	    $tag_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $tag_page->setCreatedbyUserid($u->getId());
 	    $tag_page->setOrderIndex(1023);
 	    $tag_page->save();
@@ -181,7 +181,7 @@ class SmartestSiteCreationHelper{
 	    $user_page->setDraftTemplate($master_template);
 	    $user_page->setLiveTemplate($master_template);
 	    $user_page->setParent($home_page->getId());
-	    $user_page->setWebid(SmartestStringHelper::random(32));
+	    $user_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $user_page->setCreatedbyUserid($u->getId());
 	    $user_page->setOrderIndex(1020);
 	    $user_page->save();
@@ -195,7 +195,7 @@ class SmartestSiteCreationHelper{
 	    $holding_page->setDraftTemplate($master_template);
 	    $holding_page->setLiveTemplate($master_template);
 	    $holding_page->setParent($home_page->getId());
-	    $holding_page->setWebid(SmartestStringHelper::random(32));
+	    $holding_page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
 	    $holding_page->setCreatedbyUserid($u->getId());
 	    $holding_page->setOrderIndex(1019);
 	    $holding_page->save();

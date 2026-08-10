@@ -1,0 +1,1 @@
+<a href="{$domain}datamanager/itemSummary?item_id={$value.id}">{$value.name}</a>

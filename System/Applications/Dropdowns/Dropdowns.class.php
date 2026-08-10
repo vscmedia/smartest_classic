@@ -82,6 +82,8 @@ class Dropdowns extends SmartestSystemApplication{
 	    
 	    $dropdown_id = (int) $this->getRequestParameter('dropdown_id');
 	    $dropdown = new SmartestDropdown;
+        
+        $this->setTemporaryFormReturnUri();
 	    
 	    if($dropdown->find($dropdown_id)){
 	        $this->send($dropdown, 'dropdown');
@@ -165,10 +167,11 @@ class Dropdowns extends SmartestSystemApplication{
 	    
 	    $label = $post['dropdownvalue_label'];
 	    
-	    if(strlen($post['dropdownvalue_value'])){
+	    if(strlen(trim($post['dropdownvalue_value']))){
 	        $value = SmartestStringHelper::toVarName($post['dropdownvalue_value']);
         }else{
-            $value = $post['dropdownvalue_value'];
+            $value = SmartestStringHelper::toVarName($post['dropdownvalue_label']);
+            // $value = $post['dropdownvalue_value'];
         }
 	    
 	    $dropdown_id = (int) $this->getRequestParameter('dropdown_id');
@@ -233,6 +236,15 @@ class Dropdowns extends SmartestSystemApplication{
 	    if($option->find($id)){
 	        $drop_down_label = SmartestStringHelper::sanitize($post['dropdown_label']);
 	        $option->setLabel($drop_down_label);
+            
+    	    if(!strlen(trim($option->getValue()))){
+    	        $option->setValue(SmartestStringHelper::toVarName($option->getLabel()));
+            }
+            
+            // var_dump(strlen(trim($option->getLabel())));
+            // 
+            // var_dump($option->__toSimpleObject());
+            
 	        $option->save();
 	        $this->addUserMessageToNextRequest("The option was updated.", SmartestUserMessage::SUCCESS);
 	    }else{

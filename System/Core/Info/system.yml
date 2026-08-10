@@ -1,7 +1,7 @@
 system:
   info:
     version: "0.5"
-    revision: 897
+    revision: 899
     minimum_php_version: 5.4
     minimum_database_version: 21
     default_timezone: Europe/London
@@ -11,6 +11,7 @@ system:
     - Assets
     - BlockLists
     - CmsFrontEnd
+    - Data
     - Dropdowns
     - Desktop
     - Items

@@ -3,6 +3,7 @@
 class SmartestString extends SmartestObject implements SmartestBasicType, SmartestStorableValue, SmartestSubmittableValue, SmartestSearchableValue, SmartestJsonCompatibleObject{
 	
 	protected $_string = '';
+    protected $_pattern = null;
 	
     public function __construct($string=''){
         $this->setValue($string);

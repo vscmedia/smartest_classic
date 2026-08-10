@@ -96,7 +96,7 @@
         
         $('logo').observe('click', function(){
           
-          window.open('http://sma.rte.st/?ref=login');
+          window.open('http://smartestproject.org/?ref=login');
           
         });
         
@@ -156,6 +156,6 @@
 
 </div>
 
-<p id="footer">Smartest is © VSC Creative Ltd. {$now.Y}</p>
+<p id="footer">Smartest is © VSC Media International OÜ. {$now.Y}</p>
 
 </body>

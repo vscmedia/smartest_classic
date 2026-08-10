@@ -257,6 +257,11 @@ div.warning a.sm-help-link:hover i.fa{
     color:#fff;
 }
 
+#about-modal-logo{
+    width:200px;
+    height:auto;
+}
+
 /* a.sm-help-link{
     margin-top:1px;
     color:#fff!important;
@@ -1454,6 +1459,33 @@ div.image-picker-caption{
   75% {
     stroke: #F54E4E;
   }
+}
+
+@media (prefers-color-scheme: dark) {
+    
+    body{
+    	background-color:#333;
+        color:#fff;
+    }
+    
+    div#work-area h3, div#work-area-full h3, div.form-section-label, .form-hint, ul.apps li a.label, div#work-area h4, div#work-area-full h4, .text, span.selection-summary span.selection-summary-file-name, span.selection-summary span.selection-summary-item-name{
+        color:#fff;
+    }
+    
+    div.special-box{
+        border-color:#464646;
+        background-color:#444;
+    }
+    
+    div.buttons-bar{
+    	color:#fff;
+    	background-color:#444;
+    }
+    
+    div#actions-area{
+        background-color:#444;
+    }
+    
 }
 
 /*** Retina display stuff ***/
