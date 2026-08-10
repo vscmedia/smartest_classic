@@ -225,8 +225,8 @@ class SmartestRequestUrlHelper{
 		if(is_array($dataset_pages)){
 			
 			$found_page = false;
-			
-			// loop through dataset pages and urls and check the urls against the current one
+            
+            // loop through dataset pages and urls and check the urls against the current one
 			foreach($dataset_pages as $page_record){
 			    
 			    // Before doing anything intensive like regexes, check for more straightforward cases
@@ -241,31 +241,30 @@ class SmartestRequestUrlHelper{
     				    $page->setIdentifyingFieldValue($page_record['pageurl_item_id']);
     			        $page->setUrlNameValuePair("id", $page_record['pageurl_item_id']);
 			            
-			            if($page->isAcceptableItem()){
-    		                $page->assignPrincipalItem();
-    		                return $page;
-    		            }
+                        if($page->isAcceptableItem()){
+                            $page->assignPrincipalItem();
+                            return $page;
+                        }
 		            
 	                }
 			        
 			    }else if($page_record['pageurl_type'] == 'SM_PAGEURL_ITEM_FORWARD' && $page_record['pageurl_url'] == $url){
 			        
-			        // load up page and forward
+                    // load up page and forward
 			        $page = new SmartestItemPage;
-			        
-			        if($page->find($page_record['pageurl_page_id'])){
-			        
-			            $page->setIdentifyingFieldName("id");
+                    
+                    if($page->find($page_record['pageurl_page_id'])){
+                        
+                        $page->setIdentifyingFieldName("id");
     				    $page->setIdentifyingFieldValue($page_record['pageurl_item_id']);
     			        $page->setUrlNameValuePair("id", $page_record['pageurl_item_id']);
-			        
-    			        if($page->isAcceptableItem()){
-    		                $page->assignPrincipalItem();
-    		                // echo $page->getPrincipalItem()->getUrl();
-                            if($response_type == 'return'){
-                                return $page;
-                            }else{
+                        
+                        if($page->isAcceptableItem()){
+                            $page->assignPrincipalItem();
+    		                if($response_type == 'throw' || $page_record['pageurl_type'] == "SM_PAGEURL_ITEM_FORWARD"){
                                 throw new SmartestRedirectException($page->getPrincipalItem()->getUrl(), $page_record['pageurl_redirect_type']);
+                            }else{
+                                return $page;
                             }
     		                
     		            }
@@ -324,7 +323,6 @@ class SmartestRequestUrlHelper{
         					    $page->assignPrincipalItem();
         					    
         					    if($page_record['pageurl_type'] == 'SM_PAGEURL_INTERNAL_FORWARD'){
-        					        // var_dump($page->getPrincipalItem());
                                     if($response_type == 'return'){
                                         return $page;
                                     }else{
