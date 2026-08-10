@@ -156,9 +156,45 @@ class SmartestDataObjectHelper{
 	    if($force || !file_exists($file_name)){
 	        
 	        $dbTableHelper = new SmartestDatabaseTableHelper('SMARTEST');
-	        $columns = $dbTableHelper->getColumnNames($table_info['name']);
+            $column_definitions = self::getTableColumnDefinitions($table_info['name']);
+            $columns = array();
+            $field_definitions = array();
 	        $offset = strlen($table_info['prefix']);
 	        $pns = array();
+	        
+            if(count($column_definitions)){
+                foreach($column_definitions as $column_definition){
+                    if(isset($column_definition['Field'])){
+                        $column = $column_definition['Field'];
+                        $columns[] = $column;
+
+         			    if(in_array($column, $table_info['noprefix'])){
+         				    $pn = $column;
+         				}else{
+         					$pn = substr($column, $offset);
+         				}
+
+                        $pns[] = $pn;
+                        $field_definitions[$pn] = self::buildFieldDefinitionArray($pn, $column_definition);
+                    }
+                }
+            }else{
+                // Fallback for older helper/database abstractions: build the old field list only.
+                $columns = $dbTableHelper->getColumnNames($table_info['name']);
+
+                foreach($columns as $column){
+
+         			    if(in_array($column, $table_info['noprefix'])){
+         				    $pn = $column;
+         				}else{
+         					$pn = substr($column, $offset);
+         				}
+
+         				$pns[] = $pn;
+                    $field_definitions[$pn] = self::buildFallbackFieldDefinitionArray($pn, $column);
+
+         			}
+            }
 	        
 	        $file_contents = SmartestFileSystemHelper::load(SM_ROOT_DIR.'System/Data/ObjectModelTemplates/basedataobject_template.txt');
 	        $sp = $is_smartest ? 'Smartest' : '';
@@ -167,18 +203,6 @@ class SmartestDataObjectHelper{
 	        $file_contents = str_replace('__BASE_CLASS__', $table_info['class'], $file_contents);
             $file_contents = str_replace('__REVISION__', SmartestInfo::$revision, $file_contents);
 	        
-	        foreach($columns as $column){
-		    
-			    if(in_array($column, $table_info['noprefix'])){
-				    $pn = $column;
-				}else{
-					$pn = substr($column, $offset);
-				}
-				
-				$pns[] = $pn;
-				
-			}
-			
 			$file_contents = str_replace('__IS_SMARTEST__', $is_smartest ? 'true' : 'false', $file_contents);
 			$file_contents = str_replace('__TABLE_PREFIX__', $table_info['prefix'], $file_contents);
 			$file_contents = str_replace('__TABLE_NAME__', $table_info['name'], $file_contents);
@@ -195,8 +219,11 @@ class SmartestDataObjectHelper{
             }
             $file_contents = str_replace('__PRIVATE_FIELDS__', $private_fields, $file_contents);
 			
-			$pac = self::buildBasePropertiesArray($pns);
+			$pac = self::buildBasePropertiesArray($field_definitions);
 			$file_contents = str_replace('__PROPERTIES_ARRAY__', $pac, $file_contents);
+
+            $fdc = self::buildBaseFieldDefinitionsArray($field_definitions);
+            $file_contents = str_replace('__FIELD_DEFINITIONS__', $fdc, $file_contents);
 			
 			$fc = self::buildBaseFunctions($pns);
 			$file_contents = str_replace('__FUNCTIONS__', $fc, $file_contents);
@@ -206,17 +233,129 @@ class SmartestDataObjectHelper{
 	    
 	}
 	
-	public static function buildBasePropertiesArray($pns){
+	public static function getTableColumnDefinitions($table_name){
+
+        $database = SmartestPersistentObject::get('db:main');
+
+        if(is_object($database) && method_exists($database, 'queryToArray')){
+            $safe_table_name = str_replace('`', '``', $table_name);
+            return $database->queryToArray("SHOW COLUMNS FROM `".$safe_table_name."`");
+        }else{
+            return array();
+        }
+
+    }
+
+    public static function buildFieldDefinitionArray($property_name, $column_definition){
+
+        $type = isset($column_definition['Type']) ? $column_definition['Type'] : '';
+        $base_type = self::getBaseColumnType($type);
+        $nullable = (isset($column_definition['Null']) && strtoupper($column_definition['Null']) == 'YES');
+        $extra = isset($column_definition['Extra']) ? $column_definition['Extra'] : '';
+        $auto_increment = (stripos($extra, 'auto_increment') !== false);
+        $default = self::getDefaultValueForColumn($column_definition, $base_type, $nullable, $auto_increment);
+
+        return array(
+            'column' => isset($column_definition['Field']) ? $column_definition['Field'] : '',
+            'type' => $type,
+            'base_type' => $base_type,
+            'numeric' => self::columnTypeIsNumeric($type),
+            'nullable' => $nullable,
+            'default' => $default,
+            'auto_increment' => $auto_increment
+        );
+
+    }
+
+    public static function buildFallbackFieldDefinitionArray($property_name, $column_name){
+
+        return array(
+            'column' => $column_name,
+            'type' => '',
+            'base_type' => '',
+            'numeric' => false,
+            'nullable' => true,
+            'default' => '',
+            'auto_increment' => false
+        );
+
+    }
+
+    public static function getBaseColumnType($type){
+
+        if(preg_match('/^([a-z0-9_]+)/i', trim($type), $matches)){
+            return strtolower($matches[1]);
+        }else{
+            return '';
+        }
+
+    }
+
+    public static function columnTypeIsNumeric($type){
+
+        return (bool) preg_match('/^(tinyint|smallint|mediumint|int|bigint|decimal|float|double|real|bit)\b/i', trim($type));
+
+    }
+
+    public static function columnTypeIsTextual($type){
+
+        return (bool) preg_match('/^(char|varchar|tinytext|text|mediumtext|longtext|enum|set)\b/i', trim($type));
+
+    }
+
+    public static function getDefaultValueForColumn($column_definition, $base_type, $nullable, $auto_increment){
+
+        if($auto_increment){
+            return null;
+        }
+
+        if(array_key_exists('Default', $column_definition) && !is_null($column_definition['Default'])){
+            $default = $column_definition['Default'];
+
+            if(self::columnTypeIsNumeric($base_type) && is_numeric($default)){
+                return $default + 0;
+            }else{
+                return $default;
+            }
+        }
+
+        if($nullable){
+            return null;
+        }
+
+        if(self::columnTypeIsNumeric($base_type)){
+            return 0;
+        }
+
+        return '';
+
+    }
+
+    public static function phpLiteral($value){
+
+        if(is_null($value)){
+            return 'null';
+        }else if(is_bool($value)){
+            return $value ? 'true' : 'false';
+        }else if(is_int($value) || is_float($value)){
+            return (string) $value;
+        }else{
+            return "'".str_replace(array("\\", "'"), array("\\\\", "\\'"), $value)."'";
+        }
+
+    }
+
+	public static function buildBasePropertiesArray($field_definitions){
 	    
 	    $pac = '    protected $_properties = array('."\n";
 		
-		$i = count($pns);
+		$i = count($field_definitions);
 		
-		foreach($pns as $pn){
+		foreach($field_definitions as $pn => $definition){
 		    
 		    if(strlen($pn)){
 		        
-		        $pac .= "        '".$pn."' => ''";
+		        $pac .= "        '".$pn."' => ".self::phpLiteral($definition['default']);
 		        
 		        if($i>1){
 		            $pac .= ",";
@@ -235,6 +374,36 @@ class SmartestDataObjectHelper{
 		return $pac;
 	    
 	}
+
+    public static function buildBaseFieldDefinitionsArray($field_definitions){
+
+        $string = '';
+        $i = count($field_definitions);
+
+        foreach($field_definitions as $property_name => $definition){
+
+            $string .= "        '".$property_name."' => array(";
+            $string .= "'column' => ".self::phpLiteral($definition['column']);
+            $string .= ", 'type' => ".self::phpLiteral($definition['type']);
+            $string .= ", 'base_type' => ".self::phpLiteral($definition['base_type']);
+            $string .= ", 'numeric' => ".($definition['numeric'] ? 'true' : 'false');
+            $string .= ", 'nullable' => ".($definition['nullable'] ? 'true' : 'false');
+            $string .= ", 'default' => ".self::phpLiteral($definition['default']);
+            $string .= ", 'auto_increment' => ".($definition['auto_increment'] ? 'true' : 'false');
+            $string .= ")";
+
+            if($i > 1){
+                $string .= ",";
+            }
+
+            $string .= "\n";
+            $i--;
+
+        }
+
+        return $string;
+
+    }
 	
 	public static function buildBaseFunctions($pns){
 	    

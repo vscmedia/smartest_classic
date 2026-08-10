@@ -1,8 +1,11 @@
 <?php
 
 class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibleObject{
+
+    const GENERATED_OBJECT_MODEL_FORMAT = 2;
 	
 	protected $_properties = array();
+    protected $_field_definitions = array();
 	protected $_modified_properties = array();
 	protected $_overloaded_properties = array();
 	protected $_foreign_key_objects = array();
@@ -20,6 +23,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	protected $_escape_values_on_save = false;
     protected $_preferences_helper;
     protected $_cached_global_preferences;
+    protected static $_table_column_info_cache = array();
 	
 	public function __construct(){
 		
@@ -48,7 +52,8 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	        throw new SmartestException($e->getMessage());
 	    }
         
-        if(!isset($this->__revision_num) || $this->__revision_num != SmartestInfo::$revision){
+        if(!$this->hasCurrentGeneratedObjectModel()){
+            SmartestLog::getInstance('system')->log(get_class($this).' is using an old generated data-object model. Auto-generated class will be deleted to allow re-caching.', SmartestLog::NOTICE);
             $this->refreshDataStructure();
             $this->refreshClass();
         }
@@ -471,19 +476,217 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 		}
 	}
 	
+    public function getGeneratedObjectModelFormat(){
+
+        if(isset($this->__object_model_format)){
+            return (int) $this->__object_model_format;
+        }else{
+            return 0;
+        }
+
+    }
+
+    public function hasCurrentGeneratedObjectModel(){
+
+        if(!strlen($this->_table_name)){
+            return true;
+        }
+
+        if(!isset($this->__revision_num) || $this->__revision_num != SmartestInfo::$revision){
+            return false;
+        }
+
+        if($this->getGeneratedObjectModelFormat() < self::GENERATED_OBJECT_MODEL_FORMAT){
+            return false;
+        }
+
+        if(!is_array($this->_field_definitions) || !count($this->_field_definitions)){
+            return false;
+        }
+
+        return true;
+
+    }
+
+    protected function getColumnNameForField($field_name){
+
+        if(isset($this->_no_prefix[$field_name])){
+            return $field_name;
+        }else{
+            return $this->_table_prefix.$field_name;
+        }
+
+    }
+
+    protected function getFieldDefinition($field_name){
+
+        if(isset($this->_field_definitions[$field_name]) && is_array($this->_field_definitions[$field_name])){
+            return $this->_field_definitions[$field_name];
+        }else{
+            return null;
+        }
+
+    }
+
+    protected function columnTypeIsNumeric($type){
+
+        return (bool) preg_match('/^(tinyint|smallint|mediumint|int|bigint|decimal|float|double|real|bit)\b/i', trim($type));
+
+    }
+
+    protected function fieldDefinitionIsNumeric($field_definition){
+
+        if(is_array($field_definition)){
+            if(isset($field_definition['numeric'])){
+                return (bool) $field_definition['numeric'];
+            }else if(isset($field_definition['type'])){
+                return $this->columnTypeIsNumeric($field_definition['type']);
+            }
+        }
+
+        return false;
+
+    }
+
+    protected function fieldDefinitionIsNullable($field_definition){
+
+        return (is_array($field_definition) && isset($field_definition['nullable']) && $field_definition['nullable']);
+
+    }
+
+    protected function fieldDefinitionDefault($field_definition){
+
+        if(is_array($field_definition) && array_key_exists('default', $field_definition)){
+            return $field_definition['default'];
+        }else{
+            return null;
+        }
+
+    }
+
+    protected function getLegacyColumnInfoForField($field_name){
+
+        if(!strlen($this->_table_name)){
+            return null;
+        }
+
+        if(!isset(self::$_table_column_info_cache[$this->_table_name])){
+
+            $safe_table_name = str_replace('`', '``', $this->_table_name);
+            $sql = "SHOW COLUMNS FROM `".$safe_table_name."`";
+            $rows = $this->database->queryToArray($sql);
+
+            self::$_table_column_info_cache[$this->_table_name] = array();
+
+            foreach($rows as $row){
+                if(isset($row['Field'])){
+                    self::$_table_column_info_cache[$this->_table_name][$row['Field']] = $row;
+                }
+            }
+
+        }
+
+        $column_name = $this->getColumnNameForField($field_name);
+
+        if(isset(self::$_table_column_info_cache[$this->_table_name][$column_name])){
+            return self::$_table_column_info_cache[$this->_table_name][$column_name];
+        }else{
+            return null;
+        }
+
+    }
+
+    protected function legacyColumnInfoIsNumeric($column_info){
+
+        if(is_array($column_info) && isset($column_info['Type'])){
+            return $this->columnTypeIsNumeric($column_info['Type']);
+        }else{
+            return false;
+        }
+
+    }
+
+    protected function normaliseValueForDatabase($field_name, $value){
+
+        if($value === ''){
+
+            $field_definition = $this->getFieldDefinition($field_name);
+
+            if($this->fieldDefinitionIsNumeric($field_definition)){
+
+                if($this->fieldDefinitionIsNullable($field_definition)){
+                    return null;
+                }
+
+                $default = $this->fieldDefinitionDefault($field_definition);
+
+                if(!is_null($default) && is_numeric($default)){
+                    return $default;
+                }
+
+                return 0;
+
+            }
+
+            // Fallback for old generated base classes that have not yet been rebuilt.
+            $column_info = $this->getLegacyColumnInfoForField($field_name);
+
+            if($this->legacyColumnInfoIsNumeric($column_info)){
+
+                if(isset($column_info['Null']) && strtoupper($column_info['Null']) == 'YES'){
+                    return null;
+                }
+
+                if(array_key_exists('Default', $column_info) && strlen($column_info['Default']) && is_numeric($column_info['Default'])){
+                    return $column_info['Default'];
+                }
+
+                return 0;
+
+            }
+
+        }
+
+        return $value;
+
+    }
+
+    protected function getSqlValue($value){
+
+        if(is_null($value)){
+            return 'NULL';
+        }
+
+        if($this->_escape_values_on_save){
+            return "'".addslashes($value)."'";
+        }else{
+            return "'".$value."'";
+        }
+
+    }
+
 	protected function setField($field_name, $value){
 		
 		if(array_key_exists($field_name, $this->_properties)){
 			
 			// field being set is part of the model and corresponds to a column in the db table
+            $value = $this->normaliseValueForDatabase($field_name, $value);
 			$this->_properties[$field_name] = $value;
 			
-			// Magic Quotes is deprecated but if switched on can still fuck things up.
-			// if(!SM_OPTIONS_MAGIC_QUOTES){
-			    $value = mysql_real_escape_string($value);
-		    //}
-			
-			$this->_modified_properties[$field_name] = SmartestStringHelper::sanitize($value);
+            if(is_null($value)){
+
+                $this->_modified_properties[$field_name] = null;
+
+            }else{
+
+    			// Magic Quotes is deprecated but if switched on can still fuck things up.
+    			// if(!SM_OPTIONS_MAGIC_QUOTES){
+    			    $value = mysql_real_escape_string($value);
+    		    //}
+    			
+    			$this->_modified_properties[$field_name] = SmartestStringHelper::sanitize($value);
+
+            }
 			
 		}else{
 		    
@@ -737,11 +940,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 				$sql .= ', ';
 			}
 		    
-		    if($this->_escape_values_on_save){
-			    $sql .= "'".addslashes($value)."'";
-		    }else{
-		        $sql .= "'".$value."'";
-		    }
+            $sql .= $this->getSqlValue($value);
 		    
 			$i++;
 		}
@@ -764,15 +963,11 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 				$sql .= ', ';
 			}
 		
-			if(!isset($this->_no_prefix[$name])){
-				$sql .= $this->_table_prefix.$name."='".$value."'";
-			}else{
-				if($this->_escape_values_on_save){
-    			    $sql .= $name."='".addslashes($value)."'";
-    		    }else{
-    		        $sql .= $name."='".$value."'";
-    		    }
-			}
+            if(!isset($this->_no_prefix[$name])){
+                $sql .= $this->_table_prefix.$name."=".$this->getSqlValue($value);
+            }else{
+                $sql .= $name."=".$this->getSqlValue($value);
+            }
 		
 			$i++;
 		}
