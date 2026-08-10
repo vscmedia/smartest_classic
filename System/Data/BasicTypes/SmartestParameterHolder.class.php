@@ -254,6 +254,8 @@ class SmartestParameterHolder extends SmartestObject implements IteratorAggregat
             return new SmartestParameterHolderValuePresenceChecker(array_keys($this->_data));
             case "_debug":
             return "<code>".print_r($this->_data, true)."</code>";
+            case "_params":
+            return "<code>".implode("|", array_keys($this->_data))."</code>";
         }
         
         return $this->getParameter($offset);

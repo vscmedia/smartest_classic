@@ -39,6 +39,7 @@ class SmartestPageRenderingDataRequestHandler implements ArrayAccess{
     public function getSite(){
         if(!$this->_site){
             $this->_site = $this->_page->getParentSite();
+            $this->_site->setDraftMode($this->_page->getDraftMode());
         }
         return $this->_site;
     }

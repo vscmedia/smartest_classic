@@ -11,6 +11,7 @@ class SmartestSite extends SmartestBaseSite{
     protected $displayPages = array();
     protected $displayPagesIndex = 0;
     protected $_last_search_time_taken = 0;
+    protected $_draft_mode = false;
     
     public static $special_page_ids = array();
     
@@ -26,6 +27,14 @@ class SmartestSite extends SmartestBaseSite{
 	    return $this->_home_page;
 	    
 	}
+    
+    public function getDraftMode(){
+        return $this->_draft_mode;
+    }
+    
+    public function setDraftMode($mode){
+        $this->_draft_mode = (bool) $mode;
+    }
 	
 	public function getPagesTree($draft_mode=true, $normal_pages_only=false){
 	    
@@ -889,6 +898,44 @@ class SmartestSite extends SmartestBaseSite{
         
     }
     
+    public function getActiveTags($draft_mode='__UNSET'){
+        
+        if($draft_mode === '__UNSET'){
+            $draft_mode = $this->getDraftMode();
+        }
+        
+        // public items
+        $items_sql = "SELECT DISTINCT Tags.tag_id FROM Items, TagsObjectsLookup, Sites, Tags WHERE Sites.site_id=".$this->getId()." AND TagsObjectsLookup.taglookup_type = 'SM_ITEM_TAG_LINK' AND Items.item_site_id = Sites.site_id AND Items.item_id = TagsObjectsLookup.taglookup_object_id AND TagsObjectsLookup.taglookup_tag_id = Tags.tag_id";
+        if(!$draft_mode){
+            $items_sql .= " AND Items.item_public='TRUE'";
+        }
+        
+        $result = $this->database->queryToArray($items_sql);
+        $ids = array();
+        foreach($result as $r){
+            $ids[] = $r['tag_id'];
+        }
+        
+        // public pages
+        // $pages_sql = "SELECT DISTINCT Tags.tag_id FROM Items, TagsObjectsLookup, Sites, Tags WHERE Sites.site_id=".$this->getId()." AND TagsObjectsLookup.taglookup_type = 'SM_PAGE_TAG_LINK' AND Pages.page_site_id = Sites.site_id AND Pages.page_id = TagsObjectsLookup.taglookup_object_id AND TagsObjectsLookup.taglookup_tag_id = Tags.tag_id";
+        // if(!$draft_mode){
+        //     $pages_sql .= "AND Pages.page_is_published='TRUE'";
+        // }
+        
+        $final_sql = "SELECT DISTINCT Tags.* from Tags WHERE Tags.tag_id IN ('".implode("','", $ids)."') ORDER BY Tags.tag_name ASC";
+        $final_result = $this->database->queryToArray($final_sql);
+        $tags = array();
+        
+        foreach($final_result as $fr){
+            $t = new SmartestTag;
+            $t->hydrate($fr);
+            $tags[] = $t;
+        }
+        
+        return $tags;
+        
+    }
+    
     public function getOrganizationName(){
         $ph = new SmartestPreferencesHelper;
         $on = $ph->getGlobalPreference('site_organisation_name', null, $this->getId());
@@ -1001,6 +1048,9 @@ class SmartestSite extends SmartestBaseSite{
             
             case 'elasticsearch_index_name':
             return $this->getElasticSearchIndexName();
+            
+            case 'active_tags':
+            return $this->getActiveTags($this->getDraftMode());
             
         }
         

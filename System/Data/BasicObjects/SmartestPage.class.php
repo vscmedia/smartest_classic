@@ -1,6 +1,6 @@
 <?php
 
-class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, SmartestGenericListedObject, SmartestDualModedObject, SmartestStorableValue, SmartestSearchableValue{
+class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, SmartestGenericListedObject, SmartestDualModedObject, SmartestStorableValue, SmartestSearchableValue, SmartestSubmittableValue{
 
 	protected $_save_url = true;
 	protected $_fields_retrieval_attempted = false;
@@ -1446,7 +1446,8 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
     	        $property = new SmartestPageField;
     	        $property->hydrate($p);
     	        $fields[$property->getId()] = $property;
-    	        $definitions->setParameter($p['pageproperty_name'], null);
+    	        // $definitions->setParameter($p['pageproperty_name'], null);
+                $definitions->setParameter($p['pageproperty_name'], SmartestDataUtility::objectize(null, $property->getType()));
     	    }
 	    
     	    $sql = "SELECT * FROM `PagePropertyValues` WHERE pagepropertyvalue_page_id='".$this->_properties['id']."'";

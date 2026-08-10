@@ -305,6 +305,7 @@ class SmartestDateTime implements SmartestBasicType, ArrayAccess, SmartestStorab
 	        
 	        case 'Y':
 	        case 'year':
+            case 'year_only':
 	        return date('Y', $this->_value);
 	        
 	        case 'M':

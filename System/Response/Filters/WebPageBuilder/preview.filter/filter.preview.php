@@ -4,6 +4,22 @@ function smartest_filter_preview($html, $filter){
     
     if($filter->getDraftMode()){
         
+        $test_html = trim(str_replace(array("\n", "\r"), '', $html));
+        
+        if(!strlen($test_html)){
+            $html = <<<'EOT'
+            <html>
+              <head>
+                <title>Smartest: Empty template</title>
+              </head>
+              <body>
+                <p style="text-align:center;padding-top:200px">Empty template</p>
+              </body>
+            </html>
+EOT;
+
+        }
+        
         $request_data = SmartestPersistentObject::get('request_data');
         
         $preview_url = '/website/renderEditableDraftPage?page_id='.$request_data->getParameter('request_parameters')->getParameter('page_id').'&amp;hide_newwin_link=true';

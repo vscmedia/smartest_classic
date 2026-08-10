@@ -761,6 +761,9 @@ class Items extends SmartestSystemApplication{
                     $this->redirect('/'.$this->getRequest()->getModule().'/getItemClassMembers?class_id='.$item->getItemclassId());
                 }
     	    }
+        }else{
+            $this->addUserMessageToNextRequest('The item ID was not recognised.', SmartestUserMessage::ERROR);
+            $this->redirect('/smartest/models');
         }
 	    
 	}
@@ -1930,8 +1933,8 @@ class Items extends SmartestSystemApplication{
 	    	$item_id = $this->getRequestParameter('item_id');
 		
     		$item = SmartestCmsItem::retrieveByPk($item_id);
-		
-    		if(is_object($item)){
+            
+            if(is_object($item)){
 		        
 		        // update name
     		    if (strlen($this->getRequestParameter('item_name'))){
@@ -1989,8 +1992,8 @@ class Items extends SmartestSystemApplication{
                     $item->save();
 			    
 			    }
-			    
-			    $this->addUserMessageToNextRequest('The '.strtolower($item->getModel()->getName()).' was updated successfully.', SmartestUserMessage::SUCCESS);
+                
+                $this->addUserMessageToNextRequest('The '.strtolower($item->getModel()->getName()).' was updated successfully.', SmartestUserMessage::SUCCESS);
 		
 	        }else{
 	        
@@ -2334,7 +2337,6 @@ class Items extends SmartestSystemApplication{
                 if($item->getModel()->hasSubModels()){
                     $this->send($item->getModel()->getSubModels(), 'sub_models');
                     $recommended_sub_model_publish_mode = (!$item->isPublished() || !$item->getItem()->getLastPublished()) ? 'ALL' : 'CHANGED';
-                    // var_dump($recommended_sub_model_publish_mode);
                     $this->send($recommended_sub_model_publish_mode, 'recommended_sub_model_publish_mode');
                 }else{
                     $this->send(array(), 'sub_models');
@@ -2639,7 +2641,7 @@ class Items extends SmartestSystemApplication{
         		    $model->setName($this->getRequestParameter('itemclass_name'));
         		    $model->setPluralName($this->getRequestParameter('itemclass_plural_name'));
         		    $model->setVarname(SmartestStringHelper::toVarName($this->getRequestParameter('itemclass_plural_name')));
-        		    $model->setWebid(SmartestStringHelper::random(16));
+        		    $model->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
                     
                     $model->save();
                     
@@ -2709,7 +2711,7 @@ class Items extends SmartestSystemApplication{
         		    if($this->getRequestParameter('create_meta_page') && $this->getRequestParameter('create_meta_page') == 1){
         		        $p = new SmartestPage;
         		        $p->setTitle($this->getRequestParameter('itemclass_name'));
-        		        $p->setWebId(SmartestStringHelper::random(32));
+        		        $p->setWebId(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
         		        $p->setName(SmartestStringHelper::toSlug($this->getRequestParameter('itemclass_name')));
         		        $p->setSiteId($this->getSite()->getId());
         		        $p->addUrl(SmartestStringHelper::toSlug($this->getRequestParameter('itemclass_plural_name')).'/:name.html'); 
@@ -2978,7 +2980,7 @@ class Items extends SmartestSystemApplication{
             		$property->setDatatype($this->getRequestParameter('itemproperty_datatype'));
             		$property->setRequired($this->getRequestParameter('itemproperty_required') ? 'TRUE' : 'FALSE');
             		$property->setItemClassId($model->getId());
-            		$property->setWebid(SmartestStringHelper::random(16));
+            		$property->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
             		$property->setOrderIndex($model->getNextPropertyOrderIndex());
 		
             		if($this->getRequestParameter('foreign_key_filter')){
@@ -3061,7 +3063,7 @@ class Items extends SmartestSystemApplication{
             		        if($foreign_model->find($this->getRequestParameter('foreign_key_filter'))){
             		            
             		            $aqp = new SmartestItemProperty;
-            		            $aqp->setWebid(SmartestStringHelper::random(16));
+            		            $aqp->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
                     		    $aqp->setOrderIndex($foreign_model->getNextPropertyOrderIndex());
             		            $aqp->setItemClassId($foreign_model->getId());
             		            $aqp->setDatatype('SM_DATATYPE_AUTO_ITEM_FK');
@@ -3119,7 +3121,7 @@ class Items extends SmartestSystemApplication{
     		    $model->find($model_id);
 		    
     		    if(!strlen($property->getWebid())){
-    		        $property->setWebid(SmartestStringHelper::random(16));
+    		        $property->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
     		        $property->save();
     		    }
                 
@@ -3331,7 +3333,7 @@ class Items extends SmartestSystemApplication{
 	        if(in_array($property->getDatatype(), $sd['system']['regularizable_types'])){
 	        
     	        if(!strlen($property->getWebid())){
-    		        $property->setWebid(SmartestStringHelper::random(16));
+    		        $property->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
     		        $property->save();
     		    }
 	        

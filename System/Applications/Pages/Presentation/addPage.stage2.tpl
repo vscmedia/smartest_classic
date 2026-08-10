@@ -142,7 +142,7 @@
         {if count($templates)}
   	    <select name="page_draft_template" id="page_draft_template">
   	      {foreach from=$templates item="template"}
-  	      <option value="{$template.url}"{if $newPage.draft_template == $template.url} selected="selected"{/if}>{$template.label} ({$template.url})</option>
+  	      <option value="{$template.url}"{if $newPage.draft_template == $template.url} selected="selected"{/if}>{if $template.label}{$template.label} ({$template.url}){else}{$template.url}{/if}</option>
   	      {/foreach}
 {if $master_templates_dir_writable}          <option value="NEW">Create a new layout template</option>{/if}
   	    </select>

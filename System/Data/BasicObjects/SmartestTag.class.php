@@ -642,6 +642,9 @@ class SmartestTag extends SmartestBaseTag implements SmartestStorableValue, Smar
             case "attached":
             return $this->_is_attached;
             
+            case "label":
+            return new SmartestString($this->getLabel());
+            
             case "pages":
             return new SmartestArray($this->getPages($this->getCurrentSiteId()));
             
