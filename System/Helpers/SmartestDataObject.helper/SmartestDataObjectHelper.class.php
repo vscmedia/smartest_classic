@@ -64,7 +64,7 @@ class SmartestDataObjectHelper{
 	    
 	    $raw_types = $data;
 	    $types = array();
-	    // var_dump($raw_types);
+	    
 	    foreach($raw_types as $raw_type){
 	        
 	        $types[$raw_type['name']] = $raw_type;
@@ -159,10 +159,12 @@ class SmartestDataObjectHelper{
             $column_definitions = self::getTableColumnDefinitions($table_info['name']);
             $columns = array();
             $field_definitions = array();
+            $metadata_complete = false;
 	        $offset = strlen($table_info['prefix']);
 	        $pns = array();
 	        
             if(count($column_definitions)){
+                $metadata_complete = true;
                 foreach($column_definitions as $column_definition){
                     if(isset($column_definition['Field'])){
                         $column = $column_definition['Field'];
@@ -202,6 +204,7 @@ class SmartestDataObjectHelper{
 	        $file_contents = str_replace('__CLASSNAME__', $class_name, $file_contents);
 	        $file_contents = str_replace('__BASE_CLASS__', $table_info['class'], $file_contents);
             $file_contents = str_replace('__REVISION__', SmartestInfo::$revision, $file_contents);
+            $file_contents = str_replace('__OBJECT_MODEL_FORMAT__', $metadata_complete ? '2' : '1', $file_contents);
 	        
 			$file_contents = str_replace('__IS_SMARTEST__', $is_smartest ? 'true' : 'false', $file_contents);
 			$file_contents = str_replace('__TABLE_PREFIX__', $table_info['prefix'], $file_contents);
@@ -262,7 +265,8 @@ class SmartestDataObjectHelper{
             'numeric' => self::columnTypeIsNumeric($type),
             'nullable' => $nullable,
             'default' => $default,
-            'auto_increment' => $auto_increment
+            'auto_increment' => $auto_increment,
+            'metadata_complete' => true
         );
 
     }
@@ -276,7 +280,8 @@ class SmartestDataObjectHelper{
             'numeric' => false,
             'nullable' => true,
             'default' => '',
-            'auto_increment' => false
+            'auto_increment' => false,
+            'metadata_complete' => false
         );
 
     }
@@ -345,35 +350,77 @@ class SmartestDataObjectHelper{
 
     }
 
-	public static function buildBasePropertiesArray($field_definitions){
-	    
-	    $pac = '    protected $_properties = array('."\n";
-		
-		$i = count($field_definitions);
-		
-		foreach($field_definitions as $pn => $definition){
-		    
-		    if(strlen($pn)){
-		        
-		        $pac .= "        '".$pn."' => ".self::phpLiteral($definition['default']);
-		        
-		        if($i>1){
-		            $pac .= ",";
-		        }
-		        
-		        $i--;
-		        
-		        $pac .= "\n";
-		        
-	        }
-		    
-		}
-		
-		$pac .= '    );'."\n";
-		
-		return $pac;
-	    
-	}
+    public static function getInitialPropertyValueForGeneratedProperty($property_name, $definition){
+
+        /*
+         * Database defaults and new-object initial values are deliberately
+         * different things.
+         *
+         * $_field_definitions keeps the real schema default so save-time
+         * normalisation can repair NULL/blank values before INSERT/UPDATE.
+         * $_properties must remain a neutral representation of an unsaved PHP
+         * object. Otherwise placeholder/renderable objects can appear to be
+         * real database rows merely because a non-empty database default has
+         * leaked into the object state, for example asset_label =
+         * 'Unlabelled Asset'.
+         */
+
+        if(!is_array($definition)){
+            return '';
+        }
+
+        if(isset($definition['auto_increment']) && $definition['auto_increment']){
+            return null;
+        }
+
+        if(isset($definition['nullable']) && $definition['nullable']){
+            return null;
+        }
+
+        if(isset($definition['numeric']) && $definition['numeric']){
+            return 0;
+        }
+
+        /*
+         * String/text columns that are NOT NULL should start as an empty
+         * string, not as their database default. This preserves the historical
+         * Smartest object semantics while still keeping schema defaults in
+         * $_field_definitions for save-time use.
+         */
+        return '';
+
+    }
+
+    public static function buildBasePropertiesArray($field_definitions){
+        
+        $pac = '    protected $_properties = array('."\n";
+        
+        $i = count($field_definitions);
+        
+        foreach($field_definitions as $pn => $definition){
+            
+            if(strlen($pn)){
+                
+                $initial_value = self::getInitialPropertyValueForGeneratedProperty($pn, $definition);
+                $pac .= "        '".$pn."' => ".self::phpLiteral($initial_value);
+                
+                if($i>1){
+                    $pac .= ",";
+                }
+                
+                $i--;
+                
+                $pac .= "\n";
+                
+            }
+            
+        }
+        
+        $pac .= '    );'."\n";
+        
+        return $pac;
+        
+    }
 
     public static function buildBaseFieldDefinitionsArray($field_definitions){
 
@@ -390,6 +437,7 @@ class SmartestDataObjectHelper{
             $string .= ", 'nullable' => ".($definition['nullable'] ? 'true' : 'false');
             $string .= ", 'default' => ".self::phpLiteral($definition['default']);
             $string .= ", 'auto_increment' => ".($definition['auto_increment'] ? 'true' : 'false');
+            $string .= ", 'metadata_complete' => ".((isset($definition['metadata_complete']) && $definition['metadata_complete']) ? 'true' : 'false');
             $string .= ")";
 
             if($i > 1){

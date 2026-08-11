@@ -138,6 +138,14 @@ class SmartestResponse{
                 die;
     	    }
             
+    		// if nothing bad happened, instantiate database object
+    		try{
+    		    $this->database = SmartestDatabase::getInstance('SMARTEST');
+    			SmartestPersistentObject::set('db:main', $this->database);
+    		} catch(SmartestException $e){
+    		    $this->errorFromException($e);
+    	    }
+            
 	    }catch(SmartestNotInstalledException $e){
 	        // If we get here, Smartest isn't installed, so show installer
 	        if(!class_exists('SmartestInstaller')){
@@ -280,15 +288,7 @@ class SmartestResponse{
 		    $this->_error_stack->recordError($e, false);
 		}
 		
-		// instantiate database object
 		try{
-		    $this->database = SmartestDatabase::getInstance('SMARTEST');
-			SmartestPersistentObject::set('db:main', $this->database);
-		} catch(SmartestException $e){
-		    $this->errorFromException($e);
-	    }
-	    
-	    try{
 	        // Instantiate user auth object
 		    $this->_authentication = new SmartestAuthenticationHelper();
         }catch(SmartestException $e){

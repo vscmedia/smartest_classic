@@ -1839,7 +1839,17 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
 	
 	public function getLabel(){
 	    
-	    return parent::getLabel() ? $this->_properties['label'] : $this->getStringId();
+        $label = parent::getLabel();
+    
+        if(strlen((string) $label)){
+            return $label;
+        }
+
+        if($this->isHydrated() || is_numeric($this->getId())){
+            return $this->getStringId();
+        }
+
+        return '';
 	    
 	}
 	

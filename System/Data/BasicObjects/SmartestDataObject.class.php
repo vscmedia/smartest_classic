@@ -24,6 +24,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
     protected $_preferences_helper;
     protected $_cached_global_preferences;
     protected static $_table_column_info_cache = array();
+    protected static $_incomplete_field_definition_warnings = array();
 	
 	public function __construct(){
 		
@@ -53,9 +54,8 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	    }
         
         if(!$this->hasCurrentGeneratedObjectModel()){
-            SmartestLog::getInstance('system')->log(get_class($this).' is using an old generated data-object model. Auto-generated class will be deleted to allow re-caching.', SmartestLog::NOTICE);
-            $this->refreshDataStructure();
-            $this->refreshClass();
+            SmartestLog::getInstance('system')->log(get_class($this).' is using an old generated data-object model. The generated base class has not been deleted at runtime. Rebuild the generated object cache in a controlled cache-rebuild step.', SmartestLog::WARNING);
+            $this->clearTableColumnsCache();
         }
 		
 	}
@@ -182,7 +182,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	
 	public function offsetExists($offset){
 	    $offset = strtolower($offset);
-	    return (isset($this->_properties[$offset]) || in_array($offset, array('_class', '_php_class', '_print_r', 'empty')));
+	    return (array_key_exists($offset, $this->_properties) || in_array($offset, array('_class', '_php_class', '_print_r', 'empty')));
 	}
 	
 	public function offsetGet($offset){
@@ -204,7 +204,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	        
 	    }
 	    
-	    if(isset($this->_properties[$offset])){
+	    if(array_key_exists($offset, $this->_properties)){
 	        return $this->_properties[$offset];
 	    }else{
 	        return $this->__toString();
@@ -264,7 +264,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
         if(isset($this->_private_fields)){
             return array_keys($this->_private_fields);
         }else{
-            $this->refreshClass();
+            SmartestLog::getInstance('system')->log(get_class($this).' has no generated private-field list. The generated base class has not been deleted at runtime.', SmartestLog::WARNING);
             return array();
         }
 	}
@@ -366,17 +366,11 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 			
 			if(is_file($class_file)){
 			    
-			    // refresh cache of columns and delete so that it can regenerate
-			    SmartestLog::getInstance('system')->log('Call to undefined get/set function: '.get_class($this).'->'.$name.'(). Auto-generated class SmartestBase'.$this->_base_class.' ('.$class_file.') will be deleted to allow for re-caching.', SmartestLog::NOTICE);
-			    // $this->removeClassFile();
-                $this->refreshClass();
-			    
-			    /* $data = SmartestDataObjectHelper::getBasicObjectSchemaInfo();
-			    $table_info = $data[$this->_table_name];
-			    SmartestDataObjectHelper::buildBaseDataObjectFile($table_info, true); */
+			    SmartestLog::getInstance('system')->log('Call to undefined get/set function: '.get_class($this).'->'.$name.'(). Auto-generated class SmartestBase'.$this->_base_class.' ('.$class_file.') may be stale, but it has not been deleted at runtime. Rebuild the generated object cache in a controlled cache-rebuild step.', SmartestLog::WARNING);
+                $this->clearTableColumnsCache();
 			    
 		    }else{
-		        SmartestLog::getInstance('system')->log('Call to undefined get/set function: '.get_class($this).'->'.$name.'(). Auto-generated class SmartestBase'.$this->_base_class.' could not be found for deletion.', SmartestLog::NOTICE);
+		        SmartestLog::getInstance('system')->log('Call to undefined get/set function: '.get_class($this).'->'.$name.'(). Auto-generated class SmartestBase'.$this->_base_class.' could not be found. No runtime deletion has been attempted.', SmartestLog::WARNING);
 		    }
 			
 		}else{
@@ -387,20 +381,15 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
     
     public function refreshClass(){
         $this->clearTableColumnsCache();
-        $this->removeClassFile();
+        SmartestLog::getInstance('system')->log('refreshClass() called for '.get_class($this).'. The generated base class has not been deleted at runtime. Rebuild the generated object cache in a controlled cache-rebuild step.', SmartestLog::WARNING);
+        return false;
     }
     
     public function removeClassFile(){
         
         $class_file = $this->getBaseClassFilename();
-        
-        if(is_file($class_file)){
-            SmartestLog::getInstance('system')->log('Auto-generated class SmartestBase'.$this->_base_class.' ('.$class_file.') has been deleted.', SmartestLog::NOTICE);
-            return unlink($class_file);
-        }else{
-            SmartestLog::getInstance('system')->log('Auto-generated class SmartestBase'.$this->_base_class.' ('.$class_file.') could not be found so has not been deleted.', SmartestLog::NOTICE);
-            return false;
-        }
+        SmartestLog::getInstance('system')->log('removeClassFile() called for '.get_class($this).' ('.$class_file.'). Runtime deletion of generated base classes is disabled; no file was removed.', SmartestLog::WARNING);
+        return false;
         
     }
 	
@@ -422,8 +411,8 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	}
 	
 	protected function getField($field_name){
-		if(isset($this->_properties[$field_name])){
-			return stripslashes($this->_properties[$field_name]);
+		if(array_key_exists($field_name, $this->_properties)){
+			return is_null($this->_properties[$field_name]) ? null : stripslashes($this->_properties[$field_name]);
 		}else if(array_key_exists($field_name.'_id', $this->_properties)){
 			// retrieve foreign key object, getSite(), getModel(), etc...
 			if(array_key_exists($this->_properties[$field_name], $this->_foreign_key_objects)){
@@ -448,9 +437,9 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	
 	public function getFieldByName($field_name){
 	    
-	    if(isset($this->_properties[$field_name])){
-			return stripslashes($this->_properties[$field_name]);
-		}else if(isset($this->_properties[substr($field_name, strlen($this->_table_prefix))])){
+	    if(array_key_exists($field_name, $this->_properties)){
+			return is_null($this->_properties[$field_name]) ? null : stripslashes($this->_properties[$field_name]);
+		}else if(array_key_exists(substr($field_name, strlen($this->_table_prefix)), $this->_properties)){
 		    return $this->_properties[substr($field_name, strlen($this->_table_prefix))];
 		}else if(isset($this->_properties[$field_name.'_id'])){
 			// retrieve foreign key object, getSite(), getModel(), etc...
@@ -492,15 +481,12 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
             return true;
         }
 
+        /*
+         * Runtime code must not delete generated base classes. A stale revision
+         * is only reported to the caller; a controlled cache-rebuild path must
+         * regenerate and verify replacement files.
+         */
         if(!isset($this->__revision_num) || $this->__revision_num != SmartestInfo::$revision){
-            return false;
-        }
-
-        if($this->getGeneratedObjectModelFormat() < self::GENERATED_OBJECT_MODEL_FORMAT){
-            return false;
-        }
-
-        if(!is_array($this->_field_definitions) || !count($this->_field_definitions)){
             return false;
         }
 
@@ -518,13 +504,51 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 
     }
 
+    protected function generatedFieldDefinitionHasColumnMetadata($field_definition){
+
+        if(!is_array($field_definition)){
+            return false;
+        }
+
+        if(isset($field_definition['metadata_complete'])){
+            return (bool) $field_definition['metadata_complete'];
+        }
+
+        if(isset($field_definition['type']) && strlen(trim($field_definition['type']))){
+            return true;
+        }
+
+        if(isset($field_definition['base_type']) && strlen(trim($field_definition['base_type']))){
+            return true;
+        }
+
+        return false;
+
+    }
+
     protected function getFieldDefinition($field_name){
 
         if(isset($this->_field_definitions[$field_name]) && is_array($this->_field_definitions[$field_name])){
-            return $this->_field_definitions[$field_name];
-        }else{
-            return null;
+
+            $field_definition = $this->_field_definitions[$field_name];
+
+            if($this->generatedFieldDefinitionHasColumnMetadata($field_definition)){
+                return $field_definition;
+            }
+
+            $warning_key = $this->_table_name.'.'.$field_name;
+
+            if(!isset(self::$_incomplete_field_definition_warnings[$warning_key])){
+                self::$_incomplete_field_definition_warnings[$warning_key] = 1;
+                SmartestLog::getInstance('system')->log(
+                    get_class($this).' ignored incomplete generated field metadata for '.$this->getColumnNameForField($field_name).' and will fall back to SHOW COLUMNS.',
+                    SmartestLog::WARNING
+                );
+            }
+
         }
+
+        return null;
 
     }
 
@@ -606,11 +630,141 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 
     }
 
+
+    protected function fieldCanStoreNull($field_name){
+
+        $field_definition = $this->getFieldDefinition($field_name);
+
+        if(is_array($field_definition)){
+            return $this->fieldDefinitionIsNullable($field_definition);
+        }
+
+        $column_info = $this->getLegacyColumnInfoForField($field_name);
+
+        if(is_array($column_info) && isset($column_info['Null'])){
+            return (strtoupper($column_info['Null']) == 'YES');
+        }
+
+        // If the generated metadata and legacy column lookup both fail, do not
+        // guess. Leave the value alone rather than accidentally dropping data.
+        return true;
+
+    }
+
+    protected function getDefaultValueForField($field_name, &$has_default){
+
+        $has_default = false;
+        $field_definition = $this->getFieldDefinition($field_name);
+
+        if(is_array($field_definition) && array_key_exists('default', $field_definition) && !is_null($field_definition['default'])){
+            $has_default = true;
+            return $field_definition['default'];
+        }
+
+        $column_info = $this->getLegacyColumnInfoForField($field_name);
+
+        if(is_array($column_info) && array_key_exists('Default', $column_info) && !is_null($column_info['Default'])){
+            $has_default = true;
+            return $column_info['Default'];
+        }
+
+        return null;
+
+    }
+
+    protected function removeModifiedPropertyWithWarning($field_name, $reason){
+
+        if(isset($this->_modified_properties[$field_name]) || array_key_exists($field_name, $this->_modified_properties)){
+            unset($this->_modified_properties[$field_name]);
+        }
+
+        SmartestLog::getInstance('system')->log(
+            get_class($this).' omitted field '.$this->getColumnNameForField($field_name).' from save because '.$reason.'.',
+            SmartestLog::WARNING
+        );
+
+    }
+
+    protected function repairIllegalNullModifiedProperty($field_name, $context){
+
+        if($this->fieldCanStoreNull($field_name)){
+            return true;
+        }
+
+        $has_default = false;
+        $default = $this->getDefaultValueForField($field_name, $has_default);
+
+        if($has_default){
+
+            $this->_properties[$field_name] = $default;
+            $this->_modified_properties[$field_name] = $this->prepareValueForModifiedProperties($default);
+
+            SmartestLog::getInstance('system')->log(
+                get_class($this).' converted NULL for non-nullable field '.$this->getColumnNameForField($field_name).' to its database default during '.$context.'.',
+                SmartestLog::WARNING
+            );
+
+            return true;
+
+        }
+
+        $this->removeModifiedPropertyWithWarning($field_name, 'it was NULL but the column is not nullable and no database default could be found during '.$context);
+        return false;
+
+    }
+
     protected function normaliseValueForDatabase($field_name, $value){
 
-        if($value === ''){
+        $field_definition = $this->getFieldDefinition($field_name);
 
-            $field_definition = $this->getFieldDefinition($field_name);
+        if(is_null($value)){
+
+            if(is_array($field_definition)){
+
+                if($this->fieldDefinitionIsNullable($field_definition)){
+                    return null;
+                }
+
+                $default = $this->fieldDefinitionDefault($field_definition);
+
+                if(!is_null($default)){
+                    return $default;
+                }
+
+                if($this->fieldDefinitionIsNumeric($field_definition)){
+                    return 0;
+                }
+
+                return '';
+
+            }
+
+            // Fallback for old generated base classes that have not yet been rebuilt.
+            $column_info = $this->getLegacyColumnInfoForField($field_name);
+
+            if(is_array($column_info)){
+
+                if(isset($column_info['Null']) && strtoupper($column_info['Null']) == 'YES'){
+                    return null;
+                }
+
+                if(array_key_exists('Default', $column_info) && !is_null($column_info['Default'])){
+                    return $column_info['Default'];
+                }
+
+                if($this->legacyColumnInfoIsNumeric($column_info)){
+                    return 0;
+                }
+
+                return '';
+
+            }
+
+            return null;
+
+        }
+
+        if($value === ''){
 
             if($this->fieldDefinitionIsNumeric($field_definition)){
 
@@ -628,6 +782,16 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 
             }
 
+            if(is_array($field_definition) && !$this->fieldDefinitionIsNullable($field_definition)){
+
+                $default = $this->fieldDefinitionDefault($field_definition);
+
+                if(!is_null($default) && $default !== ''){
+                    return $default;
+                }
+
+            }
+
             // Fallback for old generated base classes that have not yet been rebuilt.
             $column_info = $this->getLegacyColumnInfoForField($field_name);
 
@@ -642,6 +806,14 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
                 }
 
                 return 0;
+
+            }
+
+            if(is_array($column_info) && (!isset($column_info['Null']) || strtoupper($column_info['Null']) != 'YES')){
+
+                if(array_key_exists('Default', $column_info) && !is_null($column_info['Default']) && $column_info['Default'] !== ''){
+                    return $column_info['Default'];
+                }
 
             }
 
@@ -665,27 +837,53 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 
     }
 
+    protected function prepareValueForModifiedProperties($value){
+
+        if(is_null($value)){
+            return null;
+        }
+
+        // Magic Quotes is deprecated but if switched on can still fuck things up.
+        // if(!SM_OPTIONS_MAGIC_QUOTES){
+            $value = mysql_real_escape_string($value);
+        //}
+
+        return SmartestStringHelper::sanitize($value);
+
+    }
+
+    protected function normaliseModifiedPropertiesForDatabase(){
+
+        foreach($this->_modified_properties as $field_name => $value){
+
+            $normalised_value = $this->normaliseValueForDatabase($field_name, $value);
+
+            if(is_null($normalised_value) && !$this->fieldCanStoreNull($field_name)){
+                $this->repairIllegalNullModifiedProperty($field_name, 'pre-save normalisation');
+                continue;
+            }
+
+            if($normalised_value !== $value || (is_null($normalised_value) && !is_null($value)) || (!is_null($normalised_value) && is_null($value))){
+                $this->_modified_properties[$field_name] = $this->prepareValueForModifiedProperties($normalised_value);
+            }
+
+        }
+
+    }
+
 	protected function setField($field_name, $value){
 		
 		if(array_key_exists($field_name, $this->_properties)){
 			
 			// field being set is part of the model and corresponds to a column in the db table
             $value = $this->normaliseValueForDatabase($field_name, $value);
-			$this->_properties[$field_name] = $value;
-			
-            if(is_null($value)){
+            $this->_properties[$field_name] = $value;
 
+            if(is_null($value) && !$this->fieldCanStoreNull($field_name)){
                 $this->_modified_properties[$field_name] = null;
-
+                $this->repairIllegalNullModifiedProperty($field_name, 'setField()');
             }else{
-
-    			// Magic Quotes is deprecated but if switched on can still fuck things up.
-    			// if(!SM_OPTIONS_MAGIC_QUOTES){
-    			    $value = mysql_real_escape_string($value);
-    		    //}
-    			
-    			$this->_modified_properties[$field_name] = SmartestStringHelper::sanitize($value);
-
+                $this->_modified_properties[$field_name] = $this->prepareValueForModifiedProperties($value);
             }
 			
 		}else{
@@ -907,6 +1105,8 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 	
 	public function getSaveSql(){
 	    
+        $this->normaliseModifiedPropertiesForDatabase();
+
 	    if($this->_came_from_database){
 			$sql = $this->getUpdateSql();
 		}else{

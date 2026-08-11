@@ -13,14 +13,14 @@ class __CLASSNAME__ extends SmartestDataObject{
 	protected $_original_fields = array(__ORIGINAL_FIELDS__);
 	protected $_base_class = '__BASE_CLASS__';
 	protected $__revision_num = __REVISION__;
-    protected $__object_model_format = 2;
+    protected $__object_model_format = __OBJECT_MODEL_FORMAT__;
     protected $_field_definitions = array(
 __FIELD_DEFINITIONS__
     );
     
     public function offsetExists($offset){
   	    $offset = strtolower($offset);
-  	    return (isset($this->_properties[$offset]) || in_array($offset, array('_class', '_php_class', '_print_r', 'empty')));
+  	    return (array_key_exists($offset, $this->_properties) || in_array($offset, array('_class', '_php_class', '_print_r', 'empty')));
     }
     
 __PROPERTIES_ARRAY__
