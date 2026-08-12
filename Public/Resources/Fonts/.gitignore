@@ -1,3 +1,6 @@
 *.woff
 *.woff2
 *.eot
+*.svg
+*.ttf
+*.font.js
