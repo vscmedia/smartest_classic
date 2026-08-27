@@ -31,14 +31,26 @@ foreach($errors as $file){
   <code>bash <?php echo $stage->g('perms')->g('script_name'); ?></code>
 </p>
 
+<p>If your web server uses a private temporary directory and you cannot see the script from your shell, run this instead:</p>
+<p>
+  <code><?php echo htmlspecialchars($stage->g('perms')->g('permissions_command'), ENT_QUOTES, 'UTF-8'); ?></code>
+</p>
+
 <p>Alternatively if you're not comfortable using a terminal, get a friend or your server administrator to do it.</p>
 <p>Once you've done this, click "Next".</p>
 <?php else: ?>
 <?php if ($stage->g('perms')->g('script_error')): ?>
 <p><strong><?php echo $stage->g('perms')->g('script_error'); ?></strong></p>
 <?php endif; ?>
+<?php if ($stage->g('perms')->g('permissions_command')): ?>
+<p>To make all required directories writable in one go, log into your server with a terminal and type this:</p>
+<p>
+  <code><?php echo htmlspecialchars($stage->g('perms')->g('permissions_command'), ENT_QUOTES, 'UTF-8'); ?></code>
+</p>
+<?php else: ?>
 <p>To make a directory writable, log into your server with a terminal and type this:</p>
 <p><code>chmod 777 <?php echo $errors[0]; ?></code></p>
+<?php endif; ?>
 <p>Alternatively if you're not comfortable using a terminal, get a friend or your server administrator to do it.</p>
 <p>Once you've done this for each of the folders listed above, click "Next".</p>
 <?php endif; ?>

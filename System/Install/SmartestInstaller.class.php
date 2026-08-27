@@ -179,7 +179,18 @@ class SmartestInstaller{
 		
 		$ph->setParameter('writable_files', $writable_files);
 		$ph->setParameter('errors', $errors);
-        
+        $quoted_errors = array();
+
+        foreach($errors as $file){
+            $quoted_errors[] = escapeshellarg($file);
+        }
+
+        if(count($quoted_errors)){
+            $ph->setParameter('permissions_command', 'sudo sh -c \'mkdir -p "$@" && chmod 777 "$@"\' smartest-permissions '.implode(' ', $quoted_errors));
+        }else{
+            $ph->setParameter('permissions_command', '');
+        }
+
         $temp_dir = sys_get_temp_dir();
         $ph->setParameter('script_created', false);
         $ph->setParameter('script_error', '');
