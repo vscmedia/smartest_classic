@@ -21,7 +21,6 @@
     <input type="hidden" name="client_id" value="{$account.oauth_consumer_token}">
     <input type="hidden" name="redirect_uri" value="{$redirect_uri}">
     <input type="hidden" name="response_type" value="code">
-    {if $service.shortname == 'instagram'}<input type="hidden" name="scope" value="public_content">{/if}
     {if $service.shortname == 'medium'}<input type="hidden" name="scope" value="basicProfile,publishPost">{/if}
     <input type="hidden" name="state" value="{$final_uri}?scid={$account.id}">
     <a class="button" href="{$domain}smartest/oauth_accounts">Cancel</a>

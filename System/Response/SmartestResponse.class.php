@@ -107,9 +107,9 @@ class SmartestResponse{
         );
         self::debugTrace('construct: core group included');
         
-        // Temporary
-        include_once(SM_ROOT_DIR.'Library/SimplePie/autoloader.php');
-        include_once(SM_ROOT_DIR.'Library/SimplePie/idn/idna_convert.class.php');
+        if(!class_exists('SimplePie')){
+            require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
+        }
         
         SmartestDataUtility::loadBasicTypes();
         self::debugTrace('construct: basic types loaded');

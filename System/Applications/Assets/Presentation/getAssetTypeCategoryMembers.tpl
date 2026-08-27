@@ -4,7 +4,7 @@
 
 <div id="work-area">
 
-  <h3>{$category_label} files</h3>
+  <h3>{$category_label}</h3>
 
 <form id="pageViewForm" method="get" action="">
   <input type="hidden" name="asset_category" value="{$category_code}" />

@@ -1,6 +1,6 @@
 <?php
 
-require_once SM_ROOT_DIR.'System/Library/Smarty5/vendor/autoload.php';
+require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
 
 class SmartestEngine extends \Smarty\Smarty{
 

@@ -52,7 +52,7 @@ class SmartestDynamicStylesheetCompiler{
     protected function ensureCompilerLoaded(){
 
         if(!class_exists('ScssPhp\ScssPhp\Compiler')){
-            require_once SM_ROOT_DIR.'System/Library/scssphp/vendor/autoload.php';
+            require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
         }
 
     }

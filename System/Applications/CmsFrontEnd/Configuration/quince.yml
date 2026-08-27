@@ -77,9 +77,6 @@ module:
     author:
       url: /author/:username
       action: getAuthorProfile
-    new_securimage_captcha_image:
-      url: /captcha/new
-      action: getCaptchaImage
     json_set:
       url: /json/set/:set_name/:set_mode
       action: getSetAsJson

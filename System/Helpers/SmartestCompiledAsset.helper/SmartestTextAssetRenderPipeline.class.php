@@ -1,11 +1,7 @@
 <?php
 
-if(defined('SM_ROOT_DIR') && is_file(SM_ROOT_DIR.'System/Library/Markdown/vendor/autoload.php')){
-    require_once SM_ROOT_DIR.'System/Library/Markdown/vendor/autoload.php';
-}
-
-if(defined('SM_ROOT_DIR') && is_file(SM_ROOT_DIR.'System/Library/Textile/vendor/autoload.php')){
-    require_once SM_ROOT_DIR.'System/Library/Textile/vendor/autoload.php';
+if(defined('SM_ROOT_DIR')){
+    require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
 }
 
 class SmartestTextAssetRenderPipeline{

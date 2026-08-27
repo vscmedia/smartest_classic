@@ -1367,27 +1367,6 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
             
             break;
             
-            case "instagram":
-            $oh = new SmartestAPIServicesHelper;
-            
-            if($acct = SmartestOAuthRateLimitDistributionHelper::getAccountForService('instagram')){
-                
-                $ih = new SmartestInstagramHelper;
-                $ih->assignClientAccount($acct);
-                
-                if($user = $ih->getUserFromUsername($name)){
-                    return $ih->getUserFeed($name, 20);
-                }else{
-                    echo $this->raiseError("Instagram user with name '@".$name."' does not exist.");
-                    return;
-                }
-            
-            }else{
-                echo $this->raiseError("No authenticated Instagram account is available to make this request.");
-            }
-            
-            break;
-            
             case "set":
             case "dataset":
             default:

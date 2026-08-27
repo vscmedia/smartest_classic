@@ -35,10 +35,7 @@ class SmartestInit{
 		
 		$new_array = array('.');
 		
-		$new_array[] = SM_ROOT_DIR."System/Library/Smarty2/";
 		$new_array[] = SM_ROOT_DIR."System/Library/";
-		$new_array[] = SM_ROOT_DIR."Library/Smarty/";
-		$new_array[] = SM_ROOT_DIR."Library/Pear/";
 		$new_array[] = SM_ROOT_DIR."Library/";
 		
 		foreach($ip_array as $path){
@@ -57,6 +54,8 @@ class SmartestInit{
 	    
 	    self::setRootDir();
 		self::setIncludePaths();
+
+        require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
         
         // Yaml is needed for reading system version information so this needs to be here for now.
         // In future this should be a JSON or ini file so it can be done by built-in code with no dependencies

@@ -1,30 +1,4 @@
 services:
-  SM_OAUTHSERVICE_TWITTER:
-    id: SM_OAUTHSERVICE_TWITTER
-    shortname: twitter
-    label: Twitter
-    token_request_url: dynamic
-    client_register_url: http://dev.twitter.com/apps/new
-    class: SmartestTwitterHelper
-    authorize_method: post
-    oauth_version: 1.0
-    default_consumer_key: sa9IsyivfRop4zorTixj2VSXU
-    default_consumer_secret: K5Rl2lkm35uL5AFIXhxgNnKIqxOWotkeaVBMHL0dlGcsbGWBZn
-    fa_icon: twitter
-    username_prefix: '@'
-  SM_OAUTHSERVICE_INSTAGRAM:
-    id: SM_OAUTHSERVICE_INSTAGRAM
-    shortname: instagram
-    label: Instagram
-    token_request_url: https://api.instagram.com/oauth/authorize/
-    client_register_url: https://www.instagram.com/developer/clients/manage/
-    class: SmartestInstagramHelper
-    authorize_method: get
-    oauth_version: 2.0
-    default_client_id: 158cc3b2e1ac4c97b631fd302b75a327
-    default_client_secret: 42a06577794c46c18281c3ae30856c64
-    fa_icon: instagram
-    username_prefix: '@'
   SM_OAUTHSERVICE_MEDIUM:
     id: SM_OAUTHSERVICE_MEDIUM
     shortname: medium
@@ -38,18 +12,6 @@ services:
     default_client_id: d339d0219962
     default_client_secret: 65d88bfe29eae0945a511ddeef0555ba132d06a0
     fa_icon: medium
-  SM_OAUTHSERVICE_BITLY:
-    id: SM_OAUTHSERVICE_BITLY
-    shortname: bitly
-    label: Bit.ly
-    token_request_url: https://bitly.com/oauth/authorize
-    client_register_url: https://bitly.com/a/oauth_apps
-    class: SmartestBitlyHelper
-    authorize_method: get
-    oauth_version: 2.0
-    default_client_id: 831ec4997c28ef50fe64cead5b13477091a5f30a
-    default_client_secret: e2d4c495a753d3e25c48b37f45750e35085df2d2
-    fa_icon: link
 #  SM_OAUTHSERVICE_MAILCHIMP:
 #    id: SM_OAUTHSERVICE_MAILCHIMP
 #    shortname: mailchimp

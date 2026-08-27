@@ -1,7 +1,6 @@
 <?php
 
-include_once(SM_ROOT_DIR.'System/Library/Mobile-Detect-2.8.3/Mobile_Detect.php');
-include_once(SM_ROOT_DIR.'System/Library/PhpUserAgent-0.3.0/UserAgentParser.php');
+require_once SM_ROOT_DIR.'System/Library/vendor/autoload.php';
 
 SmartestHelper::register('UserAgent');
 
@@ -14,7 +13,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
 	
 	public function __construct(){
     	
-    	$this->_detector = new Mobile_Detect;
+    	$this->_detector = new \Detection\MobileDetect();
         $this->_preferences_helper = new SmartestPreferencesHelper;
         
         if(isset($_SERVER['HTTP_USER_AGENT']) && (!SmartestSession::hasData('user_agent_string') || $_SERVER['HTTP_USER_AGENT'] != SmartestSession::get('user_agent_string'))) {
@@ -41,7 +40,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
     	
         $this->_browser['language'] = $languages;
         
-        $uadata = parse_user_agent($user_agent);
+        $uadata = $this->parseUserAgent($user_agent);
         
         $this->_browser['platform'] = isset($uadata['platform']) ? $uadata['platform'] : 'Unknown';
         
@@ -84,6 +83,18 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
         }
         
 	}
+
+    protected function parseUserAgent($user_agent){
+
+        if(function_exists('\\donatj\\UserAgent\\parse_user_agent')){
+            return \donatj\UserAgent\parse_user_agent($user_agent);
+        }elseif(function_exists('parse_user_agent')){
+            return parse_user_agent($user_agent);
+        }else{
+            return array();
+        }
+
+    }
 	
 	public function getPlatform(){
 	    
@@ -115,7 +126,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
                 SmartestLog::getInstance('system')->log("Empty or unset user agent string used at ".$_SERVER['REQUEST_URI'].' by IP '.$_SERVER['REMOTE_ADDR'], SmartestLog::WARNING);
             }
                 
-            $uadata = parse_user_agent($user_agent);
+            $uadata = $this->parseUserAgent($user_agent);
     
             if(isset($uadata['platform'])){
                 $this->_browser['platform'] = $uadata['platform'];
@@ -150,7 +161,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
     		    $this->_browser['appName'] = 'Unknown';
     	    } */
             
-            $uadata = parse_user_agent($this->_userAgent);
+            $uadata = $this->parseUserAgent($this->_userAgent);
             $this->_browser['appName'] = isset($uadata['browser']) ? $uadata['browser'] : 'Unknown';
             
     	}
@@ -162,7 +173,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
 	    
 	    if(!isset($this->_browser['appVersion'])){
 	        
-            $uadata = parse_user_agent($this->_userAgent);
+            $uadata = $this->parseUserAgent($this->_userAgent);
             if(isset($uadata['browser'])){
                 $this->_browser['appVersion'] = $uadata['version'];
                 preg_match('/^\d+/', $uadata['version'], $matches);
