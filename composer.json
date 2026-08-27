@@ -1,0 +1,23 @@
+{
+  "name": "smartest/smartest_classic",
+  "description": "Smartest CMS PHP 8 compatibility dependencies",
+  "type": "project",
+  "license": "GPL-3.0-or-later",
+  "config": {
+    "vendor-dir": "System/Library/vendor",
+    "platform": {
+      "php": "8.4.0"
+    },
+    "sort-packages": true
+  },
+  "require": {
+    "donatj/phpuseragentparser": "^1.12",
+    "league/commonmark": "^2.7",
+    "mobiledetect/mobiledetectlib": "^4.11",
+    "netcarver/textile": "^4.1",
+    "scssphp/scssphp": "^2.1",
+    "simplepie/simplepie": "^1.9",
+    "smarty/smarty": "^5.5",
+    "symfony/yaml": "^7.3"
+  }
+}
