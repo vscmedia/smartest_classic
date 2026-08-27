@@ -34,6 +34,9 @@ foreach($errors as $file){
 <p>Alternatively if you're not comfortable using a terminal, get a friend or your server administrator to do it.</p>
 <p>Once you've done this, click "Next".</p>
 <?php else: ?>
+<?php if ($stage->g('perms')->g('script_error')): ?>
+<p><strong><?php echo $stage->g('perms')->g('script_error'); ?></strong></p>
+<?php endif; ?>
 <p>To make a directory writable, log into your server with a terminal and type this:</p>
 <p><code>chmod 777 <?php echo $errors[0]; ?></code></p>
 <p>Alternatively if you're not comfortable using a terminal, get a friend or your server administrator to do it.</p>
