@@ -39,7 +39,7 @@ class SmartestContainer extends SmartestAssetClass{
 	    
 	}
 	
-	public function hydrateBy($field, $value){
+	public function hydrateBy($field, $value, $site_id=''){
 	    $sql = "SELECT * FROM AssetClasses WHERE ".$this->_table_prefix.$field."='".$value."' AND ".$this->_table_prefix."type='SM_ASSETCLASS_CONTAINER' AND (".$this->_table_prefix."site_id='".$this->getSite()->getId()."' OR ".$this->_table_prefix."shared='1')";
 	    $result = $this->database->queryToArray($sql);
 	    

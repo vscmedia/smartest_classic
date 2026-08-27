@@ -1,6 +1,6 @@
 {day_input name=$_input_data.name value=$value id=$_input_data.property_id property=$property}
 
-{if $property.id == $item.model.default_date_property_id && $_user.can_publish_items}
+{if $item && $property.id == $item.model.default_date_property_id && $_user.can_publish_items}
 <div class="edit-form-sub-row" style="margin:8px 0;display:{if ($item.public == 'FALSE' || $item.public == 'SCHED') && $value.unix > $now.unix}block{else}none{/if}" id="item-scheduled-{$item.id}-{$property.id}" data-status="{$item.public}">
   <input type="checkbox" name="item_publish_scheduled" value="1"{if $item.public == 'SCHED'} checked="checked"{/if} id="item-scheduled-checkbox-{$item.id}-{$property.id}" />
   <label class="hint" for="item-scheduled-checkbox-{$item.id}-{$property.id}">Schedule this {$item.model.name|lower} to be published on this date</label>

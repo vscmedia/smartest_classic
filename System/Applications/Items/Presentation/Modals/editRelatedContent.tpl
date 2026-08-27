@@ -101,7 +101,7 @@
     <ul class="basic-list icons pages" id="available-pages-list">
       {foreach from=$pages item="relatable_page"}
       
-      {if $relatable_page.type == 'NORMAL' && $relatable_page.id != $page.id}
+      {if $relatable_page.type == 'NORMAL'}
       <li data-searchname="{$relatable_page.name|escape:"quotes"}"><input type="checkbox" name="pages[{$relatable_page.id}]" id="page_{$relatable_page.id}"{if in_array($relatable_page.id, $related_ids)} checked="checked"{/if} /><label for="page_{$relatable_page.id}">{$relatable_page.title|xmlentities}</label></li>
       {/if}
       {/foreach}

@@ -14,13 +14,13 @@
       {if $smartest_info.is_self_hosted}
       <p><strong>Installed</strong>: {if $system_installed_timestamp > 0}{$system_installed_timestamp|date_format:"%A %B %e, %Y, %l:%M%p"}{else}<em>Unknown</em>{/if}</p>
       <p><strong>PHP Version</strong>: {$php_version}</p>
+      <p><strong>Root directory</strong>: <code>{$root_dir}</code></p>
+      <p><strong>Code management</strong>: {$code_management}</p>
       <p><strong>Available Memory</strong>: {if $memory_limit < 32}<span style="color:#e20">{/if}{$memory_limit} MB{if $memory_limit < 32} - Please allocate more memory to PHP</span>{/if}</p>
       {if $allow_see_server_speed}<p><strong>Server Speed</strong>: <span id="server-speed-holder">{load_interface file="server_speed.tpl"}</span> {if $allow_test_server_speed}<input type="button" value="Test" id="test-server-speed-button" /><img src="{$domain}Resources/System/Images/ajax-loader.gif" alt="" id="server-speed-ajax-loader" style="display:none" />{/if}</p>{/if}
       <p><strong>Web Server</strong>: {$platform}</p>
-      <p><strong>Root directory</strong>: <code>{$root_dir}</code></p>
       <p><strong>Install ID</strong>: <code>{$system_install_id}</code> {help id="desktop:install_ids" buttonize="true"}What&rsquo;s this?{/help}</p>
       <p><strong>Operating System</strong>: {if $is_osx}<i class="fa fa-apple" style="font-size:1.2em"> </i>{else}<i class="fa fa-linux" style="font-size:1.2em"> </i>{/if} {$linux_version}</p>
-      <p><strong>Is SVN checkout</strong>: {$is_svn_checkout.english}</p>
       {/if}
       <p style="margin-top:15px"><strong>Credits</strong>: Designed and developed by Marcus Gilroy-Ware. Originally devised by Marcus Gilroy-Ware and Eddie Tejeda. Many thanks to Eddie Tejeda, Dr. Chris Brauer, Dr. Mariann Hardey, Rebecca Lewis Smith, Martina Seitl &amp; Christer Lundahl, Emma Leach, Sergiy Berezin, Sereen Joseph, Nancy Arnold, Matt Asay for generous advice, Professor Lawrence Lessig for the inspiring books and work, PG, VW, CGW, many dear friends, a few brave journalism students at City, University of London and the University of the West of England, and early adopters everywhere.</p>
       <p>Some icons are © Zach Roszczewski. Thanks to Aleksander K of Slovenia for the circle 'loading' animation</p>
@@ -32,7 +32,6 @@
         <img alt="" border="0" src="https://www.paypalobjects.com/en_GB/i/scr/pixel.gif" width="1" height="1" />
       </form>
       <p><strong>If you'd like to make a donation (via PayPal) and help to support Smartest</strong> <a href="#donate" onclick="$('donate-form').submit();return false;" class="button small">click here</a>.</p>
-      {* <p>We also accept LiteCoin donations: <strong>LfbkN6afTwG9gHUdw2MYu1Z6cxZutftEHF</strong></p> *}
       <p><strong>OR - want to give Smartest's developers some props?</strong> just put <code>&lt;?sm:credit:?&gt;</code> in a template to make: <a href="http://smartestproject.org/?ref=scb"><img src="{$domain}Resources/System/Images/smartest_credit_button.png" /></a></p>
       {* if !$hide_fb_likes_box}
       <div id="facebook-stuff">

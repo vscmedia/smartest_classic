@@ -9,9 +9,15 @@ class SmartestManyToManyHelper{
     }
     
     static function getLookupTypesXmlData(){
-	    
+
+	    $yml_file_path = SM_ROOT_DIR.'System/Core/Types/mtmrelationshiptypes.yml';
 	    $file_path = SM_ROOT_DIR.'System/Core/Types/mtmrelationshiptypes.xml';
 	    
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['type'];
+	    }
+
 	    if(SmartestCache::hasData('lookuptypes_xml_file_hash', true)){
 	        
 	        $old_hash = SmartestCache::load('lookuptypes_xml_file_hash', true);

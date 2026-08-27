@@ -10,6 +10,7 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
     protected $_user_info_modified;
     protected $_group_membership_checker;
     protected $_bio_text_asset;
+    protected $_profile_pic_asset = null;
 	
 	protected function __objectConstruct(){
 	    
@@ -23,7 +24,9 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
 		
 	}
 	
-	public function hydrate($id, $bother_with_tokens=true){
+	public function hydrate($id, $site_id='', $dup=false){
+
+        $bother_with_tokens = is_bool($site_id) ? $site_id : true;
 		
 		if(is_array($id)){
 			
@@ -94,6 +97,34 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
 			}
 		}
 	}
+
+    public function findForLogin($field, $value){
+
+        switch($field){
+            case 'email':
+            case 'user_email':
+                $column_name = 'user_email';
+                break;
+
+            case 'username':
+                $column_name = 'username';
+                break;
+
+            default:
+                return false;
+        }
+
+        $sql = "SELECT * FROM ".$this->_table_name." WHERE ".$column_name." = :identifier LIMIT 1";
+        $result = $this->database->prepareQuery($sql, array('identifier' => $value));
+        $this->_last_query = $sql;
+
+        if(is_array($result) && count($result)){
+            return $this->hydrate($result[0]);
+        }
+
+        return false;
+
+    }
 	
 	public function __postHydrationAction(){
 	    
@@ -264,7 +295,7 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
             
             case "profile_initials":
             if(strlen($this->_properties['firstname']) && strlen($this->_properties['lastname'])){
-                return $this->_properties['firstname']{0}.$this->_properties['lastname']{0};
+                return $this->_properties['firstname'][0].$this->_properties['lastname'][0];
             }else if(strlen($this->_properties['firstname'])){
                 return substr($this->_properties['firstname'], 0, 2);
             }else if(strlen($this->_properties['lastname'])){
@@ -364,17 +395,40 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
     public function getDefaultProfilePicAssetId(){
         
         $ph = new SmartestPreferencesHelper;
-        $asset = new SmartestAsset;
+        $asset_id = null;
+        $current_site_id = $this->getCurrentSiteId();
         
         // does the setting exist?
-        if($ph->getGlobalPreference('default_user_profile_pic_asset_id', null, $this->getCurrentSiteId(), true)){
+        if($ph->getGlobalPreference('default_user_profile_pic_asset_id', null, $current_site_id, true)){
             
             // if so, what is it's value?
-            return (int) $ph->getGlobalPreference('default_user_profile_pic_asset_id', null, $this->getCurrentSiteId());
+            $asset_id = (int) $ph->getGlobalPreference('default_user_profile_pic_asset_id', null, $current_site_id);
+            $asset = new SmartestAsset;
+
+            if($asset_id && $asset->find($asset_id) && $asset->getDeleted() != '1'){
+                return $asset_id;
+            }
+        }
+
+        $database = SmartestDatabase::getInstance('SMARTEST');
+        $result = $database->preparedQuery(
+            "SELECT asset_id FROM Assets WHERE asset_url=:url AND asset_type='SM_ASSETTYPE_JPEG_IMAGE' AND asset_is_system=1 AND asset_shared=1 AND asset_deleted=0 ORDER BY asset_id ASC LIMIT 1",
+            array('url' => 'default_user_profile_pic.jpg')
+        );
+
+        if(is_array($result) && isset($result[0]['asset_id'])){
+            $asset_id = (int) $result[0]['asset_id'];
+            $ph->setGlobalPreference('default_user_profile_pic_asset_id', $asset_id, null, $current_site_id);
+            return $asset_id;
+        }
         
-        }elseif($asset->findBy('url', 'default_user_profile_pic.jpg')){
+        $asset = new SmartestAsset;
+
+        if($asset->findBy('url', 'default_user_profile_pic.jpg')){
         
-            return (int) $asset->getId();
+            $asset_id = (int) $asset->getId();
+            $ph->setGlobalPreference('default_user_profile_pic_asset_id', $asset_id, null, $current_site_id);
+            return $asset_id;
         
         }else{
             
@@ -394,7 +448,7 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
             
             $p = $a->getId();
             
-            $ph->setGlobalPreference('default_user_profile_pic_asset_id', $p, null, $this->getCurrentSiteId());
+            $ph->setGlobalPreference('default_user_profile_pic_asset_id', $p, null, $current_site_id);
             return (int) $p;
             
         }
@@ -412,6 +466,8 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
             $asset = new SmartestRenderableAsset;
             
             if($asset->find($this->getProfilePicAssetId())){
+                $this->_profile_pic_asset = $asset;
+            }else if($asset->find($this->getDefaultProfilePicAssetId())){
                 $this->_profile_pic_asset = $asset;
             }
             
@@ -443,7 +499,7 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
 	
 	public function sendEmail($subject, $message, $from=""){
 	    
-	    if(!isset($from{0})){
+	    if(!isset($from[0])){
 	        $from = 'Smartest <smartest@'.$_SERVER['HTTP_HOST'].'>';
 	    }
 	    
@@ -780,7 +836,7 @@ class SmartestUser extends SmartestBaseUser implements SmartestBasicType, Smarte
 	    
 	    /* $type = SmartestTodoListHelper::getType($type_code);
 	    
-	    if(isset($message{1})){
+	    if(isset($message[1])){
 	        $input_message = SmartestStringHelper::sanitize($message);
 	    }else{
 	        $input_message = $type->getDescription();

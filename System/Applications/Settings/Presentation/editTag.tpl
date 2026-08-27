@@ -43,7 +43,8 @@
     
   </form>
   
-  <script src="{$domain}Resources/System/Javascript/tinymce4/tinymce.min.js"></script>
+  <script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+  <script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
   <script language="javascript" type="text/javascript">
   {literal}
 

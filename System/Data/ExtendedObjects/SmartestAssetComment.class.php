@@ -4,9 +4,9 @@ class SmartestAssetComment extends SmartestComment{
     
     protected $_user;
     
-    public function hydrate($array){
+    public function hydrate($array, $site_id='', $dup=false){
         
-        parent::hydrate($array);
+        parent::hydrate($array, $site_id, $dup);
         
         if(isset($array['user_id']) && is_numeric($array['user_id'])){
             $u = new SmartestSystemUser;

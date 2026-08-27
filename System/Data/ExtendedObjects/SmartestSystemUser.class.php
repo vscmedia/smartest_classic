@@ -2,8 +2,8 @@
 
 class SmartestSystemUser extends SmartestUser implements SmartestSystemUserApi{
     
-    protected $_tokens;
-    protected $_token_codes;
+    protected $_tokens = array();
+    protected $_token_codes = array();
     protected $_num_allowed_sites = 0;
     protected $_temporary_colour;
     
@@ -577,7 +577,7 @@ class SmartestSystemUser extends SmartestUser implements SmartestSystemUserApi{
 	    
 	    $type = SmartestTodoListHelper::getType($type_code);
 	    
-	    if(isset($message{1})){
+	    if(isset($message[1])){
 	        $input_message = SmartestStringHelper::sanitize($message);
 	    }else{
 	        $input_message = $type->getDescription();

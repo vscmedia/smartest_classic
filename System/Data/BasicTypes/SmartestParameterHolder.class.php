@@ -278,7 +278,7 @@ class SmartestParameterHolder extends SmartestObject implements IteratorAggregat
         }
     }
     
-    public function &getIterator(){
+    public function getIterator(){
         return new ArrayIterator($this->_data);
     }
     

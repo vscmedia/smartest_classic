@@ -109,6 +109,8 @@ function smarty_function_image_select($params, $smartest_engine){
                 }
             }
             
+        }elseif($params['name'] == 'site_logo_image_asset_id'){
+            $asset->setParameter('for', 'site_logo');
         }else{
             $asset->setParameter('for', '');
         }

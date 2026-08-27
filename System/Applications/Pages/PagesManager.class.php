@@ -336,11 +336,11 @@ class PagesManager{
     		$page_url = $this->getAutomaticUrl($page_id);
     	}
     	
-    	$page_keywords = mysql_real_escape_string($pageData['page_keywords']);
-    	$page_title = mysql_real_escape_string($pageData['page_title']);
-    	$page_description = mysql_real_escape_string($pageData['page_description']);
-    	$page_cache_as_html = mysql_real_escape_string($pageData['page_cache_as_html']);
-    	$page_cache_interval = mysql_real_escape_string($pageData['page_cache_interval']);
+		$page_keywords = SmartestMysql::escapeString($pageData['page_keywords']);
+		$page_title = SmartestMysql::escapeString($pageData['page_title']);
+		$page_description = SmartestMysql::escapeString($pageData['page_description']);
+		$page_cache_as_html = SmartestMysql::escapeString($pageData['page_cache_as_html']);
+		$page_cache_interval = SmartestMysql::escapeString($pageData['page_cache_interval']);
     	
     	$sql = "UPDATE `Pages` SET `page_keywords` = '".$page_keywords."', `page_title` = '".$page_title."', `page_description` = '".$page_description."', `page_parent` = '".$page_parent."', page_cache_as_html='".$page_cache_as_html."', page_cache_interval='".$page_cache_interval."', page_modified='".time()."' WHERE `page_id` = '".$page_id."' LIMIT 1";
     	$result = $this->database->rawQuery($sql);
@@ -1407,68 +1407,9 @@ class PagesManager{
 	}
 	
 	public function getTemplateTags($template_file_path){
-		
-        $capture_tags = array('list', 'container', 'placeholder', 'template', 'itemspace', 'blocklist', 'var', 'field', 'parameter');
-        
-		if(is_file($template_file_path)){
-			
-			if($template_contents = file_get_contents($template_file_path)){
 
-				$regexp = preg_match_all("/<\?sm:([\w_]{2,})([^\?>]+)?:\?>/i", $template_contents, $matches);
-				$completeTags = $matches[0];
-				$foundTags = $matches[1];
-				$tags = array();
-				
-				if(is_array($completeTags)){
-					
-					foreach($completeTags as $key=>$complete_tag){
-						
-                        $tag_name = $foundTags[$key];
-                        
-                        if(in_array($tag_name, $capture_tags)){
-                        
-    						$tag = array();
-    						$tag['type'] = $tag_name;
-    						$tag['attributes'] = array();
-						
-    						$expression = '/((\w+)=(\$[\w_\.]+|"([^"]+)"))/i';
-						
-    						$regexp2 = preg_match_all($expression, $complete_tag, $matches2);
-						
-    						for($i=0;$i<count($matches2[0]);$i++){
-    							$tag['attributes'][$matches2[2][$i]] = array();
-    							if($matches2[4][$i]){
-    								$tag['attributes'][$matches2[2][$i]]['type'] = "string";
-    								$tag['attributes'][$matches2[2][$i]]['value'] = $matches2[4][$i];
-    							}else{
-    								$tag['attributes'][$matches2[2][$i]]['type'] = "variable";
-    								$tag['attributes'][$matches2[2][$i]]['value'] = $matches2[3][$i];
-    							}
-    						}
-                            
-                            if(!isset($tag['attributes']['name'])){
-                                $tag['attributes']['name'] = array('type'=>'string', 'value'=>'default');
-                            }
-                            
-                            if(!isset($tag['attributes']['instance'])){
-                                $tag['attributes']['instance'] = array('type'=>'string', 'value'=>'default');
-                            }
-						
-    						$tags[$key] = $tag;
-                        
-                        }
-                        
-					}
-				}
-				
-				return array_values($tags);
-			}else{
-				return false;
-			}
-			
-		}else{
-			return false;
-		}
+        $helper = new SmartestPageManagementHelper;
+        return $helper->scanTemplateTags($template_file_path);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////

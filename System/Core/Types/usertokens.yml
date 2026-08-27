@@ -1,0 +1,194 @@
+# Generated from usertokens.xml during PHP 8 migration.
+---
+token:
+  - 
+    id: "0"
+    name: root_permission
+    description: Carry out any action on any site.
+    type: permission
+  - 
+    id: "1"
+    name: create_remove_settings
+    description: >
+      Create, remove, and edit settings
+      themselves.
+    type: permission
+  - 
+    id: "2"
+    name: modify_system_settings
+    description: Modify values of system settings.
+    type: permission
+  - 
+    id: "3"
+    name: add_new_pages
+    description: Add pages to the sitemap.
+    type: permission
+  - 
+    id: "4"
+    name: remove_pages
+    description: Remove pages from the sitemap.
+    type: permission
+  - 
+    id: "5"
+    name: create_remove_models
+    description: Create, remove, and edit item classes.
+    type: permission
+  - 
+    id: "6"
+    name: create_remove_properties
+    description: >
+      Create, remove and edit item class
+      properties.
+    type: permission
+  - 
+    id: "7"
+    name: add_items
+    description: Add items to existing item classes.
+    type: permission
+  - 
+    id: "8"
+    name: delete_items
+    description: Delete items from existing item classes.
+    type: permission
+  - 
+    id: "9"
+    name: modify_page_properties
+    description: Modify the basic properties of pages.
+    type: permission
+  - 
+    id: "10"
+    name: modify_draft_pages
+    description: >
+      Modify draft versions of the pages in
+      the CMS.
+    type: permission
+  - 
+    id: "11"
+    name: approve_page_changes
+    description: >
+      Approve pages marked as ready for
+      approval.
+    type: permission
+  - 
+    id: "12"
+    name: see_advanced_page_edit_ui
+    description: >
+      See the page elements tree in its
+      complex form.
+    type: complexity
+  - 
+    id: "13"
+    name: modify_user_permissions
+    description: Edit the permissions of other users.
+    type: permission
+  - 
+    id: "14"
+    name: modify_items
+    description: >
+      Modify CMS Items that do not necessarily
+      belong to the user.
+    type: permission
+  - 
+    id: "15"
+    name: approve_item_changes
+    description: Approve changes to all items.
+    type: permission
+  - 
+    id: "16"
+    name: publish_approved_pages
+    description: >
+      Publish pages that have been modified
+      and approved.
+    type: permission
+  - 
+    id: "17"
+    name: publish_approved_items
+    description: >
+      Publish items that have been modified
+      and approved.
+    type: permission
+  - 
+    id: "18"
+    name: publish_all_pages
+    description: >
+      Publish changed pages even if they have
+      not been approved.
+    type: permission
+  - 
+    id: "19"
+    name: publish_all_items
+    description: >
+      Publish changed items even if they have
+      not been approved.
+    type: permission
+  - 
+    id: "20"
+    name: modify_site_parameters
+    description: Edit site parameters.
+    type: permission
+  - 
+    id: "21"
+    name: site_access
+    description: >
+      Access a site. See it listed in the list
+      of available sites.
+    type: permission
+  - 
+    id: "22"
+    name: modify_other_user_details
+    description: Edit the details of other users.
+    type: permission
+  - 
+    id: "23"
+    name: grant_site_access
+    description: Grant another user access to a site.
+    type: permission
+  - 
+    id: "24"
+    name: grant_global_permissions
+    description: >
+      Grant permissions that will persist
+      across all sites.
+    type: permission
+    sitespecific: 'false'
+  - 
+    id: "25"
+    name: create_sites
+    description: Create new sites.
+    type: permission
+  - 
+    id: "26"
+    name: modify_assets
+    description: >
+      Modify existing media assets that do not
+      belong to the user.
+    type: permission
+  - 
+    id: "27"
+    name: delete_assets
+    description: >
+      Delete media assets that do not belong
+      to the user.
+    type: permission
+  - 
+    id: "28"
+    name: create_assets
+    description: Add new media to the system.
+    type: permission
+  - 
+    id: "29"
+    name: clear_pages_cache
+    description: Clear the pages cache.
+    type: permission
+  - 
+    id: "30"
+    name: modify_assets
+    description: >
+      Modify existing media assets that do not
+      belong to the user.
+    type: permission
+  - 
+    id: "31"
+    name: create_users
+    description: Create other user accounts.
+    type: permission

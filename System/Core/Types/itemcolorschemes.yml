@@ -1,0 +1,11 @@
+# Generated from itemcolorschemes.xml during PHP 8 migration.
+---
+scheme:
+  SM_ICS_DEFAULT:
+    id: SM_ICS_DEFAULT
+    name: Sunrise (Default)
+    icon:
+      - 
+        role: item_large
+      - 
+        role: item_small

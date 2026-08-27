@@ -1,11 +1,12 @@
 <div class="edit-form-row">
   <div style="width:100%" id="text_window">
     <textarea name="content" id="tpl_textArea" wrap="virtual"></textarea>
-    <span class="form-hint">Editor powered by TinyMCE 4</span>
+    <span class="form-hint">Editor powered by TinyMCE 8</span>
   </div>
 </div>
 
-<script src="{$domain}Resources/System/Javascript/tinymce4/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
 <script language="javascript" type="text/javascript">
 {literal}
 

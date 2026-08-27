@@ -23,8 +23,14 @@ class SmartestTodoListHelper extends SmartestHelper{
     }
     
     static function getTypesXmlData(){
-	    
+
+	    $yml_file_path = SM_ROOT_DIR.'System/Core/Types/todoitemtypes.yml';
 	    $file_path = SM_ROOT_DIR.'System/Core/Types/todoitemtypes.xml';
+
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['type'];
+	    }
 	    
 	    if(SmartestCache::hasData('todoitemtypes_xml_file_hash', true)){
 	        
@@ -74,8 +80,14 @@ class SmartestTodoListHelper extends SmartestHelper{
 	
 	static function getCategoriesXmlData(){
 	    
+	    $yml_file_path = SM_ROOT_DIR.'System/Core/Types/todoitemtypes.yml';
 	    $file_path = SM_ROOT_DIR.'System/Core/Types/todoitemtypes.xml';
 	    
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['category'];
+	    }
+
 	    if(SmartestCache::hasData('todoitemcats_xml_file_hash', true)){
 	        
 	        $old_hash = SmartestCache::load('todoitemcats_xml_file_hash', true);

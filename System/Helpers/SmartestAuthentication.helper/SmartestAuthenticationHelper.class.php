@@ -57,7 +57,7 @@ class SmartestAuthenticationHelper extends SmartestHelper{
 	    }
 	    
 	    // Does that username exist?
-		if($userObj->findBy($findby_field, $username)){
+		if($userObj->findForLogin($findby_field, $username)){
 			
 			if($require_smartest && $userObj->getType() != 'SM_USERTYPE_SYSTEM_USER'){
                 SmartestLog::getInstance('auth')->log('Attempted login from IP address '.$_SERVER['REMOTE_ADDR'].' failed for username \''.$username.'\' because it is not a system user account and does not have permission to access the Smartest backend.');

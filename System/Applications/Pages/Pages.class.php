@@ -1304,7 +1304,191 @@ class Pages extends SmartestSystemApplication{
 		$this->formForward();
 	}
 	
-	public function sitePages($get){
+        protected function siteHasNoPages(SmartestSite $site){
+
+            $page_count = $this->getSitePageCount($site);
+
+            if(is_numeric($page_count)){
+                return ((int) $page_count) === 0;
+            }
+
+            SmartestLog::getInstance('system')->log("Could not count pages for site ID ".$site->getId()." while checking for missing baseline pages.", SM_LOG_WARNING);
+            return false;
+
+        }
+
+        protected function getSitePageCount(SmartestSite $site){
+
+            $database = SmartestDatabase::getInstance('SMARTEST');
+            $result = $database->preparedQuery(
+                "SELECT COUNT(*) AS num_pages FROM Pages WHERE page_site_id=:site_id AND page_deleted='FALSE'",
+                array('site_id' => $site->getId())
+            );
+
+            if(is_array($result) && isset($result[0]['num_pages'])){
+                return (int) $result[0]['num_pages'];
+            }
+
+            return null;
+
+        }
+
+        protected function siteHasValidTopPage(SmartestSite $site){
+
+            if(!is_numeric($site->getTopPageId())){
+                return false;
+            }
+
+            $page = new SmartestPage;
+
+            if(!$page->find($site->getTopPageId())){
+                return false;
+            }
+
+            return ((int) $page->getSiteId()) === ((int) $site->getId()) && $page->getDeleted() != 'TRUE';
+
+        }
+
+        protected function nominateExistingPageAsSiteTopPage(SmartestSite $site){
+
+            $database = SmartestDatabase::getInstance('SMARTEST');
+            $result = $database->preparedQuery(
+                "SELECT page_id FROM Pages WHERE page_site_id=:site_id AND page_deleted='FALSE' AND page_type='NORMAL' ORDER BY (page_parent=0) DESC, page_order_index ASC, page_id ASC LIMIT 1",
+                array('site_id' => $site->getId())
+            );
+
+            if(is_array($result) && count($result) && isset($result[0]['page_id'])){
+                $site->setTopPageId($result[0]['page_id']);
+                $site->save();
+                SmartestCache::clear('site_pages_tree_'.$site->getId(), true);
+
+                SmartestLog::getInstance('system')->log(
+                    "Nominated existing page ID ".$result[0]['page_id']." as the top page for site '".$site->getName()."' (site ID ".$site->getId().") while loading the site tree.",
+                    SM_LOG_WARNING
+                );
+
+                return true;
+            }
+
+            SmartestLog::getInstance('system')->log(
+                "Could not nominate a top page for site '".$site->getName()."' (site ID ".$site->getId().") because no normal pages were found.",
+                SM_LOG_WARNING
+            );
+
+            return false;
+
+        }
+
+        protected function ensureSiteCanRenderPagesTree(SmartestSite $site){
+
+            if($this->siteHasNoPages($site)){
+                $this->createBaselinePagesForEmptySite($site);
+                return true;
+            }
+
+            if(!$this->siteHasValidTopPage($site)){
+                return $this->nominateExistingPageAsSiteTopPage($site);
+            }
+
+            return false;
+
+        }
+
+        protected function getDefaultMasterTemplateForSite(SmartestSite $site){
+
+            $database = SmartestDatabase::getInstance('SMARTEST');
+            $result = $database->preparedQuery(
+                "SELECT asset_url FROM Assets WHERE (asset_site_id=:site_id OR asset_shared=1) AND asset_type='SM_ASSETTYPE_MASTER_TEMPLATE' AND asset_deleted=0 ORDER BY asset_site_id DESC, asset_id DESC LIMIT 1",
+                array('site_id' => $site->getId())
+            );
+
+            if(is_array($result) && count($result) && isset($result[0]['asset_url']) && strlen($result[0]['asset_url'])){
+                return $result[0]['asset_url'];
+            }
+
+            return '';
+
+        }
+
+        protected function createBaselineSitePage(SmartestSite $site, $title, $name, $template, $order_index, $parent_page_id=null, $published=true, $meta_description=''){
+
+            $page = new SmartestPage;
+            $page->setParentSite($site);
+            $page->setTitle($title);
+            $page->setName($name);
+            $page->setSiteId($site->getId());
+            $page->setDraftTemplate($template);
+            $page->setLiveTemplate($template);
+            $page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
+            $page->setCreatedbyUserid($this->getUser()->getId());
+            $page->setOrderIndex($order_index);
+
+            if(is_numeric($parent_page_id)){
+                $page->setParent($parent_page_id);
+            }
+
+            if($published){
+                $page->setIsPublished('TRUE');
+            }
+
+            if(strlen($meta_description)){
+                $page->setMetaDescription($meta_description);
+            }
+
+            $page->save();
+            $page->addAuthorById($this->getUser()->getId());
+
+            return $page;
+
+        }
+
+        protected function createBaselinePagesForEmptySite(SmartestSite $site){
+
+            $master_template = $this->getDefaultMasterTemplateForSite($site);
+
+            $container = new SmartestContainer;
+
+            if($container->exists('page_layout')){
+                $site->setPrimaryContainerId($container->getId());
+            }
+
+            $home_page = $this->createBaselineSitePage($site, 'Home', 'home', $master_template, 0, null, true);
+            $site->setTopPageId($home_page->getId());
+            $site->save();
+
+            $error_page = $this->createBaselineSitePage($site, 'Page not found', 'error-404', $master_template, 1024, $home_page->getId(), true, 'The page you requested could not be found.');
+            $site->setErrorPageId($error_page->getId());
+
+            $search_page = $this->createBaselineSitePage($site, 'Search Results', 'search', $master_template, 1022, $home_page->getId(), true);
+            $site->setSearchPageId($search_page->getId());
+
+            $tag_page = $this->createBaselineSitePage($site, 'Tagged Content', 'tag', $master_template, 1023, $home_page->getId(), true);
+            $site->setTagPageId($tag_page->getId());
+
+            $user_page = $this->createBaselineSitePage($site, 'User Profile', 'user', $master_template, 1020, $home_page->getId(), true);
+            $site->setUserPageId($user_page->getId());
+
+            $holding_page = $this->createBaselineSitePage($site, 'Holding page', 'error-503', $master_template, 1019, $home_page->getId(), false);
+            $site->setHoldingPageId($holding_page->getId());
+
+            $site->save();
+            SmartestCache::clear('site_pages_tree_'.$site->getId(), true);
+
+            $this->addUserMessage(
+                "This site did not have any pages, so Smartest created a homepage and baseline special pages.",
+                SmartestUserMessage::INFO
+            );
+
+            SmartestLog::getInstance('system')->log(
+                "Created missing baseline pages for empty site '".$site->getName()."' (site ID ".$site->getId().") while loading the site tree. Home page ID ".$home_page->getId().", 404 page ID ".$error_page->getId().", search page ID ".$search_page->getId().", tag page ID ".$tag_page->getId().", user page ID ".$user_page->getId().", holding page ID ".$holding_page->getId().".",
+                SM_LOG_WARNING
+            );
+
+            return $home_page;
+
+        }
+
+		public function sitePages($get){
 		
 		$this->requireOpenProject();
 		$this->setFormReturnUri();
@@ -1315,13 +1499,20 @@ class Pages extends SmartestSystemApplication{
         $site = new SmartestSite;
         $site->find($site_id);
         
-        if($this->getRequestParameter('refresh') == 1){
-            SmartestCache::clear('site_pages_tree_'.$site_id, true);
-        }
+	        if($this->getRequestParameter('refresh') == 1){
+	            SmartestCache::clear('site_pages_tree_'.$site_id, true);
+	        }
+
+            if($this->ensureSiteCanRenderPagesTree($site)){
+                $site = new SmartestSite;
+                $site->find($site_id);
+            }
+
+            SmartestSession::set('current_open_project', $site);
+	        
+	        $pagesTree = $site->getPagesTree(true);
         
-        $pagesTree = $site->getPagesTree(true);
-        
-        $this->setTitle($this->getSite()->getInternalLabel()." | Site Tree");
+        $this->setTitle($site->getInternalLabel()." | Site Tree");
         
         $this->send($pagesTree, "tree");
         $this->send($site_id, "site_id");
@@ -1329,7 +1520,7 @@ class Pages extends SmartestSystemApplication{
         $this->send($site->getHomePage(true), "home_page");
         $this->send(true, "site_recognised");
         
-        $recent = $this->getUser()->getRecentlyEditedPages($this->getSite()->getId());
+        $recent = $this->getUser()->getRecentlyEditedPages($site->getId());
 	    $this->send($recent, 'recent_pages');
 		    
 	}
@@ -3235,8 +3426,8 @@ class Pages extends SmartestSystemApplication{
 	                if($this->getRequestParameter('definition_scope') == 'ALL'){
 	                    
 	                    // DELETE ALL PER-ITEM DEFINITIONS
-	                    $pmh = new SmartestPageManagementHelper;
-	                    $pmh->removePerItemDefinitions($page->getId(), $container_id);
+		                    $pmh = new SmartestPageManagementHelper;
+		                    $pmh->removePerItemDefinitions($page->getId(), $container_id, $instance_name);
 	                    
 	                }
 	                
@@ -3417,14 +3608,14 @@ class Pages extends SmartestSystemApplication{
                     $params = array();
                     $page_definition = new SmartestPlaceholderDefinition;
                 
-                    if($page_definition->load($placeholder_name, $page, true, $this->getRequestParameter('item_id'), $instance_name)){
+                    if($page_definition->load($placeholder_name, $page, true, null, $instance_name)){
 	                
     	                $is_defined = true;
 	                
     	                if($type_index[$page_webid] == 'ITEMCLASS'){
 	                    
     	                    $item_definition = new SmartestPlaceholderDefinition;
-    	                    if($item_definition->load($placeholder_name, $page, true, $item_id)){
+    	                    if($item_definition->load($placeholder_name, $page, true, $item_id, $instance_name)){
     	                        if($page_definition->getDraftAssetId() == $item_definition->getDraftAssetId()){
     	                            $item_uses_default = true;
     	                        }else{
@@ -3702,8 +3893,8 @@ class Pages extends SmartestSystemApplication{
 	                if($this->getRequestParameter('definition_scope') == 'ALL'){
 	                    
 	                    // DELETE ALL PER-ITEM DEFINITIONS
-	                    $pmh = new SmartestPageManagementHelper;
-	                    $pmh->removePerItemDefinitions($page->getId(), $placeholder->getId());
+		                    $pmh = new SmartestPageManagementHelper;
+		                    $pmh->removePerItemDefinitions($page->getId(), $placeholder->getId(), $instance_name);
 	                    
 	                }
 	                
@@ -3711,7 +3902,7 @@ class Pages extends SmartestSystemApplication{
 	            
                 }else if($type_index[$page_id] == 'ITEMCLASS' && ($this->getRequestParameter('item_id') && is_numeric($this->getRequestParameter('item_id')) && $this->getRequestParameter('definition_scope') == 'THIS')){
                     
-                    if($definition->loadForUpdate($placeholder->getName(), $page)){ // looks for all-items definition
+                    if($definition->loadForUpdate($placeholder->getName(), $page, null, $instance_name)){ // looks for all-items definition
 	                    
 	                    $item_def = new SmartestPlaceholderDefinition;
 	                    
@@ -3729,7 +3920,7 @@ class Pages extends SmartestSystemApplication{
                             }
 	                        
 	                        // if there is already a per-item definitions for this item
-	                        if($item_def->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'))){
+		                        if($item_def->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'), $instance_name)){
 	                            
 	                            if($has_params && ($default_def_params_hash != $this_item_params_hash)){
 	                                // don't delete, because display params are different to default.
@@ -3745,7 +3936,7 @@ class Pages extends SmartestSystemApplication{
 	                                $item_def->setDraftAssetId($asset_id);
         	                        $item_def->setAssetclassId($placeholder_id);
         	                        $item_def->setItemId($this->getRequestParameter('item_id'));
-        	                        $item_def->setInstanceName('default');
+        	                        $item_def->setInstanceName($instance_name);
         	                        $item_def->setPageId($page->getId());
                                     // TODO: Go through these parameters, eliminating illegal values such as blanks where a value is required
 	                                $item_def->setDraftRenderData(serialize($this->getRequestParameter('params')));
@@ -3758,7 +3949,7 @@ class Pages extends SmartestSystemApplication{
 	                    
 	                    }else{
 	                        
-	                        if($item_def->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'))){
+		                        if($item_def->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'), $instance_name)){
 	                            // just update placeholder
 	                            $item_def->setDraftAssetId($asset_id);
 	                            $log_message = $this->getUser()->__toString()." updated placeholder '".$placeholder->getName()."' on meta-page '".$page->getTitle(true)."' to use asset ID ".$asset_id." when displaying item ID ".$this->getRequestParameter('item_id').".";
@@ -3766,7 +3957,7 @@ class Pages extends SmartestSystemApplication{
 	                            $item_def->setDraftAssetId($asset_id);
         	                    $item_def->setAssetclassId($placeholder_id);
         	                    $item_def->setItemId($this->getRequestParameter('item_id'));
-        	                    $item_def->setInstanceName('default');
+        	                    $item_def->setInstanceName($instance_name);
         	                    $item_def->setPageId($page->getId());
 	                            $log_message = $this->getUser()->__toString()." defined placeholder '".$placeholder->getName()."' on meta-page '".$page->getTitle(true)."' to use asset ID ".$asset_id." when displaying item ID ".$this->getRequestParameter('item_id').".";
 	                        }
@@ -3780,7 +3971,7 @@ class Pages extends SmartestSystemApplication{
 	                        
 	                    }
 	                
-	                }else if($definition->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'))){
+		                }else if($definition->loadForUpdate($placeholder->getName(), $page, $this->getRequestParameter('item_id'), $instance_name)){
 	                    
 	                    // all-items definition doesn't exist but per-item for this item does
 	                    $definition->setDraftAssetId($asset_id);
@@ -3798,7 +3989,7 @@ class Pages extends SmartestSystemApplication{
 	                    $definition->setDraftAssetId($asset_id);
 	                    $definition->setAssetclassId($placeholder_id);
 	                    $definition->setItemId($this->getRequestParameter('item_id'));
-	                    $definition->setInstanceName('default');
+		                    $definition->setInstanceName($instance_name);
 	                    $definition->setPageId($page->getId());
 	                    
 	                    if(is_array($this->getRequestParameter('params'))){

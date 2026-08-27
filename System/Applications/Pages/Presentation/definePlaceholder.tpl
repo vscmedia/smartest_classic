@@ -47,26 +47,26 @@ var toggleParamsHolder = function(){
   <form id="file_chooser" method="get" action="{$domain}{$section}/definePlaceholder">
     
     <div class="edit-form-row">
-      <div class="form-section-label">{if !$asset.id && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}Placeholder text{else}Choose media for this placeholder{/if}</div>
+      <div class="form-section-label">{if (!isset($asset.id) || !$asset.id) && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}Placeholder text{else}Choose media for this placeholder{/if}</div>
       {if $only_accepts_images}
       
       {image_select id="chosen-asset-id" name="chosen_asset_id" for="placeholder" placeholder_id=$placeholder.id value=$asset onchange="$('file_chooser').submit()"}
       
       {else}
       
-      <div id="placeholder-asset-select-{$placeholder.id}" style="display:{if !$asset.id && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}none{else}block{/if}">
+      <div id="placeholder-asset-select-{$placeholder.id}" style="display:{if (!isset($asset.id) || !$asset.id) && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}none{else}block{/if}">
 
         <select name="chosen_asset_id" onchange="$('file_chooser').submit()">
           {if !$valid_definition}<option value="">None Selected</option>{/if}
           {foreach from=$assets item="available_asset"}
-            <option value="{$available_asset.id}"{if $available_asset.id==$asset.id} selected="selected"{/if}>{if $available_asset.id==$live_asset_id}* {/if}{$available_asset.label}</option>
+            <option value="{$available_asset.id}"{if isset($asset.id) && $available_asset.id==$asset.id} selected="selected"{/if}>{if $available_asset.id==$live_asset_id}* {/if}{$available_asset.label}</option>
           {/foreach}
         </select>
 
-      {if !$asset.id && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')} <a href="#cancel" class="button small" id="cancel-asset-text-select-{$placeholder.id}">Cancel</a>{/if}
+      {if (!isset($asset.id) || !$asset.id) && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')} <a href="#cancel" class="button small" id="cancel-asset-text-select-{$placeholder.id}">Cancel</a>{/if}
       </div>
       
-      {if !$asset.id && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}
+      {if (!isset($asset.id) || !$asset.id) && ($placeholder.type == 'SM_ASSETCLASS_RICH_TEXT' || $placeholder.type == 'SM_ASSETCLASS_TEXT')}
       
       <div class="edit-form-sub-row" style="margin-bottom:10px" id="asset-text-buttons-{$placeholder.id}">
         <div style="margin-bottom:5px">No text is currently in use for placeholder <code>'{$placeholder.name}'</code> on this page.</div>

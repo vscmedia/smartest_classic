@@ -13,7 +13,7 @@ class SmartestItemSpace extends SmartestAssetClass{
 		
 	}
 	
-	public function exists($name, $site_id){
+	public function exists($name, $site_id=0){
 	    
 	    $sql = "SELECT * FROM AssetClasses WHERE assetclass_name='".$name."' AND assetclass_type='SM_ASSETCLASS_ITEM_SPACE' AND assetclass_site_id='".$site_id."'";
 	    $query_result = $this->database->queryToArray($sql);

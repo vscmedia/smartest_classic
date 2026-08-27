@@ -15,6 +15,5 @@
         <div class="buttons-bar">
             {save_buttons}
         </div>
-    <div>
-        
+    </div>
 </form>

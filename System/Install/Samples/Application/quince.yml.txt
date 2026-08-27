@@ -1,0 +1,17 @@
+module:
+  class: %CLASSNAME%
+  shortname: %SHORTNAME%
+  identifier: %APPIDENTIFIER%
+  longname: An application created automatically by Smartest
+  default_action: startAction
+  aliases:
+    - {url: /alternate-url, action: startAction}
+  routes:
+    home:
+      action: startAction
+      url: /%RANDOMURL% # Route URls can be arbitrary
+      meta:
+        foo: bar
+  meta:
+    system: false
+    author: Your name here

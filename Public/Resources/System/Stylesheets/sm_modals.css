@@ -15,8 +15,8 @@
 
 .modal{
     
-    width:550px;
-    height:350px;
+    width:600px;
+    height:400px;
     background-color:#fff;
     /* border:3px solid #ccc; */
     position:relative;
@@ -35,8 +35,8 @@
 }
 
 .modal-outer.big .modal{
-    width:750px;
-    height:450px;
+    width:800px;
+    height:500px;
 }
 
 .modal h1{
@@ -77,15 +77,15 @@
 }
 
 .modal-updater{
-    height:320px;
-    width:525px;
+    height:370px;
+    width:575px;
     margin-top:25px;
     overflow:hidden;
 }
 
 .modal-outer.big .modal-updater{
-    height:420px;
-    width:725px;
+    height:470px;
+    width:775px;
 }
 
 .modal-updater h1{
@@ -97,7 +97,7 @@
     position:absolute;  
     top:40px;  
     right:12px;  
-    height:315px;  
+    height:365px;  
     width:14px;  
     cursor:move;
     border-radius: 7px;
@@ -107,7 +107,7 @@
 }
 
 .modal-outer.big .modal .modal-scrollbar-track{
-    height:415px;  
+    height:465px;  
 }
  
 .modal-scrollbar-handle {  
@@ -126,13 +126,13 @@
     position:absolute;
     top:4px;
     left:0px;
-    width:562px;
+    width:612px;
     color:#999;
     font-size:14px;
 }
 
 .modal-outer.big .modal-title-bar{
-    width:762px;
+    width:812px;
 }
 
 .modal-title-bar h2{

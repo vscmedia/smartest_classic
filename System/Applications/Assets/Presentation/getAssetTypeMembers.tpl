@@ -6,8 +6,6 @@
 
   <h3>{$type_label} files</h3>
 
-  {load_interface file="assettype_tabs.tpl"}
-
 <form id="pageViewForm" method="get" action="">
   <input type="hidden" name="assettype_code" value="{$type_code}" />
   <input type="hidden" name="asset_id" id="item_id_input" value="" />
@@ -84,7 +82,7 @@
 {if in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))}
     <img border="0" src="{$asset.image._ui_preview.web_path}" class="grid" />
 {else}
-  {if $asset.type_info.large_icon}
+  {if isset($asset.type_info.large_icon) && $asset.type_info.large_icon}
     <img border="0" src="{$domain}Resources/System/Images/{$asset.type_info.large_icon}" class="grid" />
   {else}
     <img border="0" src="{$domain}Resources/Icons/blank_page.png" class="grid" />
@@ -148,7 +146,7 @@
 <ul class="actions-list" id="non-specific-actions">
   <li><span style="color:#999">Recent {$type_label|strtolower} files</span></li>
   {foreach from=$recent_assets item="recent_asset"}
-  <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$recent_asset.action_url}'"><i class="fa fa-{$recent_asset.type_info.fa_iconname}"></i> {$recent_asset.label|summary:"30"}</a></li>
+  <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$recent_asset.action_url}'"><i class="fa fa-{if isset($recent_asset.type_info.fa_iconname) && $recent_asset.type_info.fa_iconname}{$recent_asset.type_info.fa_iconname}{else}file-o{/if}"></i> {$recent_asset.label|summary:"30"}</a></li>
   {/foreach}
 </ul>
 

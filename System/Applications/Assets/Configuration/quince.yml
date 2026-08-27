@@ -3,7 +3,7 @@ module:
   shortname: assets
   identifier: com.smartest.FileManager
   longname: Files repository 
-  default_action: getAssetTypes
+  default_action: assetTypeCategories
   aliases:
     - {url: /smartest/assets, action: startPage}
     - {url: /smartest/assets/groups, action: assetGroups}
@@ -15,6 +15,12 @@ module:
     types:
       action: getAssetTypes
       url: /smartest/files/types
+    categories:
+      action: assetTypeCategories
+      url: /smartest/files/categories
+    category:
+      action: getAssetTypeCategoryMembers
+      url: /smartest/files/category/:asset_category
     groups:
       action: assetGroups
       url: /smartest/files/groups

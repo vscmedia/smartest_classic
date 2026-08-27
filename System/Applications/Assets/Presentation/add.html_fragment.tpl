@@ -15,7 +15,7 @@
 {literal}
 var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
     lineNumbers: true,
-    mode: "htmlmixed",
+    mode: "smartest-htmlmixed",
     lineWrapping: true
   });
 {/literal}

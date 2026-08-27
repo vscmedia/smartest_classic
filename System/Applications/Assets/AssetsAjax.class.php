@@ -492,21 +492,30 @@ class AssetsAjax extends SmartestSystemApplication{
                     
                     $asset->setSiteId($this->getSite()->getId());
                     $asset->save();
-                    
+
+                }else{
+
+                    header('Content-type: application/json');
+                    echo json_encode(array(
+                        'error' => true,
+                        'message' => 'The uploaded file type is not recognised as an image.'
+                    ));
+                    exit;
+
                 }
-                
+
                 if($this->requestParameterIsSet('for')){
-                    
+
                     $assetSimpleObj->for = $this->getRequestParameter('for');
-                    
+
                     switch($this->getRequestParameter('for')){
-                        
+
                         case 'ipv':
-                        
+
                         if($property_id = $this->getRequestParameter('property_id')){
-                            
+
                             $assetSimpleObj->property_id = $this->getRequestParameter('property_id');
-                            
+
                             $property = new SmartestItemProperty;
                             if($property->find($property_id)){
                                 // Property exists, so that's good
@@ -518,15 +527,15 @@ class AssetsAjax extends SmartestSystemApplication{
                                 }
                             }
                         }
-                        
+
                         break;
-                        
+
                         case 'placeholder':
-                        
+
                         if($placeholder_id = $this->getRequestParameter('placeholder_id')){
-                            
+
                             $assetSimpleObj->placeholder_id = $this->getRequestParameter('placeholder_id');
-                            
+
                             $placeholder = new SmartestPlaceholder;
                             if($placeholder->find($placeholder_id)){
                                 // Placeholder exists, so that's good
@@ -538,7 +547,25 @@ class AssetsAjax extends SmartestSystemApplication{
                                 }
                             }
                         }
-                        
+
+                        break;
+
+                        case 'site_logo':
+
+                        $asset->setSiteId($this->getSite()->getId());
+                        $asset->setShared(1);
+                        $asset->setIsSystem(1);
+                        $asset->setIsHidden(1);
+                        $asset->save();
+
+                        $site_logos_group = new SmartestAssetGroup;
+
+                        if($site_logos_group->find(SmartestSystemSettingHelper::getSiteLogosFileGroupId())){
+                            $site_logos_group->addAssetById($asset->getId(), false);
+                        }
+
+                        break;
+
                         case 'user_profile_pic':
                         
                         if($user_id = $this->getRequestParameter('user_id')){
@@ -573,7 +600,7 @@ class AssetsAjax extends SmartestSystemApplication{
                     
                 }
                 
-                header('Content-type: application/javascript');
+                header('Content-type: application/json');
                 echo json_encode($assetSimpleObj);
                 exit;
                 
@@ -716,36 +743,35 @@ class AssetsAjax extends SmartestSystemApplication{
     }
     
     public function postBackTextEditorContentsFromModal(){
-        
-        if($this->getUser()->hasToken('modify_assets')){
-            
-            $asset = new SmartestAsset;
-            
-            if($asset->find($this->getRequestParameter('asset_id'))){
-                
-                if($asset->getType() == 'SM_ASSETTYPE_RICH_TEXT'){
-                    
-                    $content = $this->getRequestParameter('asset_content');
-        		    $content = SmartestStringHelper::unProtectSmartestTags($content);
-        		    $content = SmartestTextFragmentCleaner::convertDoubleLineBreaks($content);
-                    $success = (bool) $asset->setContentFromEditor($content);
-                    
-                    if($success){
-            	        $asset->setModified(time());
-                        $asset->save();
-                        header('Content-Type: application/json; charset=UTF8');
-                        echo json_encode(array('success'=>true));
-                        exit;
-                    }else{
-                        header('Content-Type: application/json; charset=UTF8');
-                        echo json_encode(array('success'=>false));
-                        exit;
-                    }
-                    
-                }
-                
+
+        $asset = new SmartestAsset;
+
+        if($asset->find($this->getRequestParameter('asset_id'))){
+
+            $update_helper = new SmartestAssetUpdateHelper;
+            $result = $update_helper->updateAssetFromParameters($asset, $this->getRequestParameters(), $this->getUser(), array(
+                'preserve_absent_metadata' => true
+            ));
+
+            if($result['success']){
+                $this->addUserMessageToNextRequest($result['message'], $result['message_type']);
             }
+
+            header('Content-Type: application/json; charset=UTF8');
+            echo json_encode(array(
+                'success' => (bool) $result['success'],
+                'message' => $result['message']
+            ));
+            exit;
+
         }
+
+        header('Content-Type: application/json; charset=UTF8');
+        echo json_encode(array(
+            'success' => false,
+            'message' => 'The file you are trying to update no longer exists or has been deleted by another user.'
+        ));
+        exit;
         
     }
     
@@ -803,6 +829,108 @@ class AssetsAjax extends SmartestSystemApplication{
         
     }
     
+    public function getTextFragmentAttachmentData(){
+
+        $helper = new SmartestTextFragmentAttachmentEditor;
+        $attachment_data = $helper->getAttachmentData(
+            $this->getRequestParameter('asset_id', $this->getRequestParameter('file_id')),
+            $this->getRequestParameter('attachment', $this->getRequestParameter('attachment_name')),
+            $this->getUser()
+        );
+
+        if($attachment_data){
+            $this->sendAttachmentJson(array(
+                'success' => true,
+                'data' => $attachment_data
+            ));
+        }else{
+            $this->sendAttachmentJson(array(
+                'success' => false,
+                'message' => 'The attachment could not be found.'
+            ), '404 Not Found');
+        }
+
+    }
+
+    public function updateTextFragmentAttachmentDisplayData(){
+
+        $asset_id = $this->getRequestParameter('asset_id', $this->getRequestParameter('file_id'));
+        $asset = new SmartestAsset;
+
+        if(!$asset->find($asset_id) || ($asset->getUserId() != $this->getUser()->getId() && !$this->getUser()->hasToken('modify_assets'))){
+            $this->sendAttachmentJson(array(
+                'success' => false,
+                'message' => 'You do not have permission to modify assets.'
+            ), '403 Forbidden');
+        }
+
+        $helper = new SmartestTextFragmentAttachmentEditor;
+
+        if($attachment_context = $helper->getAttachmentContext(
+            $asset_id,
+            $this->getRequestParameter('attachment', $this->getRequestParameter('attachment_name')),
+            $this->getUser()
+        )){
+
+            $attachment = $attachment_context['attachment'];
+            $textfragment = $attachment_context['textfragment'];
+            $asset = $attachment_context['asset'];
+            $attachment_name = $attachment_context['attachment_name'];
+
+            if(!$attachment->getTextFragmentId()){
+                $attachment->setTextFragmentId($textfragment->getId());
+            }
+
+            $attachment->setAttachmentName($attachment_name);
+
+            if($this->requestParameterIsSet('attached_file_alignment')){
+                $attachment->setAlignment(SmartestStringHelper::toVarName($this->getRequestParameter('attached_file_alignment')));
+            }
+
+            if($this->requestParameterIsSet('attached_file_float')){
+                $attachment->setFloat(SmartestStringHelper::toRealBool($this->getRequestParameter('attached_file_float')));
+            }
+
+            if($this->requestParameterIsSet('attached_file_caption')){
+                $attachment->setCaption(htmlentities($this->getRequestParameter('attached_file_caption'), ENT_COMPAT, 'UTF-8'));
+            }
+
+            if($this->requestParameterIsSet('attached_file_caption_alignment')){
+                $attachment->setCaptionAlignment(SmartestStringHelper::toVarName($this->getRequestParameter('attached_file_caption_alignment')));
+            }
+
+            if($this->requestParameterIsSet('attached_file_border')){
+                $attachment->setBorder(SmartestStringHelper::toRealBool($this->getRequestParameter('attached_file_border')));
+            }
+
+            $attachment->save();
+            SmartestLog::getInstance('site')->log($this->getUser()->getFullName().' updated attachment display settings for '.$attachment_name.' on file '.$asset->getLabel().'.');
+
+            $this->sendAttachmentJson(array(
+                'success' => true,
+                'data' => $helper->buildAttachmentData($asset, $textfragment, $attachment_name, $attachment)
+            ));
+
+        }else{
+
+            $this->sendAttachmentJson(array(
+                'success' => false,
+                'message' => 'The attachment could not be updated.'
+            ), '404 Not Found');
+
+        }
+
+    }
+
+    protected function sendAttachmentJson($data, $status='200 OK'){
+
+        header('HTTP/1.1 '.$status);
+        header('Content-Type: application/json; charset=UTF8');
+        echo json_encode($data);
+        exit;
+
+    }
+
     public function insertGalleryForIpv(){
         
         if($item = SmartestCmsItem::retrieveByPk($this->getRequestParameter('item_id'))){

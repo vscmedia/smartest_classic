@@ -2,7 +2,7 @@
 
 function smarty_function_load_item($params, &$smartest_engine){
     
-    if(isset($params['assign']) && isset($params['assign']{0})){
+    if(isset($params['assign']) && isset($params['assign'][0])){
         
         if(isset($params['id'])){
         

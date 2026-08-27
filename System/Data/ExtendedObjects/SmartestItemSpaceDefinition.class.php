@@ -150,7 +150,7 @@ class SmartestItemSpaceDefinition extends SmartestAssetIdentifier{
         
     }
     
-    public function getItemId($draft){
+    public function getItemId($draft=false){
         
         if($draft){
             return $this->getField('draft_asset_id');

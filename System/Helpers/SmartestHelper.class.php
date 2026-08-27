@@ -55,7 +55,13 @@ class SmartestHelper{
     public static function loadAllLaterFiles(){
         
 		foreach(self::$load_later_files as $file){
+		    if(class_exists('SmartestResponse')){
+		        SmartestResponse::debugTrace('loadAllLaterFiles: including '.$file);
+		    }
 	        include $file;
+		    if(class_exists('SmartestResponse')){
+		        SmartestResponse::debugTrace('loadAllLaterFiles: included '.$file);
+		    }
 	    }
         
     }

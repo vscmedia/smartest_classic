@@ -71,10 +71,13 @@ class SmartyManager{
 			}
 		}
     
+        SmartestResponse::debugTrace('SmartyManager::initialize context='.$this->context);
         if($this->context == 'InterfaceBuilder'){
 		    $smartyObj = new SmartestInterfaceBuilder('_main');
 		}else if($this->context == 'WebPageBuilder'){
+            SmartestResponse::debugTrace('SmartyManager::initialize constructing SmartestWebPageBuilder');
 		    $smartyObj = new SmartestWebPageBuilder('_main');
+            SmartestResponse::debugTrace('SmartyManager::initialize constructed SmartestWebPageBuilder');
 		}else if($this->context == 'BasicRenderer'){
     	    $smartyObj = new SmartestBasicRenderer($pid);
     	}else if($this->context == 'SingleItemTemplateRenderer'){
@@ -85,10 +88,12 @@ class SmartyManager{
 		    $smartyObj = new SmartestEngine('_main');
 		}
 		
-		$smartyObj->template_dir = SM_ROOT_DIR.$this->options['default_templates_dir'];
-		$smartyObj->compile_dir = SM_ROOT_DIR.$this->options['templates_cache'];
-		$smartyObj->cache_dir = SM_ROOT_DIR.$this->options['cache'];
-		$smartyObj->config_dir = SM_ROOT_DIR.$this->options['config'];
+		$smartyObj->setTemplateDirectories(
+		    SM_ROOT_DIR.$this->options['default_templates_dir'],
+		    SM_ROOT_DIR.$this->options['templates_cache'],
+		    SM_ROOT_DIR.$this->options['cache'],
+		    SM_ROOT_DIR.$this->options['config']
+		);
     
 		return $smartyObj;
 		

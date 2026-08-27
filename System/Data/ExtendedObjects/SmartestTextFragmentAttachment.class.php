@@ -25,7 +25,7 @@ class SmartestTextFragmentAttachment extends SmartestManyToManyLookup{
         $this->setEntityForeignKeyValue(2, (int) $id);
     }
     
-    public function hydrate($id){
+    public function hydrate($id, $site_id='', $dup=false){
         
         parent::hydrate($id);
         
@@ -151,7 +151,7 @@ class SmartestTextFragmentAttachment extends SmartestManyToManyLookup{
     }
     
     public function setCaption($caption){
-        $this->setContextDataField('caption', mysql_real_escape_string($caption));
+        $this->setContextDataField('caption', SmartestMysql::escapeString($caption));
     }
     
     public function getAlignment(){

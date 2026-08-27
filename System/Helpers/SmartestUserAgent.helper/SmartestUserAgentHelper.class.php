@@ -43,19 +43,18 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
         
         $uadata = parse_user_agent($user_agent);
         
-        if(isset($uadata['platform'])){
-            $this->_browser['platform'] = $uadata['platform'];
-        }
+        $this->_browser['platform'] = isset($uadata['platform']) ? $uadata['platform'] : 'Unknown';
         
-        if(isset($uadata['browser'])){
-            $this->_browser['appName'] = $uadata['browser'];
-        }
+        $this->_browser['appName'] = isset($uadata['browser']) ? $uadata['browser'] : 'Unknown';
         
-        if(isset($uadata['browser'])){
-            $this->_browser['appVersion'] = $uadata['version'];
-            preg_match('/^\d+/', $uadata['version'], $matches);
-            $this->_browser['appVersionInteger'] = (int) $matches[0];
-        }
+            if(isset($uadata['browser'])){
+                $this->_browser['appVersion'] = $uadata['version'];
+                preg_match('/^\d+/', $uadata['version'], $matches);
+                $this->_browser['appVersionInteger'] = isset($matches[0]) ? (int) $matches[0] : 0;
+            }else{
+                $this->_browser['appVersion'] = '';
+                $this->_browser['appVersionInteger'] = 0;
+            }
         
         $this_browser_key = SmartestStringHelper::toVarName($this->_browser['appName']);
         $old_browsers = SmartestYamlHelper::fastLoad(SM_ROOT_DIR.'System/Core/Types/old_browsers.yml');
@@ -124,7 +123,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
             
     	}
     	
-    	return $this->_browser['platform'];
+    	return isset($this->_browser['platform']) ? $this->_browser['platform'] : 'Unknown';
     	
 	}
     
@@ -151,9 +150,8 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
     		    $this->_browser['appName'] = 'Unknown';
     	    } */
             
-            if(isset($uadata['browser'])){
-                $this->_browser['appName'] = $uadata['browser'];
-            }
+            $uadata = parse_user_agent($this->_userAgent);
+            $this->_browser['appName'] = isset($uadata['browser']) ? $uadata['browser'] : 'Unknown';
             
     	}
     	
@@ -164,10 +162,14 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
 	    
 	    if(!isset($this->_browser['appVersion'])){
 	        
+            $uadata = parse_user_agent($this->_userAgent);
             if(isset($uadata['browser'])){
                 $this->_browser['appVersion'] = $uadata['version'];
                 preg_match('/^\d+/', $uadata['version'], $matches);
-                $this->_browser['appVersionInteger'] = (int) $matches[0];
+                $this->_browser['appVersionInteger'] = isset($matches[0]) ? (int) $matches[0] : 0;
+            }else{
+                $this->_browser['appVersion'] = '';
+                $this->_browser['appVersionInteger'] = 0;
             }
             
     	    /* if($this->isExplorer()){
@@ -228,11 +230,11 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
     	    }else if($this->isFirefox()){
     	        preg_match('/Firefox\/(\d[\d\.]+\d+)/i', $this->_userAgent, $matches);
     	        $this->_browser['appVersion'] = $matches[1];
-    	        $this->_browser['appVersionInteger'] = (int) $matches[1]{0};
+	        $this->_browser['appVersionInteger'] = (int) $matches[1][0];
     	    }else if($this->isCamino()){
         	    preg_match('/Camino\/(\d[\d\.]+\d+)/i', $this->_userAgent, $matches);
         	    $this->_browser['appVersion'] = $matches[1];
-        	    $this->_browser['appVersionInteger'] = (int) $matches[1]{0};
+	    $this->_browser['appVersionInteger'] = (int) $matches[1][0];
         	    // echo $this->_userAgent;
         	} */
     	}
@@ -299,7 +301,7 @@ class SmartestUserAgentHelper extends SmartestHelper implements ArrayAccess{
             
         }
         
-        return $this->_browser['engine'];
+        return isset($this->_browser['engine']) ? $this->_browser['engine'] : 'Unknown';
         
 	}
     

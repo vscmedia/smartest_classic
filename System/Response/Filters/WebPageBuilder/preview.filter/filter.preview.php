@@ -57,10 +57,17 @@ EOT;
             $r->assign('has_item', false);
         }
         
-        // var_dump(SM_CMS_PAGE_SITE_ID);
+        if(defined('SM_CMS_PAGE_SITE_ID')){
+            $site_id = SM_CMS_PAGE_SITE_ID;
+        }else if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+            $site_id = $GLOBALS['_site']->getId();
+        }else{
+            $site_id = 0;
+        }
+
         $ph = new SmartestPreferencesHelper();
-        $hide_preview_bar = $ph->getApplicationPreference('hide_preview_bar', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), SM_CMS_PAGE_SITE_ID);
-        $hide_preview_edit_buttons = $ph->getApplicationPreference('hide_preview_edit_buttons', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), SM_CMS_PAGE_SITE_ID);
+        $hide_preview_bar = $ph->getApplicationPreference('hide_preview_bar', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), $site_id);
+        $hide_preview_edit_buttons = $ph->getApplicationPreference('hide_preview_edit_buttons', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), $site_id);
         // var_dump($hide_preview_bar);
         $r->assign('hide_preview_bar', (bool) $hide_preview_bar);
         $r->assign('hide_preview_edit_buttons', new SmartestBoolean($hide_preview_edit_buttons));

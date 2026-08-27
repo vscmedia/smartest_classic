@@ -16,10 +16,11 @@ class SmartestInit{
 	
 		if(!defined('SM_ROOT_DIR')){
 		
-			chdir('../');
-			define("SM_ROOT_DIR", getcwd().DIRECTORY_SEPARATOR);
+			define("SM_ROOT_DIR", dirname(__DIR__).DIRECTORY_SEPARATOR);
 		
 		}
+
+		chdir(SM_ROOT_DIR);
 	}
 	
 	public static function setIncludePaths(){

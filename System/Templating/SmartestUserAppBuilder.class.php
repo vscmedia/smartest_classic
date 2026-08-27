@@ -8,10 +8,9 @@ class SmartestUserAppBuilder extends SmartestBasicRenderer{
         
         parent::__construct('main');
         
-        $this->left_delimiter = '<'.'?sm:';
-		$this->right_delimiter = ':?'.'>';
+        $this->setSmartestDelimiters('<'.'?sm:', ':?'.'>');
 		
-		$this->plugins_dir[] = SM_ROOT_DIR."System/Templating/Plugins/UserAppFramework/";
+		$this->addPluginDirectory(SM_ROOT_DIR."System/Templating/Plugins/UserAppFramework/");
         
     }
     
@@ -59,7 +58,7 @@ class SmartestUserAppBuilder extends SmartestBasicRenderer{
         if($file_found){
 	        $render_process_id = SmartestStringHelper::toVarName('template_'.SmartestStringHelper::removeDotSuffix($requested_file).'_'.substr(microtime(true), -6));
 	        $child = $this->startChildProcess($render_process_id);
-	        $child->caching = false;
+	        $child->setSmartestCaching(false);
 	        $child->setContext(SM_CONTEXT_COMPLEX_ELEMENT);
 	        $child->assign('this', $this->_tpl_vars['this']);
 	        if($this->page instanceof SmartestPage){
@@ -76,7 +75,7 @@ class SmartestUserAppBuilder extends SmartestBasicRenderer{
     
     public function getRepeatBlockData($params){
         
-        $this->caching = false;
+        $this->setSmartestCaching(false);
         $this->_repeat_char_length_aggr = 0;
         
         if(is_array($params['from']) || $params['from'] instanceof SmartestArray){

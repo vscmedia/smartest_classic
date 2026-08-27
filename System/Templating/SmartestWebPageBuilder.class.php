@@ -25,15 +25,15 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
 		    SmartestPersistentObject::set('template_layer_data:items', new SmartestParameterHolder("Template Layer Items"));
 		}
 		
-		if(!defined('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN')){
-		    define('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN', true);
-		}
+			if(!defined('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN')){
+			    define('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN', true);
+			}
 		
 		if(!defined('SM_CMS_PAGE_CONSTRUCTION_IN_PROGRESS')){
 		    define('SM_CMS_PAGE_CONSTRUCTION_IN_PROGRESS', true);
 		}
 		
-		$this->caching = false;
+		$this->setSmartestCaching(false);
 
 	}
 	
@@ -99,7 +99,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
         return SmartestPersistentObject::get('template_layer_data:items');
     }
     
-    public function startChildProcess($pid, $type=''){
+    public function startChildProcess($pid, $type='', $caching=false){
         
         $pid = SmartestStringHelper::toVarName($pid);
         
@@ -144,6 +144,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
 	    }
 	    
 	    $template = SM_ROOT_DIR.$safe_template;
+        SmartestResponse::debugTrace('SmartestWebPageBuilder::renderPage template='.$template.' exists='.(int) is_file($template));
 	    
 	    if(!defined('SM_CMS_PAGE_ID')){
 		    define('SM_CMS_PAGE_ID', $this->page->getId());
@@ -169,6 +170,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
 	        $this->run($template, array());
 	        $content = ob_get_contents();
 	        ob_end_clean();
+            SmartestResponse::debugTrace('SmartestWebPageBuilder::renderPage missing-template output bytes='.strlen((string) $content));
 	    
 	        return $content;
 	        
@@ -178,6 +180,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
 	        $this->run($template, array());
 	        $content = ob_get_contents();
 	        ob_end_clean();
+            SmartestResponse::debugTrace('SmartestWebPageBuilder::renderPage output bytes='.strlen((string) $content));
 	    
 	        return $content;
         }
@@ -342,7 +345,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
         if($file_found){
 	        $render_process_id = SmartestStringHelper::toVarName('template_'.SmartestStringHelper::removeDotSuffix($requested_file).'_'.substr(microtime(true), -6));
 	        $child = $this->startChildProcess($render_process_id);
-	        $child->caching = false;
+	        $child->setSmartestCaching(false);
 	        $child->setContext(SM_CONTEXT_COMPLEX_ELEMENT);
 	        $child->assign('this', $this->_tpl_vars['this']);
 	        $content = $child->fetch($template);
@@ -1060,7 +1063,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
                     $child->assign('list', $list);
     	            $child->setContext(SM_CONTEXT_COMPLEX_ELEMENT);
     	            $child->setDraftMode($this->getDraftMode());
-    	            $child->caching = false;
+    	            $child->setSmartestCaching(false);
                     
                     if($this->getDraftMode()){
                         $content .= "<!--Smartest: Begin list template ".$list->getRepeatingTemplateInSmartest($this->getDraftMode())." -->\n";
@@ -1246,7 +1249,7 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
     
     public function getRepeatBlockData($params){
         
-        $this->caching = false;
+        $this->setSmartestCaching(false);
         $this->_repeat_char_length_aggr = 0;
         
         if(is_array($params['from']) || $params['from'] instanceof SmartestArray || $params['from'] instanceof SmartestCmsItemSet || ($params['from'] instanceof SmartestAssetGroup && $params['from']->isGallery())){

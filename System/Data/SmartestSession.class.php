@@ -66,13 +66,13 @@ class SmartestSession{
     			$parts = explode(':', $object_name);
     			$name = implode('/', $parts);
 			
-    			$key .= $name;
+			$key .= $name;
 			
-    			if(isset($_SESSION)){
-    			    $_SESSION[$key] = &$data;
-    			}else{
-    			    throw new SmartestException('SmartestSession or SmartestPersistentObject used while session was not active');
-    			}
+			if(isset($_SESSION)){
+    			    $_SESSION[$key] = $data;
+			}else{
+			    throw new SmartestException('SmartestSession or SmartestPersistentObject used while session was not active');
+			}
     		}
         }
 	}

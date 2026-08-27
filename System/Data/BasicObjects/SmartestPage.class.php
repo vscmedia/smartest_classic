@@ -72,7 +72,7 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
         
     }
     
-	public function hydrate($id){
+	public function hydrate($id, $site_id='', $dup=false){
 		// determine what kind of identification is being used
 		
 		if(is_array($id)){
@@ -1239,21 +1239,24 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	}
 
 	public function getPageChildren($sections_only=false, $include_special_pages=false){
-	    
-        if($include_special_pages || !$this->_child_pages_retrieved || !count($this->_child_pages)){
-            
-    	    $sql = "SELECT DISTINCT * FROM Pages WHERE page_parent='".$this->_properties['id']."' AND page_site_id='".$this->_properties['site_id']."' AND page_deleted != 'TRUE'";
+		    
+	        if($include_special_pages || !$this->_child_pages_retrieved || !count($this->_child_pages)){
+	            
+	    	    $sql = "SELECT DISTINCT * FROM Pages WHERE page_parent='".$this->_properties['id']."' AND page_site_id='".$this->_properties['site_id']."' AND page_deleted != 'TRUE'";
 		    
             if(!$this->getDraftMode()){
     		    $sql .= " AND page_is_published = 'TRUE'";
     		}
-        
-            // Don't include special pages unless told to
-            if(!$include_special_pages){
-                $special_page_ids = array_values($this->getParentSite()->getSpecialPageIds()->getParameters());
-                // print_r($special_page_ids);
-                $sql .= " AND page_id NOT IN ('".implode("','", $special_page_ids)."')";
-            }
+	        
+	            // Don't include special pages unless told to
+	            if(!$include_special_pages){
+	                $parent_site = $this->getParentSite();
+	                $special_page_ids = ($parent_site instanceof SmartestSite) ? array_values($parent_site->getSpecialPageIds()->getParameters()) : array();
+	                // print_r($special_page_ids);
+	                if(count($special_page_ids)){
+	                    $sql .= " AND page_id NOT IN ('".implode("','", $special_page_ids)."')";
+	                }
+	            }
 		
     		if($sections_only){
     		    $sql .= " AND page_is_section = '1'";
@@ -1276,24 +1279,26 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
                     
                     $pages = array();
                     
-        	        foreach($result as $page_record){
-        	            $child_page = new SmartestPage;
-        	            $child_page->hydrate($page_record);
-        	            $child_page->setDraftMode($this->getDraftMode());
-        	            $pages[$i] = $child_page;
-        	            $i++;
+	        	        foreach($result as $page_record){
+	        	            $child_page = new SmartestPage;
+	        	            $child_page->hydrate($page_record);
+	        	            $child_page->setParentSite($this->getParentSite());
+	        	            $child_page->setDraftMode($this->getDraftMode());
+	        	            $pages[$i] = $child_page;
+	        	            $i++;
         	        }
                     
                     return $pages;
                     
                 }else{
                     
-        	        foreach($result as $page_record){
-        	            $child_page = new SmartestPage;
-        	            $child_page->hydrate($page_record);
-        	            $child_page->setDraftMode($this->getDraftMode());
-        	            $this->_child_pages[$i] = $child_page;
-        	            $i++;
+	        	        foreach($result as $page_record){
+	        	            $child_page = new SmartestPage;
+	        	            $child_page->hydrate($page_record);
+	        	            $child_page->setParentSite($this->getParentSite());
+	        	            $child_page->setDraftMode($this->getDraftMode());
+	        	            $this->_child_pages[$i] = $child_page;
+	        	            $i++;
         	        }
 	    
         	        $this->_child_pages_retrieved = true;
@@ -1321,10 +1326,11 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	}
 	
 	public function getPageChildrenForWeb($sections_only=false){
-	    
+		    
 	    if($this->_child_web_pages === null){
-	        
-    	    $special_page_ids = array_values($this->getParentSite()->getSpecialPageIds()->getParameters());
+		        
+    	    $parent_site = $this->getParentSite();
+    	    $special_page_ids = ($parent_site instanceof SmartestSite) ? array_values($parent_site->getSpecialPageIds()->getParameters()) : array();
 	    
     	    /* if($this->getParentSite()->getTagPageId()){
     	        $special_page_ids[] = $this->getParentSite()->getTagPageId();
@@ -2468,6 +2474,10 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	
 	public function hasPlaceholderDefinition($placeholder_name, $instance_name='default'){
 	    
+        if(!$this->_asset_class_definitions_retrieved){
+            $this->loadAssetClassDefinitions();
+        }
+        
         $key = $placeholder_name.':'.$instance_name;
 	    // return array_key_exists($placeholder_name, $this->_placeholders);
         // print_r(array_keys($this->_placeholders->getParameters()));
@@ -2647,6 +2657,10 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	
 	public function getPlaceholderDefinition($placeholder_name, $instance_name='default'){
 	    
+        if(!$this->_asset_class_definitions_retrieved){
+            $this->loadAssetClassDefinitions();
+        }
+        
         $key = $placeholder_name.':'.$instance_name;
         
 	    if($this->_placeholders->getParameter($key)){
@@ -2665,7 +2679,11 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	}
 	
 	public function getPlaceholderDefinitionNames(){
-	    return array_keys($this->_placeholders);
+        if(!$this->_asset_class_definitions_retrieved){
+            $this->loadAssetClassDefinitions();
+        }
+        
+	    return $this->_placeholders->getParameterNames();
 	}
 	
 	// This function is used during the rendering of a page
@@ -2940,9 +2958,13 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
         
         return $this->_parent_site;
         
-	}
-	
-	public function getTitle(){
+	    }
+
+	    public function setParentSite(SmartestSite $site){
+	        $this->_parent_site = $site;
+	    }
+		
+		public function getTitle(){
         return $this->_properties['title'];
     }
     

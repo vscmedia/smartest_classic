@@ -13,7 +13,7 @@ class SmartestLinkParser{
     
     public static function parseEasyLinks($string){
         
-        $pattern = '/\[(\[(([\w_-]+):)?([^\]\|]+)(\|([^\]]+))?\]|(\+)?(https?:\/\/[^\s\]]+)(\s+([^\]]+))?)\]|\[(@([\w_]+:[\w_]+))(\s+([^\]]+))?\]/i';
+        $pattern = '/\[(\[(([\w_-]+):)?([^\]\|\r\n]+)(\|([^\]\r\n]+))?\]|(\+)?(https?:\/\/[^\s\]]+)(\s+([^\]\r\n]+))?)\]|\[(@([\w_]+:[\w_]+))(\s+([^\]\r\n]+))?\]/i';
         preg_match_all($pattern, $string, $matches, PREG_SET_ORDER);
         
         $links = array();
@@ -22,7 +22,7 @@ class SmartestLinkParser{
             
             foreach($matches as $m){
                 
-                if(isset($m[8])){ // this means link started with 'http', so it is external
+                if(isset($m[8]) && strlen($m[8])){ // this means link started with 'http', so it is external
                     
                     $l = new SmartestParameterHolder("Parsed Link Destination Properties: ".$m[7]);
                     
@@ -39,7 +39,7 @@ class SmartestLinkParser{
                         $l->setParameter('_is_twitter', true);
                     }
                     
-                    if(isset($m[10])){
+                    if(isset($m[10]) && strlen($m[10])){
                         $l->setParameter('text', $m[10]);
                     }else{
                         $l->setParameter('text', $m[8]);
@@ -47,7 +47,7 @@ class SmartestLinkParser{
                     
                     $l->setParameter('format', SM_LINK_FORMAT_URL);
                     
-                }else if(isset($m[11])){
+                }else if(isset($m[11]) && strlen($m[11])){
                     
                     // The link is to a Quince Route, and starts with '@'
                     $l = new SmartestParameterHolder("Parsed Link Destination Properties: ".$m[11]);
@@ -60,7 +60,7 @@ class SmartestLinkParser{
                     $l->setParameter('original', $m[0]);
                     $l->setParameter('namespace', 'quince');
                     
-                    if(isset($m[14])){
+                    if(isset($m[14]) && strlen($m[14])){
                         $l->setParameter('text', $m[14]);
                     }else{
                         $l->setParameter('text', self::LINK_TARGET_URL);
@@ -139,7 +139,7 @@ class SmartestLinkParser{
                         }
                     }
                 
-                    if(isset($m[6])){
+                    if(isset($m[6]) && strlen($m[6])){
                         $l->setParameter('text', $m[6]);
                     }else{
                         $l->setParameter('text', self::LINK_TARGET_TITLE);
@@ -172,7 +172,7 @@ class SmartestLinkParser{
             }
             $l->setParameter('format', SM_LINK_FORMAT_URL);
         
-        }else if(strlen($string) && $string{0} == '@'){
+        }else if(strlen($string) && $string[0] == '@'){
             
             // TODO: Finish integration with Quince's "URL For" functionality
             /* $controller = SmartestPersistentObject::get('controller');

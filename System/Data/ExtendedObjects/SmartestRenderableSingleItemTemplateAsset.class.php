@@ -76,9 +76,9 @@ class SmartestRenderableSingleItemTemplateAsset extends SmartestAsset implements
         
     }
     
-    public function find($id){
+    public function find($id, $site_id='', $include_trash_items=false){
         
-        if(parent::find($id)){
+        if(parent::find($id, $site_id, $include_trash_items)){
             $this->getFile();
             return true;
         }else{
@@ -87,7 +87,7 @@ class SmartestRenderableSingleItemTemplateAsset extends SmartestAsset implements
         
     }
     
-    public function findBy($field, $value, $site_id=''){
+    public function findBy($field, $value, $site_id='', $include_trash_items=false){
 	    
 	    $sql = $this->getRetrievalSqlQuery($value, $field, $site_id);
 	    $h = new SmartestTemplatesLibraryHelper;
@@ -154,7 +154,7 @@ class SmartestRenderableSingleItemTemplateAsset extends SmartestAsset implements
 	    return array('info'=>$info, 'level'=>$level);
 	}
 	
-	public function getContent(){
+	public function getContent($raw=false){
 	    
 	    $file = $this->getFullPathOnDisk();
 	    

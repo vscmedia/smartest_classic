@@ -27,3 +27,8 @@ module:
       url: /smartest/automate
   meta:
     system: true
+  namespaces:
+    ajax:
+      class: DesktopAjax
+      meta:
+        template: _blank.tpl

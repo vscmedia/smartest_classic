@@ -102,13 +102,13 @@ Sorry!The Url you have entered for the new page already exists. </font></td>
 </table> *}
 
 <ul class="tree-parent-node-open" id="tree-root">
-  {defun name="menurecursion" list=$tree}
-    {capture name="foreach_name" assign="foreach_name"}list_{if $page.info.page_id}{$page.info.page_id}{else}0{/if}{/capture}
-    {capture name="foreach_id" assign="foreach_id"}{if $page.info.page_id}{$page.info.page_id}{else}0{/if}{/capture}
-    {foreach from=$list item="page" name=$foreach_name}
-    <li {if $smarty.foreach.$foreach_name.last}class="last"{elseif $smarty.foreach.$foreach_name.first}class="first"{else}class="middle"{/if}>
+  {defun name="menurecursion" list=$tree parent_id=0}
+    {capture name="foreach_name" assign="foreach_name"}list_{$parent_id}{/capture}
+    {capture name="foreach_id" assign="foreach_id"}{$parent_id}{/capture}
+    {foreach from=$list item="page"}
+    <li {if $page@last}class="last"{elseif $page@first}class="first"{else}class="middle"{/if}>
       {if !empty($page.children)}
-      <a href="#" onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}')"><img src="{$domain}Resources/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}" /></a>
+      <a href="#" onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$page@iteration}')"><img src="{$domain}Resources/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$page@iteration}" /></a>
       {else}
       <img src="{$domain}Resources/Images/blank.gif" alt="" border="0" />
       {/if}
@@ -117,13 +117,14 @@ Sorry!The Url you have entered for the new page already exists. </font></td>
         {$page.info.page_title}
       </a>
       {if !empty($page.children)}
-      <ul class="tree-parent-node-open" id="{$foreach_name}_{$smarty.foreach.$foreach_name.iteration}">
-        {fun name="menurecursion" list=$page.children}
+      <ul class="tree-parent-node-open" id="{$foreach_name}_{$page@iteration}">
+        {fun name="menurecursion" list=$page.children parent_id=$page.info.page_id}
       </ul>
       {/if}
     </li>
     {/foreach}
   {/defun}
+  {fun name="menurecursion" list=$tree parent_id=0}
 </ul>
 
 </div>

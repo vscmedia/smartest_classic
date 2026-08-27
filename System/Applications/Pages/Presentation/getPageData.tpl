@@ -111,13 +111,13 @@ function viewLivePage(){
     {capture name="foreach_name" assign="foreach_name"}list_{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
     {capture name="foreach_id" assign="foreach_id"}{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
     
-    {foreach from=$list item="list" name=$foreach_name}
+    {foreach from=$list item="list"}
     
-    {if $smarty.foreach.$foreach_name.iteration == 1 && $foreach_id == 0}
+    {if $list@iteration == 1 && $foreach_id == 0}
     <li><img border="0" src="http://smartest.dev.visudo.net/Resources/Icons/page.png" /> {$page.page_title}</li>
     {else}{/if}
     
-    <li {if $smarty.foreach.$foreach_name.last}class="last"{elseif $smarty.foreach.$foreach_name.first}class="first"{else}class="middle"{/if}>
+    <li {if $list@last}class="last"{elseif $list@first}class="first"{else}class="middle"{/if}>
      <img src="{$domain}Resources/Images/blank.gif" alt="" border="0" />
       <a id="item_{$list.list_name|escape:quotes}" class="option" href="#" onclick="setSelectedItem('{$assetclass.info.assetclass_name|escape:quotes}', '{$assetclass.info.assetclass_name|escape:quotes}', 'fff');" ondblclick="window.location='{$domain}{$section}/getPageAssets?page_id={$assetclass.info.page_webid}&amp;site_id='">		 
   	<img border="0" style="width:16px;height:16px;" src="{$domain}Resources/Icons/published.gif" />
@@ -126,7 +126,8 @@ function viewLivePage(){
       </li>
     {/foreach}
     
-  {/defun}
+	  {/defun}
+	  {fun name="menurecursion" list=$lists}
 
 
 </ul>

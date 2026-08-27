@@ -21,7 +21,7 @@ class SmartestManyToManyQueryForeignTableConstraint implements SmartestManyToMan
     }
     
     public function getEscapedValue(){
-        return mysql_real_escape_string($this->_value);
+        return SmartestMysql::escapeString($this->_value);
     }
     
     public function getOperator(){

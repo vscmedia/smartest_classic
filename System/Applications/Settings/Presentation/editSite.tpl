@@ -61,14 +61,7 @@
 
 <div class="edit-form-row">
   <div class="form-section-label">Logo</div>
-  <select name="site_logo_image_asset_id">
-    <option value="">None</option>
-{foreach from=$logo_assets item="logo_asset"}
-    <option value="{$logo_asset.id}"{if $site.logo_image_asset_id == $logo_asset.id} selected="selected"{/if}>{$logo_asset.label}</option>
-{/foreach}
-  </select><br />
-  <div class="form-section-label"></div>
-  <input type="file" name="site_logo" />
+  {image_select name="site_logo_image_asset_id" value=$site.logo_image_asset_id}
 </div>
 
 <div class="edit-form-row">

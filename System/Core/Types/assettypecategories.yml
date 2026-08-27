@@ -3,6 +3,7 @@ categories:
     id: SM_ASSETTYPECAT_USER_TEXT
     short_name: user_text
     label: "Text & markup"
+    fa_iconname: file-text-o
     has_system_files: true
     importable: true
     sub_categories:
@@ -16,6 +17,7 @@ categories:
     id: SM_ASSETTYPECAT_IMAGES
     short_name: image
     label: "Images"
+    fa_iconname: file-image-o
     has_system_files: true
     importable: true
     gallery: true
@@ -27,6 +29,7 @@ categories:
     id: SM_ASSETTYPECAT_EMBEDDED_MEDIA
     short_name: embedded
     label: "Video &amp; audio"
+    fa_iconname: film
     has_system_files: true
     importable: true
     gallery: true
@@ -34,17 +37,20 @@ categories:
     id: SM_ASSETTYPECAT_BROWSER_INSTRUCTIONS
     short_name: browser_instructions
     label: "Browser instructions"
+    fa_iconname: code
     has_system_files: true
     importable: true
   other:
     id: SM_ASSETTYPECAT_DOWNLOAD_ONLY
     short_name: other
     label: "Things that need to be downloaded"
+    fa_iconname: download
     has_system_files: false
     importable: true
   templates:
     id: SM_ASSETTYPECAT_TEMPLATES
     short_name: templates
     label: "Dynamic HTML-based templates"
+    fa_iconname: file-code-o
     has_system_files: true
     importable: false

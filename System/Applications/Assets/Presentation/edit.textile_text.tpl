@@ -22,7 +22,7 @@ var addAttachmentTag = function(attachmentName){
     <div class="special-box">
       <span class="heading">Language</span>
       <select name="asset_language">
-        <option value="">{$lang.label}</option>
+        <option value=""></option>
     {foreach from=$_languages item="lang" key="langcode"}
         <option value="{$langcode}"{if $asset.language == $langcode} selected="selected"{/if}>{$lang.label}</option>
     {/foreach}
@@ -56,7 +56,7 @@ var addAttachmentTag = function(attachmentName){
 <script type="text/javascript">
 {literal}
 CM = CodeMirror.fromTextArea($('tpl_textArea'), {
-    mode: "textile",
+    mode: "smartest-textile",
     lineWrapping: true
   });
 {/literal}

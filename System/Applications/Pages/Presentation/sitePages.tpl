@@ -31,21 +31,19 @@ function viewPage(){
 </form>
 
 <ul class="tree-parent-node-open" id="tree-root">
-  {defun name="menurecursion" list=$tree}
+  {defun name="menurecursion" list=$tree parent_id=0}
     
-    {capture name="foreach_name" assign="foreach_name"}list_{if $page.info.id}{$page.info.id}{else}0{/if}{/capture}
-    {capture name="foreach_id" assign="foreach_id"}{if $page.info.id}{$page.info.id}{else}0{/if}{/capture}
-    {foreach from=$list item="page" name=$foreach_name}
+    {foreach from=$list item="page"}
     
-    <li {if $smarty.foreach.$foreach_name.last}class="last"{elseif $smarty.foreach.$foreach_name.first}class="first"{else}class="middle"{/if}>
+    <li {if $page@last}class="last"{elseif $page@first}class="first"{else}class="middle"{/if}>
       
       {if !empty($page.child_items) || !empty($page.children)}
-      <a href="javascript:toggleParentNodeFromOpenState('{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}')"><img src="{$domain}Resources/System/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}" /></a>
+      <a href="javascript:toggleParentNodeFromOpenState('{$parent_id}_{$page@iteration}')"><img src="{$domain}Resources/System/Images/open.gif" alt="" border="0" id="toggle_{$parent_id}_{$page@iteration}" /></a>
       {else}
       <img src="{$domain}Resources/System/Images/blank.gif" alt="" border="0" />
       {/if}
       
-      <a id="item_{$page.info.webid}" class="option" href="#" onclick="setSelectedItem('{$page.info.webid}', '{$page.info.title|escape:quotes}', '{if $page.info.type == 'ITEMCLASS'}meta-page{else}static-page{/if}');return false;" ondblclick="window.location='{$domain}{$section}/openPage?page_id={$page.info.webid}&amp;site_id={$content.data[0].info.site_id}'">		 
+      <a id="item_{$page.info.webid}" class="option" href="#" onclick="setSelectedItem('{$page.info.webid}', '{$page.info.title|escape:quotes}', '{if $page.info.type == 'ITEMCLASS'}meta-page{else}static-page{/if}');return false;" ondblclick="window.location='{$domain}{$section}/openPage?page_id={$page.info.webid}&amp;site_id={$site_id}'">		 
         {if $page.info.type == 'ITEMCLASS'}<i class="fa fa-cube{if $page.info.is_published == "TRUE"}{else} not-live{/if}"></i>{elseif $page.info.is_section == '1'}<i class="flaticon solid menu-list-4{if $page.info.is_published == "TRUE"}{else} not-live{/if}"></i>{else}{if $home_page.id == $page.info.id}<i class="flaticon solid earth-1{if $page.info.is_published == "TRUE"}{else} not-live{/if}"></i>{else}<i class="flaticon solid document-3{if $page.info.is_published == "TRUE"}{else} not-live{/if}"></i>{/if}{/if}
         <span>{$page.info.title}</span>
         {* <span style="color:#aaa">{if $page.info.is_published == "TRUE"}(published){else}(not published){/if}</span> *}
@@ -53,7 +51,7 @@ function viewPage(){
       
       {if !empty($page.children)}
       {* if !empty($page.child_items) || !empty($page.children) *}
-          <ul class="tree-parent-node-open" id="{$foreach_name}_{$smarty.foreach.$foreach_name.iteration}">
+          <ul class="tree-parent-node-open" id="list_{$parent_id}_{$page@iteration}">
            {*   {foreach from=$page.child_items item="child_item" name="child_item_list" }
             <li {if $smarty.foreach.child_item_list.last && empty($page.children)}class="last"{elseif $smarty.foreach.child_item_list.first}class="first"{else}class="middle"{/if}>
             
@@ -64,13 +62,14 @@ function viewPage(){
             {/foreach} *}
       
       {* <ul class="tree-parent-node-open" id="{$foreach_name}_{$smarty.foreach.$foreach_name.iteration}"> *}
-        {fun name="menurecursion" list=$page.children}
+        {fun name="menurecursion" list=$page.children parent_id=$page.info.id}
       </ul>
       {/if}
       
     </li>
     {/foreach}
   {/defun}
+  {fun name="menurecursion" list=$tree parent_id=0}
 </ul>
 
 </div>

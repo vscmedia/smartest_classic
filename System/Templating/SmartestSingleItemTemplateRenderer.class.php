@@ -13,11 +13,10 @@ class SmartestSingleItemTemplateRenderer extends SmartestEngine{
         parent::__construct($pid);
         $this->assign('domain', $this->_request_data->g('domain'));
         
-        $this->plugins_dir[] = SM_ROOT_DIR."System/Templating/Plugins/WebPageBuilder/";
-	    $this->left_delimiter = '<'.'?sm:';
-		$this->right_delimiter = ':?'.'>';
+        $this->addPluginDirectory(SM_ROOT_DIR."System/Templating/Plugins/WebPageBuilder/");
+	    $this->setSmartestDelimiters('<'.'?sm:', ':?'.'>');
         
-        $this->caching = false;
+        $this->setSmartestCaching(false);
         
     }
     

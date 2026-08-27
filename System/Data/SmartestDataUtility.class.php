@@ -24,7 +24,7 @@ class SmartestDataUtility{
     }
     
     public function getModels($simple = false, $site_id=null, $force_regenerate=false, $top_level=true){
-	    
+
 	    if(is_numeric($site_id)){
 	        $cache_name = 'models_query_site_'.$site_id;
 	        $models_holder_key = $site_id;
@@ -91,7 +91,7 @@ class SmartestDataUtility{
 	}
     
     public function getVisibleModels($site_id=null){
-        
+
         $sql = "SELECT * FROM ItemClasses WHERE itemclass_type='SM_ITEMCLASS_MODEL' AND itemclass_is_hidden='0'";
         
 		if(is_numeric($site_id)){
@@ -198,10 +198,35 @@ class SmartestDataUtility{
 			$model_objects[] = $m;
 		}
 		
-		return $model_objects;
+	    return $model_objects;
 	    
 	}
-	
+
+    public function sharedModelExistsWithName($singular_name){
+
+        return $this->sharedModelExistsWithFieldValue('itemclass_name', $singular_name);
+
+    }
+
+    public function sharedModelExistsWithPluralName($plural_name){
+
+        return $this->sharedModelExistsWithFieldValue('itemclass_plural_name', $plural_name);
+
+    }
+
+    protected function sharedModelExistsWithFieldValue($field, $value){
+
+        if(!in_array($field, array('itemclass_name', 'itemclass_plural_name'), true)){
+            return false;
+        }
+
+        $sql = "SELECT itemclass_id FROM ItemClasses WHERE itemclass_type='SM_ITEMCLASS_MODEL' AND itemclass_shared='1' AND LOWER(".$field.")=LOWER(:value) LIMIT 1";
+        $result = $this->database->preparedQuery($sql, array('value'=>(string) $value));
+
+        return is_array($result) && count($result) > 0;
+
+    }
+
 	public function getModelPluralNamesLowercase($site_id='', $reverse=false){
 	    
 	    $models = $this->getModels(false, $site_id);
@@ -523,7 +548,7 @@ class SmartestDataUtility{
 	
 	static function isValidPropertyName($string, $model=''){
 	    
-	    if(strlen($string) < 3 || is_numeric($string{0} || in_array(SmartestStringHelper::toVarName($string), $GLOBALS['reserved_keywords']))){
+	    if(strlen($string) < 3 || is_numeric($string[0]) || in_array(SmartestStringHelper::toVarName($string), $GLOBALS['reserved_keywords'])){
 	        return false;
 	    }else{
 	        return true;
@@ -546,8 +571,14 @@ class SmartestDataUtility{
 	
 	public static function getDataTypesXmlData(){
 	    
+	    $yml_file_path = SM_ROOT_DIR.'System/Core/Types/datatypes.yml';
 	    $file_path = SM_ROOT_DIR.'System/Core/Types/datatypes.xml';
 	    
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['type'];
+	    }
+
 	    if(SmartestCache::hasData('datatypes_xml_file_hash', true)){
 	        
 	        $old_hash = SmartestCache::load('datatypes_xml_file_hash', true);
@@ -780,7 +811,17 @@ class SmartestDataUtility{
     	    $types = $data['type'];
 	    
     	    foreach($types as $id=>$raw_type){
-	        
+
+                foreach(array('editable', 'source_editable', 'attachable', 'captionable', 'parsable', 'smarty_render', 'convert_to_smarty', 'hidden') as $flag){
+                    if(!array_key_exists($flag, $types[$id])){
+                        $types[$id][$flag] = false;
+                    }
+                }
+
+                if(isset($types[$id]['storage']) && is_array($types[$id]['storage']) && !array_key_exists('location', $types[$id]['storage'])){
+                    $types[$id]['storage']['location'] = '';
+                }
+
     	        if(isset($types[$id]['param'])){
                     if(isset($types[$id]['param']['name'])){
                         $types[$id]['param'] = array($types[$id]['param']);
@@ -856,9 +897,15 @@ class SmartestDataUtility{
 	
 	public static function getAssetClassTypesXmlData(){
 	    
+        $yml_file_path = SM_ROOT_DIR.'System/Core/Types/placeholdertypes.yml';
         $file_path = SM_ROOT_DIR.'System/Core/Types/placeholdertypes.xml';
 	    // $yaml_data = SmartestYamlHelper::create(SmartestXmlHelper::loadFile($file_path));
         
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['type'];
+	    }
+
 	    if(SmartestCache::hasData('placeholdertypes_xml_file_hash', true)){
 	        
 	        $old_hash = SmartestCache::load('placeholdertypes_xml_file_hash', true);

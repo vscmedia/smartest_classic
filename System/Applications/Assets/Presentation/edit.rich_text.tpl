@@ -6,7 +6,7 @@
     <div class="special-box">
       <span class="heading">Language</span>
       <select name="asset_language">
-        <option value="">{$lang.label}</option>
+        <option value=""></option>
     {foreach from=$_languages item="lang" key="langcode"}
         <option value="{$langcode}"{if $asset.language == $langcode} selected="selected"{/if}>{$lang.label}</option>
     {/foreach}
@@ -22,24 +22,26 @@
     
     <div id="textarea-holder" style="width:100%">
         <textarea name="asset_content" id="tpl_textArea" wrap="virtual" style="width:100%;padding:0">{$textfragment_content}</textarea>
-        <span class="form-hint">Editor powered by TinyMCE 4</span>
+        <span class="form-hint">Editor powered by TinyMCE 8</span>
         <span id="wordcount"></span>
         <div class="buttons-bar">
             {save_buttons}
         </div>
-    <div>
-        
+    </div>
 </form>
 
-<!--<script language="javascript" type="text/javascript" src="{$domain}Resources/System/Javascript/tiny_mce/tiny_mce.js"></script>-->
-<script src="{$domain}Resources/System/Javascript/tinymce4/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
 
 <script language="javascript" type="text/javascript">
+
+var smartestTinyMceAssetId = "{$asset.id}";
 
 {literal}
 
 tinymce.init({
     selector: "#tpl_textArea",
+    smartest_asset_id: smartestTinyMceAssetId,
     plugins: [
         "advlist autolink lists charmap print preview anchor",
         "searchreplace visualblocks code fullscreen",

@@ -333,7 +333,7 @@ function XML_RPC_ee($parser, $name)
         } else {
             // we have an I4, INT or a DOUBLE
             // we must check that only 0123456789-.<space> are characters here
-            if (!ereg("^[+-]?[0123456789 \t\.]+$", $XML_RPC_xh[$parser]['ac'])) {
+            if (!preg_match("/^[+-]?[0123456789 \t\.]+$/", $XML_RPC_xh[$parser]['ac'])) {
                 XML_RPC_Base::raiseError('Non-numeric value received in INT or DOUBLE',
                                          XML_RPC_ERROR_NON_NUMERIC_FOUND);
                 $XML_RPC_xh[$parser]['st'] .= 'XML_RPC_ERROR_NON_NUMERIC_FOUND';
@@ -1189,8 +1189,8 @@ class XML_RPC_Message extends XML_RPC_Base
 
         // see if we got an HTTP 200 OK, else bomb
         // but only do this if we're using the HTTP protocol.
-        if (ereg('^HTTP', $data) &&
-            !ereg('^HTTP/[0-9\.]+ 200 ', $data)) {
+        if (preg_match('/^HTTP/', $data) &&
+            !preg_match('/^HTTP\/[0-9\.]+ 200 /', $data)) {
                 $errstr = substr($data, 0, strpos($data, "\n") - 1);
                 error_log('HTTP error, got response: ' . $errstr);
                 $r = new XML_RPC_Response(0, $XML_RPC_err['http_error'],
@@ -1314,7 +1314,7 @@ class XML_RPC_Value extends XML_RPC_Base
         }
         $typeof = $XML_RPC_Types[$type];
         if ($typeof != 1) {
-            $this->raiseError("Not a scalar type (${typeof})",
+            $this->raiseError("Not a scalar type ({$typeof})",
                               XML_RPC_ERROR_INVALID_TYPE);
             return 0;
         }
@@ -1382,11 +1382,10 @@ class XML_RPC_Value extends XML_RPC_Base
      */
     function dump($ar)
     {
-        reset($ar);
-        while (list($key, $val) = each($ar)) {
+        foreach ($ar as $key => $val) {
             echo "$key => $val<br>";
             if ($key == 'array') {
-                while (list($key2, $val2) = each($val)) {
+                foreach ($val as $key2 => $val2) {
                     echo "-- $key2 => $val2<br>";
                 }
             }
@@ -1429,9 +1428,8 @@ class XML_RPC_Value extends XML_RPC_Base
         case 3:
             // struct
             $rs .= "<struct>\n";
-            reset($val);
-            while (list($key2, $val2) = each($val)) {
-                $rs .= "<member><name>${key2}</name>\n";
+            foreach ($val as $key2 => $val2) {
+                $rs .= "<member><name>{$key2}</name>\n";
                 $rs .= $this->serializeval($val2);
                 $rs .= "</member>\n";
             }
@@ -1450,16 +1448,16 @@ class XML_RPC_Value extends XML_RPC_Base
         case 1:
             switch ($typ) {
             case $XML_RPC_Base64:
-                $rs .= "<${typ}>" . base64_encode($val) . "</${typ}>";
+                $rs .= "<{$typ}>" . base64_encode($val) . "</{$typ}>";
                 break;
             case $XML_RPC_Boolean:
-                $rs .= "<${typ}>" . ($val ? '1' : '0') . "</${typ}>";
+                $rs .= "<{$typ}>" . ($val ? '1' : '0') . "</{$typ}>";
                 break;
             case $XML_RPC_String:
-                $rs .= "<${typ}>" . htmlspecialchars($val). "</${typ}>";
+                $rs .= "<{$typ}>" . htmlspecialchars($val). "</{$typ}>";
                 break;
             default:
-                $rs .= "<${typ}>${val}</${typ}>";
+                $rs .= "<{$typ}>{$val}</{$typ}>";
             }
         }
         return $rs;
@@ -1480,8 +1478,9 @@ class XML_RPC_Value extends XML_RPC_Base
     {
         $rs = '';
         $ar = $o->me;
-        reset($ar);
-        list($typ, $val) = each($ar);
+        foreach ($ar as $typ => $val) {
+            break;
+        }
         $rs .= '<value>';
         $rs .= $this->serializedata($typ, $val);
         $rs .= "</value>\n";
@@ -1509,7 +1508,15 @@ class XML_RPC_Value extends XML_RPC_Base
      */
     function structeach()
     {
-        return each($this->me['struct']);
+        $key = key($this->me['struct']);
+        if ($key === null) {
+            return false;
+        }
+
+        $value = current($this->me['struct']);
+        next($this->me['struct']);
+
+        return array(1 => $value, 'value' => $value, 0 => $key, 'key' => $key);
     }
 
     /**
@@ -1519,8 +1526,9 @@ class XML_RPC_Value extends XML_RPC_Base
         // UNSTABLE
         global $XML_RPC_BOOLEAN, $XML_RPC_Base64;
 
-        reset($this->me);
-        list($a, $b) = each($this->me);
+        foreach ($this->me as $a => $b) {
+            break;
+        }
 
         // contributed by I Sofer, 2001-03-24
         // add support for nested arrays to scalarval
@@ -1554,8 +1562,9 @@ class XML_RPC_Value extends XML_RPC_Base
     function scalarval()
     {
         global $XML_RPC_Boolean, $XML_RPC_Base64;
-        reset($this->me);
-        list($a, $b) = each($this->me);
+        foreach ($this->me as $a => $b) {
+            break;
+        }
         return $b;
     }
 
@@ -1565,8 +1574,9 @@ class XML_RPC_Value extends XML_RPC_Base
     function scalartyp()
     {
         global $XML_RPC_I4, $XML_RPC_Int;
-        reset($this->me);
-        list($a, $b) = each($this->me);
+        foreach ($this->me as $a => $b) {
+            break;
+        }
         if ($a == $XML_RPC_I4) {
             $a = $XML_RPC_Int;
         }
@@ -1586,8 +1596,9 @@ class XML_RPC_Value extends XML_RPC_Base
      */
     function arraysize()
     {
-        reset($this->me);
-        list($a, $b) = each($this->me);
+        foreach ($this->me as $a => $b) {
+            break;
+        }
         return sizeof($b);
     }
 }
@@ -1635,7 +1646,7 @@ function XML_RPC_iso8601_encode($timet, $utc = 0) {
  */
 function XML_RPC_iso8601_decode($idate, $utc = 0) {
     $t = 0;
-    if (ereg('([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})', $idate, $regs)) {
+    if (preg_match('/([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})/', $idate, $regs)) {
         if ($utc) {
             $t = gmmktime($regs[4], $regs[5], $regs[6], $regs[2], $regs[3], $regs[1]);
         } else {

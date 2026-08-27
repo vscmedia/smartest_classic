@@ -20,7 +20,7 @@ function smarty_function_textarea_input($params, &$smartest_engine){
                 $input->setParameter('value', new SmartestString($params['value']));
             }
         }else{
-            $input->setParameter('value', null);
+            $input->setParameter('value', new SmartestString(''));
         }
         
         $input->setParameter('placeholder', isset($params['placeholder']) ? new SmartestString($params['placeholder']) : null);

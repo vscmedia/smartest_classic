@@ -1,6 +1,10 @@
 <?php
 
 function smarty_block_help($params, $content, &$smarty, &$repeat){
+
+    if($repeat){
+        return '';
+    }
     
     $id = 'helplink-'.SmartestStringHelper::random(6);
     

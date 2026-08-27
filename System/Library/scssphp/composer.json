@@ -1,0 +1,11 @@
+{
+  "require": {
+    "scssphp/scssphp": "2.1.0"
+  },
+  "config": {
+    "platform": {
+      "php": "8.4.24"
+    },
+    "sort-packages": true
+  }
+}

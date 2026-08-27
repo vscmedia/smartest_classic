@@ -22,13 +22,12 @@
         <input type="button" onclick="cancelForm();" value="Cancel" />
         {/if}
       </div>
-    <div>
-      
+    </div>
       <script type="text/javascript">
       {literal}
       var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
           lineNumbers: true,
-          mode: "htmlmixed",
+          mode: "smartest-htmlmixed",
           lineWrapping: true
         });
       {/literal}

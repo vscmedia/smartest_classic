@@ -1,7 +1,6 @@
 <?php
 
 mb_http_output("UTF-8");
-mb_http_input("UTF-8");
 mb_internal_encoding("UTF-8");
 
 require SM_ROOT_DIR.'System/Data/SmartestCache.class.php';
@@ -12,10 +11,6 @@ require SM_ROOT_DIR.'System/Base/SmartestErrorStack.class.php';
 require SM_ROOT_DIR.'System/Data/SmartestDatabase.class.php';
 require SM_ROOT_DIR.'System/Data/SmartestDataUtility.class.php';
 require SM_ROOT_DIR.'System/Data/SmartestObject.class.php';
-
-require 'PEAR.php';
-require 'XML/Unserializer.php';
-require 'XML/Serializer.php';
 
 class SmartestResponse{
     
@@ -57,9 +52,18 @@ class SmartestResponse{
 	
 	// User messages holder - must be ousite controller object
 	public static $user_messages = array();
+
+    public static function debugTrace($message){
+
+        if(defined('SM_ROOT_DIR') && is_writable(SM_ROOT_DIR.'System/Logs/')){
+            error_log(date('Y-m-d H:i:s').' '.$message."\n", 3, SM_ROOT_DIR.'System/Logs/smartest_debug.log');
+        }
+
+    }
 	
 	public function __construct(){
-	    
+		    
+        self::debugTrace('construct: start cwd='.getcwd());
 	    $this->_error_stack = new SmartestErrorStack();
         SmartestInfo::$cache_last_mtime = (time() - 259200); // three days ago
 	    
@@ -73,12 +77,15 @@ class SmartestResponse{
 	    
 	    try{
             SmartestHelper::loadAll();
+            self::debugTrace('construct: helpers loaded');
         }catch(SmartestException $e){
+            self::debugTrace('construct: helper load error '.$e->getMessage());
             $this->error($e->getMessage());
             $this->_error_stack->display();
         }
-        
+	        
         SmartestDataObjectHelper::loadInterfaces();
+        self::debugTrace('construct: interfaces loaded');
         
         SmartestFileSystemHelper::include_group(
 
@@ -98,12 +105,14 @@ class SmartestResponse{
             'System/Base/Exceptions/SmartestOEmbedUrlNotSupportedException.class.php'
 
         );
+        self::debugTrace('construct: core group included');
         
         // Temporary
         include_once(SM_ROOT_DIR.'Library/SimplePie/autoloader.php');
         include_once(SM_ROOT_DIR.'Library/SimplePie/idn/idna_convert.class.php');
         
         SmartestDataUtility::loadBasicTypes();
+        self::debugTrace('construct: basic types loaded');
         
         $td = new SmartestParameterHolder("Smartest System Response Times");
     	$td->setParameter('start_time', microtime(true));
@@ -119,20 +128,25 @@ class SmartestResponse{
             'System/Data/ExtendedTypes/SmartestAssetClassDefinitionsHolder.class.php'
 
         );
+        self::debugTrace('construct: extended types included');
         
         SmartestFileSystemHelper::include_group(
             'System/Response/SmartestLog.class.php',
         	'System/Response/SmartestLogType.class.php'
         );
-        
+        self::debugTrace('construct: log classes included');
+	        
         try{
-            
+	            
             SmartestInstallationStatusHelper::checkStatus();
-            
+            self::debugTrace('construct: install status ok');
+	            
             // If we get this far, Smartest is installed, so test the database connection
             try{
     	        SmartestDatabase::testConnection('SMARTEST');
+                self::debugTrace('construct: database test ok');
     	    }catch(SmartestDatabaseException $e){
+                self::debugTrace('construct: database test failed '.$e->getMessage());
                 $error_message = $e->getMessage();
                 include SM_ROOT_DIR.'System/Response/ErrorPages/database_error.php';
                 die;
@@ -142,11 +156,14 @@ class SmartestResponse{
     		try{
     		    $this->database = SmartestDatabase::getInstance('SMARTEST');
     			SmartestPersistentObject::set('db:main', $this->database);
+                self::debugTrace('construct: database instance stored');
     		} catch(SmartestException $e){
+                self::debugTrace('construct: database instance failed '.$e->getMessage());
     		    $this->errorFromException($e);
     	    }
-            
+	            
 	    }catch(SmartestNotInstalledException $e){
+            self::debugTrace('construct: not installed status '.$e->getInstallationStatus());
 	        // If we get here, Smartest isn't installed, so show installer
 	        if(!class_exists('SmartestInstaller')){
 	            require SM_ROOT_DIR.'System/Install/SmartestInstaller.class.php';
@@ -180,8 +197,8 @@ class SmartestResponse{
         	'System/Data/SmartestRandomNumberGenerator.class.php',
             'System/Data/SmartestTemplateNumberCalculator.class.php',
         	'System/Base/SmartestSiteActions.class.php',
-        	'System/Data/SmartestPageRenderingDataRequestHandler.class.php',
-        	'System/Data/SmartestPageNavigationDataRequestHandler.class.php',
+            'System/Data/SmartestPageRenderingDataRequestHandler.class.php',
+            'System/Data/SmartestPageNavigationDataRequestHandler.class.php',
             'System/Data/SmartestFrontEndSystemInfoQueryService.class.php',
         	'System/Templating/SmartestBasicRenderer.class.php',
         	'System/Templating/SmartestSingleItemTemplateRenderer.class.php',
@@ -191,14 +208,17 @@ class SmartestResponse{
         	'System/Response/SmartestFilter.class.php'
 
         );
+        self::debugTrace('construct: main runtime group included');
         
         // General system information
     	$sd = SmartestYamlHelper::fastLoad(SmartestInfo::$system_info_file);
+        self::debugTrace('construct: system info loaded');
     	// Constants need to be phased out as they are slow!!
 		// define('SM_INFO_REVISION_NUMBER', $sd['system']['info']['revision']);
 		SmartestInfo::$revision = $sd['system']['info']['revision'];
         // define('SM_INFO_VERSION_NUMBER', $sd['system']['info']['version']);
         SmartestInfo::$version = $sd['system']['info']['version'];
+        self::debugTrace('construct: system info assigned');
         /* define('SM_INFO_BUILD_NUMBER', $sd['system']['info']['build']);
         SmartestInfo::$build = $sd['system']['info']['build']; */
         
@@ -206,9 +226,13 @@ class SmartestResponse{
 	        
 	        // load database connection settings
             $c = SmartestDatabase::readConfiguration('SMARTEST');
+            self::debugTrace('construct: database config read');
             $d = new SmartestDataObjectHelper($c);
+            self::debugTrace('construct: object helper created');
             $d->loadBasicObjects();
+            self::debugTrace('construct: basic objects loaded');
             $d->loadExtendedObjects();
+            self::debugTrace('construct: extended objects loaded');
             
             SmartestFileSystemHelper::include_group(
 
@@ -216,8 +240,10 @@ class SmartestResponse{
             	'Library/API/myUser.class.php'
 
             );
+            self::debugTrace('construct: public API group included');
             
 	    }catch(SmartestException $e){
+    		self::debugTrace('construct: object model setup failed '.$e->getMessage());
     		$this->_error_stack->recordError($e, false);
     	}
     	
@@ -357,7 +383,8 @@ class SmartestResponse{
     }
 	
 	public function build(){
-	    
+		    
+        self::debugTrace('build: start');
         SmartestHelper::loadAllLaterFiles();
         
         // Start Application Controller
@@ -365,6 +392,7 @@ class SmartestResponse{
 	    
 	    try{
 	        $this->_controller->prepare();
+            self::debugTrace('build: prepared '.$this->_controller->getCurrentRequest()->getModule().'/'.$this->_controller->getCurrentRequest()->getAction().' request='.$this->_controller->getCurrentRequest()->getRequestString());
 	    }catch(QuinceException $e){
 	        $this->_error_stack->recordError(new SmartestException('Quince error: '.$e->getMessage()), false);
 	    }
@@ -457,11 +485,14 @@ class SmartestResponse{
 	    
     	    // Make sure site is always looked up
     	    if($this->isWebsitePage()){
-		        
+                $use_page_site_lookup = $this->shouldUsePageSiteLookup($params);
+			        
                 if(!isset($GLOBALS['_site']) || !($GLOBALS['_site'] instanceof SmartestSite)){
-                    
-        		    if($this->_controller->getCurrentRequest()->getAction() == 'renderEditableDraftPage'){
-        		        if($site = $h->getSiteByPageWebId($_GET['page_id'])){
+	                    
+        		    if($use_page_site_lookup){
+                        $page_webid = $params->hasParameter('page_id') ? $params->getParameter('page_id') : (isset($_GET['page_id']) ? $_GET['page_id'] : null);
+
+        		        if($page_webid && ($site = $h->getSiteByPageWebId($page_webid))){
         	                $GLOBALS['_site'] = $site;
         	            }else{
         	                // unknown page id
@@ -473,10 +504,14 @@ class SmartestResponse{
         	                // unknown site domain
         	            }
         	        }
-                    
+	                    
                 }
-                
-                if($GLOBALS['_site'] instanceof SmartestSite){
+	                
+                if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+                    if(isset($use_page_site_lookup) && $use_page_site_lookup){
+                        $this->defineCmsPageSiteConstants($GLOBALS['_site']);
+                    }
+
                     if(is_file($GLOBALS['_site']->getDirectory().'Library/Actions/SiteActions.class.php')){
                         include $GLOBALS['_site']->getDirectory().'Library/Actions/SiteActions.class.php';
                         $actions_object = new SiteActions;
@@ -498,7 +533,7 @@ class SmartestResponse{
             $e->redirect();
         }
         
-        if($GLOBALS['_site'] instanceof SmartestSite){
+        if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
             define('SM_PROTOCOL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) ? 'https://' : 'http://');
             define('SM_SITE_HOST', $GLOBALS['_site']->getDomain());
             define('SM_QUINCE_DOMAIN', $this->_controller->getCurrentRequest()->getDomain());
@@ -523,16 +558,18 @@ class SmartestResponse{
 		}
         
         // Start Smarty
-	    if($this->isSystemClass()){
+        $current_request = $this->_controller->getCurrentRequest();
+
+	    if(
+            (isset($GLOBALS['user_action_has_page']) && $GLOBALS['user_action_has_page'] == true)
+            || ($current_request->getModule() == 'website' && in_array($current_request->getAction(), array('renderPageFromUrl', 'renderPageFromId', 'renderEditableDraftPage', 'pageFragment')))
+        ){
+	        $templateLayerContext = 'WebPageBuilder';
+	    }else if($this->isSystemClass()){
 		    $templateLayerContext = 'InterfaceBuilder';
 		}else{
-		    if(isset($GLOBALS['user_action_has_page']) && $GLOBALS['user_action_has_page'] == true){
-		        // echo "web page";
-		        $templateLayerContext = 'WebPageBuilder';
-	        }else{
-	            // echo "not a web page";
-	            $templateLayerContext = 'UserAppBuilder';
-	        }
+            // echo "not a web page";
+            $templateLayerContext = 'UserAppBuilder';
 		}
 		
 		$smarty_manager = new SmartyManager($templateLayerContext);
@@ -560,8 +597,10 @@ class SmartestResponse{
 	    
 	    SmartestHelper::loadApplicationHelpers();
         // Push controller and execute the user action
-		try{
+	    try{
+            self::debugTrace('build: dispatching '.$this->_controller->getCurrentRequest()->getModule().'/'.$this->_controller->getCurrentRequest()->getAction());
 		    $this->_controller->dispatch(Quince::CURRENT_URL, false);
+            self::debugTrace('build: dispatched '.$this->_controller->getCurrentRequest()->getModule().'/'.$this->_controller->getCurrentRequest()->getAction());
 		}catch(QuinceException $e){
             $this->errorFromException(new SmartestException('Quince error: '.$e->getMessage()));
 		}catch(SmartestException $e){
@@ -648,7 +687,35 @@ class SmartestResponse{
         }
 	    
 	}
-	
+
+    protected function shouldUsePageSiteLookup($params){
+
+        $action = $this->_controller->getCurrentRequest()->getAction();
+
+        if($action == 'renderEditableDraftPage'){
+            return true;
+        }
+
+        if($action == 'pageFragment' && $params->hasParameter('draft')){
+            return SmartestStringHelper::toRealBool($params->getParameter('draft'));
+        }
+
+        return false;
+
+    }
+
+    protected function defineCmsPageSiteConstants($site){
+
+        if(!defined('SM_CMS_PAGE_SITE_ID')){
+            define('SM_CMS_PAGE_SITE_ID', $site->getId());
+        }
+
+        if(!defined('SM_CMS_PAGE_SITE_UNIQUE_ID')){
+            define('SM_CMS_PAGE_SITE_UNIQUE_ID', $site->getUniqueId());
+        }
+
+    }
+		
 	protected function isSystemClass(){
 		
 		if($this->_controller->getCurrentRequest()->getMeta('system')){
@@ -681,6 +748,14 @@ class SmartestResponse{
 		define('SM_CONTROLLER_MODULE_PRES_DIR', $this->_controller->getCurrentRequest()->getMeta('_module_dir').'Presentation/');
 		$sc = SmartestYamlHelper::fastLoad(SmartestInfo::$system_info_file);
 		define('SM_SYSTEM_SYS_TEMPLATES_DIR', $sc['system']['places']['templates_dir']);
+
+        if(method_exists($this->_smarty, 'addTrustedTemplateDirectory')){
+            $this->_smarty->addTrustedTemplateDirectory(SM_CONTROLLER_MODULE_PRES_DIR);
+            if(strlen($subfolder)){
+                $this->_smarty->addTrustedTemplateDirectory(SM_CONTROLLER_MODULE_PRES_DIR.$subfolder);
+            }
+            $this->_smarty->addTrustedTemplateDirectory(SM_ROOT_DIR.SM_SYSTEM_SYS_TEMPLATES_DIR);
+        }
 		
         if($this->_controller->getCurrentRequest()->hasMeta('presentation')){
             $this->_ui_template = (strlen($this->_controller->getCurrentRequest()->getMeta('presentation'))) ? $this->_controller->getCurrentRequest()->getMeta('_module_dir').'Presentation/'.$this->_controller->getCurrentRequest()->getMeta('presentation') : null;
@@ -746,6 +821,9 @@ class SmartestResponse{
 	
 	public function finish(){
 	    
+        self::debugTrace('finish: start display='.(int) $this->_display_enabled);
+        self::debugTrace('finish: main_template='.$this->_main_template.' ui_template='.$this->_ui_template);
+	    
 	    // Pass user messages to Smarty
 	    if($this->_controller->getCurrentRequest()->getUserActionObject() instanceof SmartestSystemApplication){
 		    $this->_smarty->assign('sm_messages', self::$user_messages);
@@ -756,6 +834,8 @@ class SmartestResponse{
 	    
         if($this->_display_enabled){
 	        echo $this->fetch();
+        }else{
+            $this->logRenderDiagnostic('Display disabled for '.$this->_controller->getCurrentRequest()->getModule().'/'.$this->_controller->getCurrentRequest()->getAction());
         }
         
         exit;
@@ -774,19 +854,41 @@ class SmartestResponse{
 	}
 	
 	private function getUnfilteredOutput($fragment_only=false){
-		
+		$output = '';
+		$template = $fragment_only ? $this->_ui_template : $this->_main_template;
+        self::debugTrace('getUnfilteredOutput: template='.$template.' fragment='.(int) $fragment_only.' exists='.(int) is_file($template));
+
 	    try{
 	        if($fragment_only){
 		        $output = $this->_smarty->fetch($this->_ui_template);
 	        }else{
 	            $output = $this->_smarty->fetch($this->_main_template);
 	        }
+            self::debugTrace('getUnfilteredOutput: fetched bytes='.strlen((string) $output));
         }catch (SmartestException $e){
             $this->errorFromException($e);
+            $this->logRenderDiagnostic('SmartestException while fetching template '.$template.': '.$e->getMessage());
+        }catch (Throwable $e){
+            $this->errorFromException(new SmartestException($e->getMessage(), SM_ERROR_TMPL));
+            $this->logRenderDiagnostic('Throwable while fetching template '.$template.': '.$e->getMessage());
+		}
+
+        if($output === ''){
+            $this->logRenderDiagnostic('Empty output from template '.$template.'. Interface template: '.$this->_ui_template);
         }
 		
 		return $output;
 	}
+
+    private function logRenderDiagnostic($message){
+
+        try{
+            SmartestLog::getInstance('renderer')->log($message, SmartestLog::WARNING, -1);
+        }catch(Throwable $e){
+            error_log(date('Y-m-d H:i:s').': '.$message."\n", 3, SM_ROOT_DIR.'System/Logs/render_diagnostics.log');
+        }
+
+    }
 	
 	private function executeFilterChain($html){
         

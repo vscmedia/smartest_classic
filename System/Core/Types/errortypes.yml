@@ -1,0 +1,24 @@
+# Generated from errortypes.xml during PHP 8 migration.
+---
+type:
+  SM_ERROR_UNKNOWN:
+    id: SM_ERROR_UNKNOWN
+    code: "0"
+    label: Unknown
+    level: FATAL
+  SM_ERROR_PERMISSION_DENIED:
+    id: SM_ERROR_PERMISSION_DENIED
+    code: "1"
+    label: 'Could not write to file: Permission denied'
+  SM_ERROR_DATABASE:
+    id: SM_ERROR_DATABASE
+    code: "2"
+    label: Could not connect to database
+  SM_UNKNOWN_PRIMARY_KEY:
+    id: SM_UNKNOWN_PRIMARY_KEY
+    code: "3"
+    label: Supplied ID was not recognized
+  SM_ERROR_UNSAFE_WRITABLE_FILE:
+    id: SM_ERROR_UNSAFE_WRITABLE_FILE
+    code: "4"
+    label: 'Could not write to file: Permission denied'

@@ -6,6 +6,12 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
     
     public function __objectConstruct(){
         $this->setMembershipTypeFromInternalAttributes();
+        if(!is_array($this->_members)){
+            $this->_members = array();
+        }
+        if(!is_array($this->_member_ids)){
+            $this->_member_ids = array();
+        }
     }
     
     public function setDraftMode($draft){
@@ -146,7 +152,7 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
             $site_id = $this->getCurrentSiteId();
         }
         
-        if($refresh || !count($this->_members)){
+        if($refresh || !is_array($this->_members) || !count($this->_members)){
         
             $memberships = $this->getMemberships($mode, $site_id, $refresh);
 	        
@@ -216,7 +222,7 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
     
     public function getMemberIds($mode=1, $site_id='', $refresh=false){
         
-        if($refresh || !count($this->_member_ids)){
+        if($refresh || !is_array($this->_member_ids) || !count($this->_member_ids)){
         
             $ids = array();
         
@@ -234,7 +240,7 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
     
     public function getApprovedMembers($refresh=false, $mode=1){
         
-        if($refresh || !count($this->_members)){
+        if($refresh || !is_array($this->_members) || !count($this->_members)){
         
             $memberships = $this->getMemberShips($refresh, $mode, true);
 	        

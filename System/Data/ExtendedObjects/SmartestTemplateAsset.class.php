@@ -60,9 +60,9 @@ class SmartestTemplateAsset extends SmartestAsset{
         return $this->getFile()->getSmartestPath();
     }
     
-    public function find($id){
+    public function find($id, $site_id='', $include_trash_items=false){
         
-        if(parent::find($id)){
+        if(parent::find($id, $site_id, $include_trash_items)){
             $this->getFile();
             return true;
         }else{
@@ -71,7 +71,7 @@ class SmartestTemplateAsset extends SmartestAsset{
         
     }
     
-    public function findBy($field, $value, $site_id=''){
+    public function findBy($field, $value, $site_id='', $include_trash_items=false){
 	    
 	    $sql = $this->getRetrievalSqlQuery($value, $field, $site_id);
 	    $h = new SmartestTemplatesLibraryHelper;
@@ -198,7 +198,7 @@ class SmartestTemplateAsset extends SmartestAsset{
 	    return array('info'=>$info, 'level'=>$level);
 	}
 	
-	public function getContent(){
+	public function getContent($raw=false){
 	    
 	    $file = $this->getFullPathOnDisk();
 	    
@@ -215,7 +215,7 @@ class SmartestTemplateAsset extends SmartestAsset{
         return $content;
 	}
 	
-	public function setContent($content){
+	public function setContent($content, $escapeslashes=true){
 	    
 	    $file = $this->getFullPathOnDisk();
 	    return SmartestFileSystemHelper::save($file, $content, true);
@@ -227,7 +227,11 @@ class SmartestTemplateAsset extends SmartestAsset{
 	    
 	}
 	
-	public function getTags($tagnames, SmartestPage $page, $level=0, $version="draft", $item_id=false){
+	public function getTags($tagnames=null, $page=null, $level=0, $version="draft", $item_id=false){
+		
+		if(!$page instanceof SmartestPage){
+		    return parent::getTags();
+		}
 		
 		// This function is not yet finished. It will replace functionality in PagesManager.
 		$i = 0;

@@ -562,7 +562,13 @@ class SmartestDataObjectHelper{
 	            $singlefile .= file_get_contents(SM_ROOT_DIR.'System'.DIRECTORY_SEPARATOR.'Data'.DIRECTORY_SEPARATOR.'BasicObjects'.DIRECTORY_SEPARATOR.'SmartestDataObject.class.php');
 	        }
 	    }else{
+            if(class_exists('SmartestResponse')){
+                SmartestResponse::debugTrace('loadBasicObjects: including SmartestDataObject');
+            }
 	        include SM_ROOT_DIR.'System/Data/BasicObjects/SmartestDataObject.class.php';
+            if(class_exists('SmartestResponse')){
+                SmartestResponse::debugTrace('loadBasicObjects: included SmartestDataObject');
+            }
 	    }
 	
 		foreach($tables as $t){
@@ -584,8 +590,20 @@ class SmartestDataObjectHelper{
     			    }
 				}else{
 				    // Include the original file rather than the cache
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadBasicObjects: requiring '.$base_file_name);
+				    }
 				    require $base_file_name;
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadBasicObjects: included '.$base_file_name);
+				    }
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadBasicObjects: requiring '.$file_name);
+				    }
 				    require $file_name;
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadBasicObjects: included '.$file_name);
+				    }
 				}
 			}else{
 				// File was there amoment ago but has now disappeared (???)
@@ -661,7 +679,13 @@ class SmartestDataObjectHelper{
 				}else{
 				    // echo "including ".$h['file'];
 				    // Include the original file rather than the cache
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadExtendedObjects: including '.$h['file']);
+				    }
 				    include $h['file'];
+				    if(class_exists('SmartestResponse')){
+				        SmartestResponse::debugTrace('loadExtendedObjects: included '.$h['file']);
+				    }
 				    
 				    // echo "<br />";
 				}

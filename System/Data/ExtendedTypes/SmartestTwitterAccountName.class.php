@@ -4,7 +4,7 @@ class SmartestTwitterAccountName extends SmartestString{
     
     public function setValue($v){
         
-        if($v{0} == '@'){
+        if($v[0] == '@'){
             $this->_string = substr($v, 1);
         }else{
             $this->_string = (string) $v;

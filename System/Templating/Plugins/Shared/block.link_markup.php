@@ -1,6 +1,10 @@
 <?php
 
 function smarty_block_link_markup($params, $content, &$smartest_engine, &$repeat){
+
+    if($repeat){
+        return '';
+    }
     
 	if(isset($params['to']) && strlen($params['to'])){
 	    

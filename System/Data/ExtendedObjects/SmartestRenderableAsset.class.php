@@ -32,7 +32,7 @@ class SmartestRenderableAsset extends SmartestAsset implements SmartestDualModed
 	    
 	}
 	
-	public function findBy($field, $value, $site_id=''){
+	public function findBy($field, $value, $site_id='', $include_trash_items=false){
 	    
 	    $result = parent::findBy($field, $value, $site_id);
 	    
@@ -81,9 +81,9 @@ class SmartestRenderableAsset extends SmartestAsset implements SmartestDualModed
 		
 	} */
 	
-	public function find($id, $site_id=''){
+	public function find($id, $site_id='', $include_trash_items=false){
 	    
-	    $result = parent::find($id, $site_id);
+	    $result = parent::find($id, $site_id, $include_trash_items);
 	    
 	    if($result){
 	        $this->setAdditionalRenderData($this->getDefaultParams());

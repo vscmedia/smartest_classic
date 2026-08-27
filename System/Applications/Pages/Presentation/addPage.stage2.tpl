@@ -197,7 +197,8 @@
         <a href="#enter-text-later" class="button" id="page-text-contents-enter-later">Enter text later</a>
         <input type="hidden" name="save_textarea_contents" value="1" id="page-text-contents-save" />
         
-        <script src="{$domain}Resources/System/Javascript/tinymce4/tinymce.min.js"></script>
+        <script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+        <script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
         <script language="javascript" type="text/javascript">
         
         {literal}

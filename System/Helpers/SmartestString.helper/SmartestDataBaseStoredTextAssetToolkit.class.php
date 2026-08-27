@@ -11,34 +11,15 @@ class SmartestDataBaseStoredTextAssetToolkit{
     }
     
     public function parseTextileTextAsset($content, $asset, $renderer){
-        
-        if(stripos($content, 'NewColumn') !== false){
-            $content = SmartestStringHelper::parseTextileIntoColumns($content);
-        }else{
-            $content = SmartestStringHelper::parseTextile($content);
-        }
-        
-        $links = SmartestLinkParser::parseEasyLinks($content);
-        
-        foreach($links as $l){
-            
-            $link = new SmartestCmsLink($l, array());
-            
-            if($link->hasError()){
-                $content = str_replace($l->getParameter('original'), $renderer->raiseError($link->getErrorMessage(), $renderer->getDraftMode()), $content);
-            }else{
-                $content = str_replace($l->getParameter('original'), $link->render($renderer->getDraftMode()), $content);
-            }
-        }
-        
-        return $content;
+
+        $pipeline = new SmartestTextAssetRenderPipeline($asset, $renderer);
+        return $pipeline->parseTextile($content);
         
     }
     
     public function convertTextileTextAssetToSmartyFile($content, $asset){
         
-        $content = preg_replace('/\{attach:([\w_]+)\}/', "<?sm:attachment name=\"$1\":?>", $content);
-        return $content;
+        return SmartestTextAssetRenderPipeline::convertFormattedTextAttachmentTags($content, 'textile');
         
     }
     
@@ -47,29 +28,30 @@ class SmartestDataBaseStoredTextAssetToolkit{
         
         
     }
+
+    public function parseMarkdownTextAsset($content, $asset, $renderer){
+
+        $pipeline = new SmartestTextAssetRenderPipeline($asset, $renderer);
+        return $pipeline->parseMarkdown($content);
+
+    }
+
+    public function convertMarkdownTextAssetToSmartyFile($content, $asset){
+
+        return SmartestTextAssetRenderPipeline::convertFormattedTextAttachmentTags($content, 'markdown');
+
+    }
+
+    public function storeMarkdownTextAsset($raw_contents){
+
+
+
+    }
     
     public function parseRichTextAsset($raw_contents, $asset, $renderer){
         
-        $content = $raw_contents;
-        
-        $links = SmartestLinkParser::parseEasyLinks($content);
-        
-        foreach($links as $l){
-            
-            $link = new SmartestCmsLink($l, array());
-            
-            if($link->hasError()){
-                $content = str_replace($l->getParameter('original'), $renderer->raiseError($link->getErrorMessage(), $renderer->getDraftMode()), $content);
-            }else{
-                $content = str_replace($l->getParameter('original'), $link->render($renderer->getDraftMode()), $content);
-            }
-        }
-        
-        if(stripos($content, 'NewColumn') !== false){
-            $content = SmartestStringHelper::separateIntoColumns($content);
-        }
-        
-        return $content;
+        $pipeline = new SmartestTextAssetRenderPipeline($asset, $renderer);
+        return $pipeline->parseRichText($raw_contents);
         
     }
     

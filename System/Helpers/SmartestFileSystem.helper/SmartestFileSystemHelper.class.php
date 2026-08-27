@@ -23,11 +23,11 @@ class SmartestFileSystemHelper extends SmartestHelper{
 			while (false !== ($file = readdir($res))) {
         		
         		if($file != '.' && $file != '..'){
-        		    if($show_invisible || $file{0} != '.'){
-        		        if($type===0 || ($type===1 && is_file($directory.$file)) || ($type===2 && is_dir($directory.$file))){
-    		                $files[] = utf8_encode($file);
-		                }
-    		        }
+                    if($show_invisible || $file[0] != '.'){
+                        if($type===0 || ($type===1 && is_file($directory.$file)) || ($type===2 && is_dir($directory.$file))){
+                            $files[] = $file;
+                        }
+                    }
         		}
         		
 			}
@@ -51,7 +51,13 @@ class SmartestFileSystemHelper extends SmartestHelper{
 			foreach($files as $file){
 				
 				if(file_exists(SM_ROOT_DIR.$file)){
+					if(class_exists('SmartestResponse')){
+                        SmartestResponse::debugTrace('include_group: requiring '.$file);
+                    }
 					require SM_ROOT_DIR.$file;
+                    if(class_exists('SmartestResponse')){
+                        SmartestResponse::debugTrace('include_group: included '.$file);
+                    }
 				}
 				
 			}
@@ -63,7 +69,7 @@ class SmartestFileSystemHelper extends SmartestHelper{
 			sort($files_in_order);
 			$hash = md5(implode('_', $files_in_order));
 			$filename = $hash.'.cache.php';
-            $full_filename = 'System/Cache/Includes/'.utf8_decode($filename);
+            $full_filename = 'System/Cache/Includes/'.$filename;
             $cache_revision_name = 'last_built_revision_'.substr($hash, 0, 16);
             $last_built_revision = SmartestCache::load($cache_revision_name, true);
             
@@ -73,8 +79,8 @@ class SmartestFileSystemHelper extends SmartestHelper{
 		
 				// create single include file
 				foreach($files as $file){
-					if(file_exists(utf8_decode($file))){
-						$singlefile .= file_get_contents(utf8_decode($file));
+					if(file_exists($file)){
+						$singlefile .= file_get_contents($file);
 					}else{
 						// ERROR - file does not exist
                         SmartestLog::getInstance('system')->log("SmartestFileSystemHelper::include_group(): File ".$file." not found for inclusion.");
@@ -110,8 +116,8 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	}
 	
 	public static function getFileSize($file_path){
-	    if(file_exists(utf8_decode($file_path))){
-	        $size = filesize(utf8_decode($file_path));
+	    if(file_exists($file_path)){
+	        $size = filesize($file_path);
 	        return $size;
 	    }else{
 	        return false;
@@ -201,9 +207,9 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	
 	public static function load($path, $binary_safe=false){
 	    
-	    if(is_dir(utf8_decode($path))){
+	    if(is_dir($path)){
 	        return self::getDirectoryContents($path);
-	    }else if(is_file(utf8_decode($path))){
+	    }else if(is_file($path)){
 	        
 	        if($binary_safe){
 	            $mode = 'rb';
@@ -211,12 +217,12 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	            $mode = 'r';
 	        }
 	        
-            if($handle = fopen(utf8_decode($path), $mode)){
+            if($handle = fopen($path, $mode)){
                 
                 // echo $path.' ';
                 // var_dump(is_file($path));
                 
-                $size = filesize(utf8_decode($path)) ? filesize(utf8_decode($path)) : 1;
+                $size = filesize($path) ? filesize($path) : 1;
                 
                 $content = fread($handle, $size);
                 fclose($handle);
@@ -230,7 +236,7 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	}
 	
 	public static function copy($old_path, $new_path){
-	    if(@copy(utf8_decode($old_path), $new_path)){
+	    if(@copy($old_path, $new_path)){
 	        return true;
 	    }else{
 	        return false;
@@ -238,7 +244,7 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	}
 	
 	public static function move($old_path, $new_path){
-	    if(@copy(utf8_decode($old_path), $new_path)){
+	    if(@copy($old_path, $new_path)){
 	        return unlink($old_path);
 	    }else{
 	        return false;
@@ -252,15 +258,21 @@ class SmartestFileSystemHelper extends SmartestHelper{
         }else{
             $mode = 'w';
         }
+
+        if($data === false){
+            return false;
+        }
+
+        $data = (string) $data;
         
-        $handle = fopen(utf8_decode($path), $mode);
+        $handle = fopen($path, $mode);
         
         if($handle){
             
             $result = fwrite($handle, $data);
             fclose($handle);
-            @chmod(utf8_decode($path), 0666);
-            return $result;
+            @chmod($path, 0666);
+            return $result !== false && $result == strlen($data);
             
         }else{
             return false;
@@ -288,8 +300,13 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	    if(!SmartestStringHelper::startsWith($full_path, '/') && !SmartestStringHelper::startsWith($full_path, '\\')){
 	        $full_path = SM_ROOT_DIR.$full_path;
 	    }
+
+	    $is_directory_path = in_array(substr($full_path, -1), array('/', '\\'));
+	    $test_path = $is_directory_path ? rtrim($full_path, '/\\') : $full_path;
 	    
-	    if(!file_exists(utf8_decode($full_path))){
+	    clearstatcache(true, $test_path);
+
+	    if(!file_exists($test_path)){
 	        
 	        // THE FILE DOESN'T ALREADY EXIST, SO JUST GIVE THE NAME BACK
 	        return $full_path;
@@ -298,17 +315,14 @@ class SmartestFileSystemHelper extends SmartestHelper{
 	        
 	        // THE FILE ALREADY EXISTS! MAKE A NEW ONE
 	        
-	        // break up the directories
-    	    $path_parts = preg_split('/(\/|\\\)/', $full_path);
+            $actual_file = basename($test_path);
 
-    	    // the fastest way of getting the filename without the directory
-    	    $actual_file = end($path_parts);
-    	    
-    	    // the reason we do it like this is because dirname() and basename() issue errors if the files don't exist - this way we can control that.
-    	    $negative_start = (mb_strlen($actual_file) * -1);
-    	    $directory = mb_substr($full_path, 0, $negative_start);
-    	    
-    	    $use_suffix = self::hasDotSuffix($full_path);
+            $directory = dirname($test_path);
+            if(!SmartestStringHelper::endsWith($directory, '/') && !SmartestStringHelper::endsWith($directory, '\\')){
+                $directory .= DIRECTORY_SEPARATOR;
+            }
+
+            $use_suffix = !$is_directory_path && self::hasDotSuffix($actual_file);
     	    
     	    if($use_suffix){
     	    
@@ -351,7 +365,7 @@ class SmartestFileSystemHelper extends SmartestHelper{
                     }
                 }
                 
-                return $directory.$try_file;
+                return $directory.$try_file.($is_directory_path ? DIRECTORY_SEPARATOR : '');
                 
             }else{
                 return null;

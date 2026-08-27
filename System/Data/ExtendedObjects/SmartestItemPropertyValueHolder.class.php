@@ -58,7 +58,7 @@ class SmartestItemPropertyValueHolder extends SmartestItemProperty{
 	    return ($this->_value instanceof SmartestItemPropertyValue);
 	}
 	
-	public function delete(){
+	public function delete($rebuild_cache=true){
 	    throw new SmartestException('Cannot delete temporary SmartestItemPropertyValueHolder object. Deletion of properties should use SmartestItemProperty, values should use SmartestItemPropertyValueHolder.');
 	}
 	

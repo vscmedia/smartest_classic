@@ -449,7 +449,7 @@ class SmartestBaseApplication extends QuinceBase{
 	}
 	
 	protected function getPresentationLayerVariable($variable_name){
-	    return SmartestPersistentObject::get('presentationLayer')->getVariable($variable_name);
+	    return SmartestPersistentObject::get('presentationLayer')->getSmartestVariable($variable_name);
 	}
 	
 	protected function getUserAgent(){
@@ -587,7 +587,7 @@ class SmartestBaseApplication extends QuinceBase{
 		
 		if(!$to){
 			$destination = constant($d);
-		}else if($to{0} == "/"){
+		}else if($to[0] == "/"){
 		    if($this->getRequest()->getDomain() == '/' || substr($to, 0, strlen(constant('SM_CONTROLLER_DOMAIN'))) == constant('SM_CONTROLLER_DOMAIN')){
 		        $destination = $to;
 	        }else{

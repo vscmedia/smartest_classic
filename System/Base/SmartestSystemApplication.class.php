@@ -188,7 +188,7 @@ class SmartestSystemApplication extends SmartestBaseApplication{
 	        $fn = $uri_parts[0];
 	        
 	        if(substr($fn, 0, strlen($d)) != $d){
-	            if($fn{0} == '/'){
+	            if($fn[0] == '/'){
 	                $request_filename = $d.$fn;
 	            }else{
 	                $request_filename = $d.'/'.$fn;
@@ -209,7 +209,7 @@ class SmartestSystemApplication extends SmartestBaseApplication{
 	        $request_filename = reset(explode("?", $_SERVER["REQUEST_URI"]));
         }
         
-        if($this->getRequest()->getNamespace() == 'modal' || (isset($request_vars['from']) && isset($request_vars['from']{0}))){
+        if($this->getRequest()->getNamespace() == 'modal' || (isset($request_vars['from']) && isset($request_vars['from'][0]))){
 	        // do nothing
 	    }else{
 		    SmartestSession::set("form:return:location", $request_filename);
@@ -233,7 +233,7 @@ class SmartestSystemApplication extends SmartestBaseApplication{
 	        $fn = $uri_parts[0];
 	        
 	        if(substr($fn, 0, strlen($d)) != $d){
-	            if($fn{0} == '/'){
+	            if($fn[0] == '/'){
 	                $request_filename = $d.$fn;
 	            }else{
 	                $request_filename = $d.'/'.$fn;

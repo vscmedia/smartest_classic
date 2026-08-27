@@ -1,0 +1,83 @@
+h1. Smartest Textile Render Pipeline Test
+
+This file exercises the current Smartest Textile flow: Textile formatting, Smartest attachments, Smartest square-bracket links, external links, Quince routes, column splitting, and literal examples that should remain unparsed.
+
+h2. Basic Textile
+
+This paragraph includes *strong text*, _emphasised text_, "quoted text", (C), (R), and a little heart marker: <3
+
+* First bullet
+* Second bullet with a Smartest page link: [[page:home|Home page]]
+* Third bullet with an external link: [https://example.com Example site]
+
+h2. Smartest Links
+
+Internal page link: [[page:home|Home page]]
+
+Internal page link using an explicit field: [[page:webid=replace-with-real-page-webid|Page by webid]]
+
+Model/item-style link: [[article:hello-world|Read the article]]
+
+Mail link: [[mailto:test@example.com|Send email]]
+
+External link in the same window: [https://example.com External example]
+
+External link in a new window: [+https://example.com External example in new window]
+
+Quince route link: [@desktop:home Desktop home]
+
+h2. Attachments
+
+The next attachment is on its own block. It should render as a Smartest attachment without Textile wrapping the rendered attachment HTML inside an extra paragraph.
+
+{attach:hero_image}
+
+The next attachment is inline with surrounding text. Depending on desired product behaviour, this should either remain inline or be promoted to a stable attachment block, but it should not corrupt the surrounding paragraph.
+
+Intro text before the inline attachment {attach:inline_image} and text after it.
+
+Two attachments separated by text:
+
+{attach:first_gallery_image}
+
+Some text between the two attachments.
+
+{attach:second_gallery_image}
+
+h2. Columns
+
+This is the first Textile column. It includes a Smartest link: [[page:home|Home from column one]]
+
+~~NewColumn~~
+
+This is the second Textile column. It includes an attachment token:
+
+{attach:column_image}
+
+~~NewColumn~~
+
+This is the third Textile column with an external link: [https://example.com Column link]
+
+h2. Literal Examples
+
+The following code block should display Smartest link syntax literally. It should not become a live link.
+
+bc. [[page:home|Do not parse this]]
+[@desktop:home Do not parse this either]
+[https://example.com Do not parse this external link]
+{attach:do_not_render_this_attachment}
+
+The following notextile block should also remain literal.
+
+notextile. [[page:home|Literal notextile link]]
+
+h2. Edge Cases
+
+This paragraph contains the word NewColumn but not the delimiter, so it should still be parsed by Textile.
+
+A malformed-looking bracket example should survive visibly: [[not quite finished
+
+A repeated link appears twice and should render consistently both times:
+[[page:home|Repeated Home]] and [[page:home|Repeated Home]]
+
+End of test file.

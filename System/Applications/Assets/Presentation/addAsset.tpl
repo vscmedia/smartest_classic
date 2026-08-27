@@ -212,13 +212,14 @@ function validateUploadSuffix(){
       <input type="hidden" name="input_method" value="{$input_method}">
       <input type="hidden" name="asset_type" value="{$new_asset_type_info.id}" class="purpose_inputs">
       
-{if count($input_methods) > 1}
-    <ul class="tabset">
-{foreach from=$input_methods key="input_method_code" item="input_method_tab"}
-      <li{if $input_method_code == $input_method} class="current"{/if}><a href="{$domain}smartest/file/new?asset_type={$type_code}&amp;input_method={$input_method_code}{if $for}&amp;for={$for}{/if}{if $for == "placeholder"}&amp;placeholder_id={$placeholder.id}&amp;page_id={$page.id}{/if}{if $for == "ipv"}&amp;property_id={$property.id}{/if}{if $item.id}&amp;item_id={$item.id}{/if}{if $for == 'group' && $group && $group.id}&amp;group_id={$group.id}{if $workflow_page}&amp;page_id={$workflow_page.webid}{/if}{if $workflow_item}&amp;item_id={$workflow_item.id}{/if}{if $workflow_placeholder}&amp;placeholder_id={$workflow_placeholder.id}{/if}{/if}{if $from}&amp;from={$from}{/if}">{$input_method_tab.label}</a></li>
-{/foreach}
-    </ul>
-{/if}
+	{if count($input_methods) > 1}
+	    <ul class="tabset">
+	{foreach from=$input_methods key="input_method_code" item="input_method_tab"}
+	      {capture name="input_method_tab_url" assign="input_method_tab_url"}{$domain}smartest/file/new?asset_type={$type_code}&amp;input_method={$input_method_code}{if $for}&amp;for={$for}{/if}{if $for == "placeholder" && $placeholder && $placeholder.id && $page && $page.id}&amp;placeholder_id={$placeholder.id}&amp;page_id={$page.id}{/if}{if $for == "ipv" && $property && $property.id}&amp;property_id={$property.id}{/if}{if $item && $item.id}&amp;item_id={$item.id}{/if}{if $for == 'group' && $group && $group.id}&amp;group_id={$group.id}{if $workflow_page && $workflow_page.webid}&amp;page_id={$workflow_page.webid}{elseif $workflow_page && $workflow_page.id}&amp;page_id={$workflow_page.id}{/if}{if $workflow_item && $workflow_item.id}&amp;item_id={$workflow_item.id}{/if}{if $workflow_placeholder && $workflow_placeholder.id}&amp;placeholder_id={$workflow_placeholder.id}{/if}{/if}{if $from}&amp;from={$from}{/if}{/capture}
+	      <li{if $input_method_code == $input_method} class="current"{/if}><a href="{$input_method_tab_url}">{$input_method_tab.label}</a></li>
+	{/foreach}
+	    </ul>
+	{/if}
 
       {if count($possible_groups)}
       <div id="groups" class="special-box">

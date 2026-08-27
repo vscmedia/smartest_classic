@@ -213,7 +213,7 @@ CREATE TABLE `ItemClasses` (
 
 CREATE TABLE `ItemProperties` (
   `itemproperty_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `itemproperty_webid` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT '',
+  `itemproperty_webid` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `itemproperty_name` varchar(32) NOT NULL DEFAULT '',
   `itemproperty_varname` varchar(32) NOT NULL DEFAULT '',
   `itemproperty_required` varchar(16) NOT NULL DEFAULT 'FALSE',
@@ -442,15 +442,15 @@ CREATE TABLE `Pages` (
   `page_draft_template` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `page_type` varchar(64) NOT NULL DEFAULT 'NORMAL',
   `page_force_static_title` tinyint(1) NOT NULL DEFAULT '0',
-  `page_deleted` varchar(6) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT 'FALSE',
+  `page_deleted` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'FALSE',
   `page_cache_as_html` varchar(5) NOT NULL DEFAULT 'TRUE',
-  `page_cache_interval` varchar(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT 'PERMANENT',
+  `page_cache_interval` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PERMANENT',
   `page_created` int NOT NULL DEFAULT '0',
   `page_modified` int NOT NULL DEFAULT '0',
   `page_changes_approved` tinyint(1) NOT NULL DEFAULT '0',
   `page_last_built` int DEFAULT NULL,
   `page_last_published` int NOT NULL DEFAULT '0',
-  `page_is_published` varchar(5) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT 'FALSE',
+  `page_is_published` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'FALSE',
   `page_keywords` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `page_meta_description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `page_description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -619,7 +619,7 @@ CREATE TABLE `Sites` (
   `site_primary_container_id` int unsigned DEFAULT NULL,
   `site_primary_text_placeholder_id` int unsigned DEFAULT NULL,
   `site_default_blocklist_style_id` int unsigned DEFAULT NULL,
-  PRIMARY KEY (`site_id`),
+  PRIMARY KEY (`site_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

@@ -1,0 +1,13 @@
+<VirtualHost *:80>
+    ServerName smartestphp8.localhost
+    DocumentRoot "/Users/marcus/code_projects/smartest_git_2026/Public/"
+
+    <Directory "/Users/marcus/code_projects/smartest_git_2026/Public/">
+        AllowOverride All
+        Require all granted
+        DirectoryIndex index.php
+    </Directory>
+
+    ErrorLog "/Users/marcus/code_projects/smartest_git_2026/Logs/php8-local-error.log"
+    CustomLog "/Users/marcus/code_projects/smartest_git_2026/Logs/php8-local-access.log" combined
+</VirtualHost>

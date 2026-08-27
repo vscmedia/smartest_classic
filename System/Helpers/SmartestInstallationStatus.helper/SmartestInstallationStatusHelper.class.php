@@ -9,9 +9,8 @@ class SmartestInstallationStatusHelper{
         // Add this in a few installlations time SmartestSystemSettingsHelper::load('successful_install') === true
         // if(SmartestCache::load('installation_status', true) === SM_INSTALLSTATUS_COMPLETE && !$purge && (is_file(SM_ROOT_DIR.'Public/.htaccess') && is_file(SM_ROOT_DIR.'Configuration/database.ini'))){
         if(!$purge && (is_file(SM_ROOT_DIR.'Public/.htaccess') && (is_file(SM_ROOT_DIR.'Configuration/database.ini') || is_file(SM_ROOT_DIR.'Configuration/database.yml')))){
-            // echo "installed";
-            return SmartestCache::load('installation_status', true);
-        }else{
+            $cached_status = SmartestCache::load('installation_status', true);
+        }
         // if(SmartestCache::load('installation_status', true) !== SM_INSTALLSTATUS_COMPLETE || $purge || (!is_file(SM_ROOT_DIR.'Public/.htaccess') || !is_file(SM_ROOT_DIR.'Configuration/controller.xml') || !is_file(SM_ROOT_DIR.'Configuration/database.ini'))){
             
     	    if(is_file(SM_ROOT_DIR."System/Core/Info/system.yml")){
@@ -237,10 +236,10 @@ class SmartestInstallationStatusHelper{
                 	    if(!is_file($site_dir.'Configuration/site.yml')){file_put_contents($site_dir.'Configuration/site.yml', '');}
                 	    if(!is_dir($site_dir.'Library')){mkdir($site_dir.'Library');}
                 	    if(!is_dir($site_dir.'Library/Actions')){mkdir($site_dir.'Library/Actions');}
-                	    if(!is_dir($site_dir.'Library/Actions')){mkdir($site_dir.'Library/ObjectModel');}
+                        if(!is_dir($site_dir.'Library/ObjectModel')){mkdir($site_dir.'Library/ObjectModel');}
                 	    $actions_class_name = SmartestStringHelper::toCamelCase($sitename).'Actions';
                 	    $class_file_contents = file_get_contents(SM_ROOT_DIR.'System/Base/ClassTemplates/SiteActions.class.php.txt');
-                	    $class_file_contents = str_replace('__TIMESTAMP__', time('Y-m-d h:i:s'), $class_file_contents);
+                        $class_file_contents = str_replace('__TIMESTAMP__', date('Y-m-d h:i:s'), $class_file_contents);
                 	    if(!is_file($site_dir.'Library/Actions/SiteActions.class.php')){file_put_contents($site_dir.'Library/Actions/SiteActions.class.php', $class_file_contents);}
                 	    chmod($site_dir.'Library/Actions/SiteActions.class.php', 0666);
                         
@@ -263,13 +262,38 @@ class SmartestInstallationStatusHelper{
                         if($_POST['site_initial_tpl'] == '_DEFAULT' && !$siteCreationErrors){
                             if(is_writable(SM_ROOT_DIR.'Presentation/Masters/')){
                                 $master_template_contents = str_replace('%DEFAULTTEMPLATENAME%.tpl', $template, file_get_contents(SM_ROOT_DIR.'System/Install/Samples/default.tpl'));
+                                $stylesheet_name = SmartestStringHelper::toVarName($_POST['site_name'], true).'.css';
+                                $stylesheet_path = SM_ROOT_DIR.'Public/Resources/Stylesheets/'.$stylesheet_name;
+                                $css_success = false;
+
+                                if(is_writable(SM_ROOT_DIR.'Public/Resources/Stylesheets/')){
+                                    $css = file_get_contents(SM_ROOT_DIR.'System/Install/Samples/default.css');
+                                    $css = str_replace('%TIME%', date('r'), $css);
+                                    $css = str_replace('%COLOUR%', 'background:#333;', $css);
+                                    $css_success = (bool) file_put_contents($stylesheet_path, $css);
+                                }
+
+                                if($css_success){
+                                    $master_template_contents = str_replace('%CSSLINK%', '<?sm:stylesheet file="'.$stylesheet_name.'":?>'."\n", $master_template_contents);
+                                }else{
+                                    $master_template_contents = str_replace('%CSSLINK%', '', $master_template_contents);
+                                }
+
                                 file_put_contents(SM_ROOT_DIR.'Presentation/Masters/'.$template, $master_template_contents);
                             }else{
                                 SmartestLog::getInstance('installer')->log('Could not move default template into position because Presentation/Masters/ is not writable.', SM_LOG_ERROR);
                             }
                         }
                         
-                        $controller_domain_cache = SmartestCache::load('controller_domain_temp', -1, true);
+                            if($siteCreationErrors){
+                                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+                                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_SITE_DATA_INVALID, -1, true);
+                                }
+
+                                throw new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+                            }
+
+	                        $controller_domain_cache = SmartestCache::load('controller_domain_temp', -1, true);
                         
                         if($controller_domain_cache && strlen($controller_domain_cache)){
                             $controller_domain = $controller_domain_cache;
@@ -355,7 +379,9 @@ class SmartestInstallationStatusHelper{
                 
                 SmartestLog::getInstance('installer')->log('SmartestInstaller has a working database connection.', SM_LOG_DEBUG);
                 
-                if(count($db->getTables()) < 1){
+                $tables = $db->getTables();
+
+                if(count($tables) < 1 || !in_array('Users', $tables) || !in_array('Sites', $tables)){
                     SmartestLog::getInstance('installer')->log('Trying to build database tables structure.', SM_LOG_DEBUG);
                     try{
                         $db->executeSqlFile(SM_ROOT_DIR."System/Install/SqlScripts/table_setup.sql");
@@ -399,18 +425,28 @@ class SmartestInstallationStatusHelper{
                     
                 } */
                 
-                if(count($db->queryToArray("SELECT site_id FROM Sites")) < 1){
-                    
-                    if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
-                        SmartestCache::save('installation_status', SM_INSTALLSTATUS_NO_SITES, -1, true);
-                    }
-                    
-                    throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_SITES);
-                    
-                }
-                
-                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
-                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
+	                if(count($db->queryToArray("SELECT site_id FROM Sites")) < 1){
+
+	                    if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+	                        SmartestCache::save('installation_status', SM_INSTALLSTATUS_NO_SITES, -1, true);
+	                    }
+
+	                    throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_SITES);
+
+	                }
+
+	                if(count($db->queryToArray("SELECT page_id FROM Pages")) < 1 || count($db->queryToArray("SELECT setting_id FROM Settings")) < 1 || count($db->queryToArray("SELECT asset_id FROM Assets")) < 1){
+
+	                    if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+	                        SmartestCache::save('installation_status', SM_INSTALLSTATUS_SITE_DATA_INVALID, -1, true);
+	                    }
+
+	                    throw new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+
+	                }
+
+	                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+	                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
                     if(!SmartestSystemSettingHelper::hasData('_system_installed_timestamp')){
                         SmartestSystemSettingHelper::save('_system_installed_timestamp', time());
                     }
@@ -427,6 +463,5 @@ class SmartestInstallationStatusHelper{
                 
                 throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_CONFIG);
             }
-        }
     }
 }

@@ -18,9 +18,9 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 		
 	}
 	
-	public function hydrate($value){
+	public function hydrate($value, $site_id='', $dup=false){
 	    
-	    $result = parent::hydrate($value);
+	    $result = parent::hydrate($value, $site_id, $dup);
 	    
 	    if($result){
 	        $this->getTypeInfo();
@@ -947,11 +947,11 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	    
 	    foreach($results as $r){
 	        
-	        if(isset($r['itempropertyvalue_draft_content']{1}) && !in_array($r['itempropertyvalue_draft_content'], $values)){
+	        if(isset($r['itempropertyvalue_draft_content'][1]) && !in_array($r['itempropertyvalue_draft_content'], $values)){
 	            $values[] = $r['itempropertyvalue_draft_content'];
 	        }
 	        
-	        if(isset($r['itempropertyvalue_content']{1}) && !in_array($r['itempropertyvalue_content'], $values)){
+	        if(isset($r['itempropertyvalue_content'][1]) && !in_array($r['itempropertyvalue_content'], $values)){
 	            $values[] = $r['itempropertyvalue_content'];
 	        }
 	    }

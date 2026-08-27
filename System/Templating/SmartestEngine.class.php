@@ -1,8 +1,8 @@
 <?php
 
-require(SM_ROOT_DIR.'System/Library/Smarty2/Smarty.class.php');
+require_once SM_ROOT_DIR.'System/Library/Smarty5/vendor/autoload.php';
 
-class SmartestEngine extends Smarty{
+class SmartestEngine extends \Smarty\Smarty{
 
 	protected $controller;
 	protected $section;
@@ -20,9 +20,20 @@ class SmartestEngine extends Smarty{
 	protected $_request_data;
 	protected $_request;
 	
+	public $_tpl_vars = array();
+	public $plugins_dir = array();
+	public $template_dir;
+	public $compile_dir;
+	public $cache_dir;
+	public $config_dir;
+	public $left_delimiter = '{';
+	public $right_delimiter = '}';
+	public $caching = false;
+	protected $_registered_smartest_plugin_dirs = array();
+	
 	public function __construct($process_id){
 	    
-	    parent::Smarty();
+	    parent::__construct();
 		
 		$this->_process_id = $process_id;
 		$this->_context = SM_CONTEXT_GENERAL;
@@ -31,13 +42,11 @@ class SmartestEngine extends Smarty{
 		$this->_request_data = SmartestPersistentObject::get('request_data');
 		
 		$this->templateHelper = new SmartestTemplateHelper;
-		$this->plugins_dir[] = SM_ROOT_DIR."System/Templating/Plugins/Shared/";
-		$this->plugins_dir[] = SM_ROOT_DIR."Library/Smarty/Plugins/";
-		$this->compiler_file = SM_ROOT_DIR."System/Templating/SmartestEngineCompiler.class.php";
-        $this->compiler_class = "SmartestEngineCompiler";
+		$this->addPluginDirectory(SM_ROOT_DIR."System/Templating/Plugins/Shared/");
+		$this->addPluginDirectory(SM_ROOT_DIR."Library/Smarty/Plugins/");
+        $this->registerFilter('pre', array($this, 'translateSmartestTemplateSyntax'), 'smartest_legacy_syntax');
     	
-        $this->left_delimiter = '{';
-		$this->right_delimiter = '}';
+        $this->setSmartestDelimiters('{', '}');
 		
 		$this->assign('request_parameters', $this->_request_data->getParameter('request_parameters'));
         $this->assign('system_data_info', new SmartestFrontEndSystemInfoQueryService);
@@ -51,14 +60,211 @@ class SmartestEngine extends Smarty{
 		// Sergiy: Deny access to PHP world from frontend tpls
         // (foolproof and the case of marginally trusted template editor).
         // Marcus: moved this to SmartestEngine so that all templates are affected
-		$this->security = true;
-		$this->security_settings['PHP_HANDLING'] = false;
-		$this->security_settings['PHP_TAGS'] = false;
-		$this->security_settings['MODIFIER_FUNCS'] = array('strtolower', 'strtoupper', 'trim', 'addslashes', 'stripslashes', '_item_name_escape');
-		$this->security_settings['IF_FUNCS'] = array('strlen', 'empty', 'count', 'in_array', 'array', 'is_numeric', 'is_array', 'isset', '_b');
-		$this->security_settings['INCLUDE_ANY'] = true;
-		
+		$this->configureSmartestSecurity();
+        $this->addTrustedCorePresentationDirectories();
+        $this->addTrustedTextFragmentTemplateDirectories();
+        $this->addTrustedFilterTemplateDirectories();
+			
 	}
+
+    public function assign($tpl_var, $value = null, $nocache = false, $scope = null){
+
+        if(is_array($tpl_var)){
+            foreach($tpl_var as $key=>$val){
+                if($key != ''){
+                    $this->_tpl_vars[$key] = $val;
+                }
+            }
+        }elseif($tpl_var != ''){
+            $this->_tpl_vars[$tpl_var] = $value;
+        }
+
+        return parent::assign($tpl_var, $value, $nocache, $scope);
+
+    }
+
+    public function setTemplateDirectories($template_dir, $compile_dir, $cache_dir, $config_dir){
+
+        $this->template_dir = $template_dir;
+        $this->compile_dir = $compile_dir;
+        $this->cache_dir = $cache_dir;
+        $this->config_dir = $config_dir;
+
+        $this->setTemplateDir($template_dir);
+        $this->setCompileDir($compile_dir);
+        $this->setCacheDir($cache_dir);
+        $this->setConfigDir($config_dir);
+
+    }
+
+    public function setSmartestDelimiters($left, $right){
+
+        $this->left_delimiter = $left;
+        $this->right_delimiter = $right;
+        $this->setLeftDelimiter($left);
+        $this->setRightDelimiter($right);
+
+    }
+
+    public function setSmartestCaching($caching){
+
+        $this->caching = $caching;
+        $this->setCaching($caching ? self::CACHING_LIFETIME_CURRENT : self::CACHING_OFF);
+
+    }
+
+    protected function configureSmartestSecurity(){
+
+        $policy = new \Smarty\Security($this);
+        $policy->allow_super_globals = false;
+        $this->enableSecurity($policy);
+
+        foreach(array('strtolower', 'strtoupper', 'trim', 'addslashes', 'stripslashes', 'strlen', 'is_numeric', 'is_array', 'in_array', 'count', 'empty', '_b') as $modifier){
+            if(is_callable($modifier)){
+                $this->registerPlugin(self::PLUGIN_MODIFIER, $modifier, $modifier);
+            }
+        }
+
+        if(function_exists('_item_name_escape')){
+            $this->registerPlugin(self::PLUGIN_MODIFIER, '_item_name_escape', '_item_name_escape');
+        }
+
+    }
+
+    public function addTrustedTemplateDirectory($directory){
+
+        if(!isset($this->security_policy) || !$this->security_policy instanceof \Smarty\Security){
+            return false;
+        }
+
+        if(!is_string($directory) || !strlen($directory)){
+            return false;
+        }
+
+        $directory = rtrim($directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+
+        if(is_dir($directory)){
+            $real_directory = realpath($directory);
+
+            if($real_directory !== false){
+                $directory = rtrim($real_directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+            }
+        }
+
+        if(!in_array($directory, $this->security_policy->secure_dir, true)){
+            $this->security_policy->secure_dir[] = $directory;
+        }
+
+        return true;
+
+    }
+
+    protected function addTrustedFilterTemplateDirectories(){
+
+        $filter_root = SM_ROOT_DIR.'System/Response/Filters/';
+
+        if(!is_dir($filter_root)){
+            return;
+        }
+
+        foreach(glob($filter_root.'*/*.filter', GLOB_ONLYDIR) as $directory){
+            $this->addTrustedTemplateDirectory($directory);
+        }
+
+    }
+
+    protected function addTrustedTextFragmentTemplateDirectories(){
+
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'System/Cache/TextFragments/Live/');
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'System/Cache/TextFragments/Previews/');
+
+    }
+
+    protected function addTrustedCorePresentationDirectories(){
+
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'System/Presentation/');
+
+    }
+
+    protected function syncSmartestTemplateVars(){
+
+        foreach($this->_tpl_vars as $name=>$value){
+            parent::assign($name, $value);
+        }
+
+        $this->setLeftDelimiter($this->left_delimiter);
+        $this->setRightDelimiter($this->right_delimiter);
+        $this->setSmartestCaching($this->caching);
+
+        if($this->template_dir){
+            $this->setTemplateDir($this->template_dir);
+        }
+
+        if($this->compile_dir){
+            $this->setCompileDir($this->compile_dir);
+        }
+
+        if($this->cache_dir){
+            $this->setCacheDir($this->cache_dir);
+        }
+
+        if($this->config_dir){
+            $this->setConfigDir($this->config_dir);
+        }
+
+    }
+
+    public function translateSmartestTemplateSyntax($source){
+
+        $translations = array(
+            '/(<\?sm:\s*)defun\b/i' => '$1function',
+            '/(<\?sm:\s*)\/defun\s*:\?>/i' => '$1/function:?>',
+            '/(<\?sm:\s*)fun\b/i' => '$1call',
+            '/(\{\s*)defun\b/i' => '$1function',
+            '/(\{\s*)\/defun\s*\}/i' => '$1/function}',
+            '/(\{\s*)fun\b/i' => '$1call',
+        );
+
+        return preg_replace(array_keys($translations), array_values($translations), $source);
+
+    }
+
+    public function fetch($template = null, $cache_id = null, $compile_id = null){
+
+        $this->syncSmartestTemplateVars();
+
+        try{
+            return parent::fetch($template, $cache_id, $compile_id);
+        }catch(Throwable $e){
+            return $this->handleSmartyThrowable($e, $template);
+        }
+
+    }
+
+    public function display($template = null, $cache_id = null, $compile_id = null){
+
+        $this->syncSmartestTemplateVars();
+
+        try{
+            return parent::display($template, $cache_id, $compile_id);
+        }catch(Throwable $e){
+            echo $this->handleSmartyThrowable($e, $template);
+            return null;
+        }
+
+    }
+
+    public function _smarty_include($params){
+
+        $vars = isset($params['smarty_include_vars']) && is_array($params['smarty_include_vars']) ? $params['smarty_include_vars'] : array();
+
+        foreach($vars as $key=>$value){
+            $this->assign($key, $value);
+        }
+
+        return $this->fetch($params['smarty_include_tpl_file']);
+
+    }
 	
 	public function startChildProcess($pid, $type='', $caching=false){
 	    
@@ -72,10 +278,7 @@ class SmartestEngine extends Smarty{
         
 	    $cp = new $engine_type($pid);
 	    
-	    $cp->template_dir = isset($this->templates_dir) ? $this->templates_dir : null;
-		$cp->compile_dir = $this->compile_dir;
-		$cp->cache_dir = $this->cache_dir;
-		$cp->config_dir = $this->config_dir;
+	    $cp->setTemplateDirectories(isset($this->template_dir) ? $this->template_dir : null, $this->compile_dir, $this->cache_dir, $this->config_dir);
 		
 		$cp->assign('section', isset($this->_tpl_vars['section']) ? $this->_tpl_vars['section'] : null);
 		$cp->assign('module', isset($this->_tpl_vars['module']) ? $this->_tpl_vars['module'] : null);
@@ -85,7 +288,7 @@ class SmartestEngine extends Smarty{
 		$cp->assign('class', isset($this->_tpl_vars['class']) ? $this->_tpl_vars['class'] : null);
 		$cp->assign('sm_user_agent', isset($this->_tpl_vars['sm_user_agent']) ? $this->_tpl_vars['sm_user_agent'] : $this->getUserAgent());
 		$cp->assign('request_parameters', $this->_request_data->getParameter('request_parameters'));
-		$cp->caching = (bool) $caching;
+		$cp->setSmartestCaching((bool) $caching);
 		
 		$this->_child_processes[$pid] = $cp;
         return $cp;
@@ -164,13 +367,25 @@ class SmartestEngine extends Smarty{
 	    $this->_abstractPropertyHolder[$property_name] = $value;
 	}
 	
-	public function getVariable($variable_name){
-	    
-	    if(isset($this->_tpl_vars[$variable_name])){
-	        return $this->_tpl_vars[$variable_name];
-	    }
-	    
+	public function getVariable($varName, $searchParents = true, $errorEnable = true){
+        return parent::getVariable($varName, $searchParents, $errorEnable);
 	}
+
+    public function getSmartestVariable($varName){
+
+        if(isset($this->_tpl_vars[$varName])){
+            return $this->_tpl_vars[$varName];
+        }
+
+        $variable = parent::getVariable($varName, true, false);
+
+        if(method_exists($variable, 'getValue')){
+            return $variable->getValue();
+        }
+
+        return null;
+
+    }
 	
 	public function run($template, $data){
 	    
@@ -186,7 +401,11 @@ class SmartestEngine extends Smarty{
 	    }
 	    
 	    if(file_exists($template)){
-	        $this->_smarty_include(array('smarty_include_tpl_file'=>$template, 'smarty_include_vars'=>$data));
+	        try{
+	            echo $this->_smarty_include(array('smarty_include_tpl_file'=>$template, 'smarty_include_vars'=>$data));
+	        }catch(Throwable $e){
+	            echo $this->handleSmartyThrowable($e, $template);
+	        }
         }else{
             echo '<br />ERROR: Template \''.$template.'\' does not exist.';
         }
@@ -222,14 +441,59 @@ class SmartestEngine extends Smarty{
             $resource_name = sha1($string);
         }
         
-        // try compiling it and running it
-        if($this->_compile_source($resource_name, $string, $result)){
-            return $result;
-        }else{
-            return false;
+        $this->syncSmartestTemplateVars();
+
+        try{
+            return parent::fetch('string:'.$string, null, $resource_name);
+        }catch(Throwable $e){
+            return $this->handleSmartyThrowable($e, 'string:'.$resource_name);
         }
         
 	}
+
+    protected function handleSmartyThrowable(Throwable $e, $template=null){
+
+        $template_label = is_string($template) && strlen($template) ? $template : '[unknown template]';
+        $message = get_class($e).' while rendering '.$template_label.': '.$e->getMessage().' in '.$e->getFile().' on line '.$e->getLine();
+
+        SmartestResponse::debugTrace('Smarty error: '.$message);
+        error_log($message);
+
+        if($this->displayErrorsAreEnabled()){
+            return $this->renderSmartyError($e, $template_label);
+        }
+
+        return '';
+
+    }
+
+    protected function displayErrorsAreEnabled(){
+
+        $setting = ini_get('display_errors');
+
+        if(is_bool($setting)){
+            return $setting;
+        }
+
+        return in_array(strtolower((string) $setting), array('1', 'on', 'true', 'yes'), true);
+
+    }
+
+    protected function renderSmartyError(Throwable $e, $template_label){
+
+        $escape = function($value){
+            return htmlspecialchars((string) $value, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+        };
+
+        return '<div style="box-sizing:border-box;margin:16px;padding:14px;border:2px solid #b00020;background:#fff7f7;color:#2b1b1b;font:14px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:left;">'
+            .'<h2 style="margin:0 0 8px;font-size:18px;color:#b00020;">Smarty template error</h2>'
+            .'<p style="margin:0 0 8px;"><strong>'.$escape(get_class($e)).'</strong>: '.$escape($e->getMessage()).'</p>'
+            .'<p style="margin:0 0 8px;"><strong>Template:</strong> <code>'.$escape($template_label).'</code></p>'
+            .'<p style="margin:0 0 8px;"><strong>Thrown at:</strong> <code>'.$escape($e->getFile().':'.$e->getLine()).'</code></p>'
+            .'<details style="margin-top:10px;"><summary style="cursor:pointer;">Stack trace</summary><pre style="white-space:pre-wrap;overflow:auto;margin:8px 0 0;padding:10px;background:#2b1b1b;color:#fff;font:12px/1.4 SFMono-Regular,Consolas,monospace;">'.$escape($e->getTraceAsString()).'</pre></details>'
+            .'</div>';
+
+    }
 	
 	public function getScriptIncluded($script_file){
 	    return in_array($script_file, $this->_included_scripts);
@@ -249,11 +513,18 @@ class SmartestEngine extends Smarty{
 	
 	public function addPluginDirectory($directory){
 	    
-	    $directory = realpath($directory).'/';
+	    $real_directory = realpath($directory);
+
+	    if(!$real_directory){
+	        return false;
+	    }
+	    
+	    $directory = $real_directory.'/';
 	    
 	    if(is_dir($directory)){
 	        if(SmartestFileSystemHelper::isSafeFileName($directory)){
 	            $this->plugins_dir[] = $directory;
+	            $this->registerSmartestPluginDirectory($directory);
 	        }else{
 	            throw new SmartestException("Tried to add plugin directory outside Smartest: ".$directory, SM_ERROR_USER);
 	        }
@@ -261,6 +532,75 @@ class SmartestEngine extends Smarty{
 	        throw new SmartestException("Tried to add non-existent plugin directory: ".$directory, SM_ERROR_USER);
 	    }
 	}
+
+    protected function registerSmartestPluginDirectory($directory){
+
+        if(isset($this->_registered_smartest_plugin_dirs[$directory])){
+            return;
+        }
+
+        $this->_registered_smartest_plugin_dirs[$directory] = true;
+
+        foreach(array('function', 'block', 'modifier', 'compiler') as $type){
+            foreach(glob($directory.$type.'.*.php') as $file){
+                if($type == 'compiler' && basename($file) == 'compiler.defun.php'){
+                    continue;
+                }
+
+                SmartestResponse::debugTrace('SmartestEngine::registerPluginFile '.$file);
+                $plugin_name = substr(basename($file, '.php'), strlen($type) + 1);
+                $function_name = 'smarty_'.$type.'_'.str_replace('.', '_', $plugin_name);
+                $directory_key = strtolower(preg_replace('/\W+/', '', basename(rtrim($directory, '/'))));
+                $specific_function_name = 'smarty_'.$type.'_'.$directory_key.'_'.str_replace('.', '_', $plugin_name);
+                $require_plugin_file = true;
+
+                if(function_exists($function_name) && !function_exists($specific_function_name)){
+                    $file_contents = file_get_contents($file);
+                    if(strpos($file_contents, 'function '.$specific_function_name.'(') === false){
+                        SmartestResponse::debugTrace('SmartestEngine::registerPluginFile skipped duplicate callback '.$function_name.' in '.$file);
+                        $require_plugin_file = false;
+                    }
+                }
+
+                if($require_plugin_file){
+                    require_once $file;
+                }
+
+                if(function_exists($specific_function_name)){
+                    $function_name = $specific_function_name;
+                }
+
+                if(!function_exists($function_name)){
+                    continue;
+                }
+
+                switch($type){
+                    case 'function':
+                        $engine = $this;
+                        $this->registerPlugin(self::PLUGIN_FUNCTION, $plugin_name, function($params, \Smarty\Template $template) use ($function_name, $engine){
+                            return $function_name($params, $engine);
+                        });
+                        break;
+
+                    case 'block':
+                        $engine = $this;
+                        $this->registerPlugin(self::PLUGIN_BLOCK, $plugin_name, function($params, $content, \Smarty\Template $template, &$repeat) use ($function_name, $engine){
+                            return $function_name($params, $content, $engine, $repeat);
+                        });
+                        break;
+
+                    case 'modifier':
+                        $this->registerPlugin(self::PLUGIN_MODIFIER, $plugin_name, $function_name);
+                        break;
+
+                    case 'compiler':
+                        $this->registerPlugin(self::PLUGIN_COMPILER, $plugin_name, $function_name);
+                        break;
+                }
+            }
+        }
+
+    }
 	
 	public function getPluginDirectories(){
 	    

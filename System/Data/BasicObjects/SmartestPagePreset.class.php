@@ -53,10 +53,13 @@ class SmartestPagePreset extends SmartestBasePagePreset{
     public function getDefinitionForAssetClassId($assetclass_id){
         
         $assetclass_id = (int) $assetclass_id;
-        $sql = "SELECT Assets.*, PageLayoutPresetDefinitions.plpd_element_value FROM Assets, PageLayoutPresetDefinitions WHERE Assets.asset_id=PageLayoutPresetDefinitions.plpd_element_value AND plpd_preset_id='".$this->getId()."' AND plpd_element_id='".$assetclass_id."'";
-        $result = $this->database->queryToArray($sql);
+        $sql = "SELECT Assets.*, PageLayoutPresetDefinitions.plpd_element_value FROM Assets, PageLayoutPresetDefinitions WHERE Assets.asset_id=PageLayoutPresetDefinitions.plpd_element_value AND plpd_preset_id=:preset_id AND plpd_element_id=:assetclass_id";
+        $result = $this->database->prepareQuery($sql, array(
+            'preset_id' => $this->getId(),
+            'assetclass_id' => $assetclass_id
+        ));
         
-        if(count($result)){
+        if(is_array($result) && count($result)){
             if($result[0]['asset_type'] == 'SM_ASSETTYPE_CONTAINER_TEMPLATE'){
                 $a = new SmartestTemplateAsset;
             }else{
@@ -65,7 +68,7 @@ class SmartestPagePreset extends SmartestBasePagePreset{
             $a->hydrate($result[0]);
         }
         
-        return $a;
+        return isset($a) ? $a : null;
         
     }
 	

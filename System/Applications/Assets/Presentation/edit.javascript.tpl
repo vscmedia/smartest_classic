@@ -53,7 +53,7 @@ var CM;
 
     CM = CodeMirror.fromTextArea($('tpl_textArea'), {ldelim}
         lineNumbers: true,
-        mode: "javascript",
+        mode: "smartest-javascript",
     {if !$allow_save}    readOnly: true,
     {/if}
         lineWrapping: true

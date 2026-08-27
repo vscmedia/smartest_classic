@@ -14,17 +14,19 @@ class HelpViewer extends SmartestSystemApplication{
         
         $code = $this->getRequestParameter('help_code');
         $p = explode(':', $code);
-        $app_shortname = $p[0];
-        $node_id = $p[1];
+        $app_shortname = isset($p[0]) ? $p[0] : '';
+        $node_id = isset($p[1]) ? $p[1] : '';
         $apps = SmartestPersistentObject::get('controller')->getAllModulesByShortName();
         
         if(isset($apps[$app_shortname])){
-            $help_file = $apps[$app_shortname]['directory'].'Content/LanguagePacks/eng/Help/index.yml';
-            // echo $help_file;
+            $language_code = $this->getPreferredHelpLanguageCode();
+            $this->trustHelpPresentationDirectories($apps[$app_shortname]['directory'], $language_code);
+            $help_file = $this->getHelpIndexFile($apps[$app_shortname]['directory'], $language_code);
+
             if(is_file($help_file)){
                 $help_config = SmartestYamlHelper::fastLoad($help_file);
                 if(isset($help_config['help'][$node_id])){
-                    $template = $apps[$app_shortname]['directory'].'Content/LanguagePacks/eng/Help/Presentation/'.$help_config['help'][$node_id]['content'];
+                    $template = $this->getHelpContentTemplate($apps[$app_shortname]['directory'], $language_code, $help_config['help'][$node_id]['content']);
                     if(is_file($template)){
                         $this->send($help_config['help'][$node_id]['title'], 'title');
                         $this->send($template, 'content');
@@ -48,6 +50,63 @@ class HelpViewer extends SmartestSystemApplication{
         }else{
             // unrecognized application code
         }
+    }
+
+    protected function getPreferredHelpLanguageCode(){
+
+        if($this->getUser() && method_exists($this->getUser(), 'getPreferredUiLanguage')){
+            $language_code = $this->getUser()->getPreferredUiLanguage();
+
+            if(is_string($language_code) && preg_match('/^[a-z]{3}$/i', $language_code)){
+                return strtolower($language_code);
+            }
+        }
+
+        return 'eng';
+
+    }
+
+    protected function getHelpPresentationDirectory($application_directory, $language_code){
+
+        return $application_directory.'Content/LanguagePacks/'.$language_code.'/Help/Presentation/';
+
+    }
+
+    protected function trustHelpPresentationDirectories($application_directory, $language_code){
+
+        if(method_exists($this->getPresentationLayer(), 'addTrustedTemplateDirectory')){
+            $this->getPresentationLayer()->addTrustedTemplateDirectory($this->getHelpPresentationDirectory($application_directory, 'eng'));
+
+            if($language_code != 'eng'){
+                $this->getPresentationLayer()->addTrustedTemplateDirectory($this->getHelpPresentationDirectory($application_directory, $language_code));
+            }
+        }
+
+    }
+
+    protected function getHelpIndexFile($application_directory, $language_code){
+
+        $localized_help_file = $application_directory.'Content/LanguagePacks/'.$language_code.'/Help/index.yml';
+
+        if($language_code != 'eng' && is_file($localized_help_file)){
+            return $localized_help_file;
+        }
+
+        return $application_directory.'Content/LanguagePacks/eng/Help/index.yml';
+
+    }
+
+    protected function getHelpContentTemplate($application_directory, $language_code, $content_file){
+
+        $content_file = basename($content_file);
+        $localized_template = $this->getHelpPresentationDirectory($application_directory, $language_code).$content_file;
+
+        if($language_code != 'eng' && is_file($localized_template)){
+            return $localized_template;
+        }
+
+        return $this->getHelpPresentationDirectory($application_directory, 'eng').$content_file;
+
     }
 
     public function search($get){

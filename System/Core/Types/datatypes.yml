@@ -1,0 +1,882 @@
+# Generated from datatypes.xml during PHP 8 migration.
+---
+type:
+  SM_DATATYPE_SL_TEXT:
+    id: SM_DATATYPE_SL_TEXT
+    valuetype: string
+    label: Short text field
+    description: >
+      A short, single line of text such as
+      first or last name. Maximum 255
+      characters.
+    usage: field,itemproperty,dropdown
+    class: SmartestString
+    long: 'true'
+    sortable: 'true'
+    searchable: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/sl_text.tpl
+    parameters:
+      param:
+        - 
+          name: autocomplete
+          label: Auto-complete
+          type: SM_DATATYPE_BOOLEAN
+          default: 'true'
+          usage: itemproperty
+        - 
+          name: require_unique
+          label: Require unique values
+          type: SM_DATATYPE_BOOLEAN
+          default: 'false'
+          usage: itemproperty
+        - 
+          name: pattern
+          label: Validate using a given pattern
+          type: SM_DATATYPE_SL_TEXT
+          default: ""
+          usage: itemproperty,field,dropdown
+  SM_DATATYPE_ASSET:
+    id: SM_DATATYPE_ASSET
+    valuetype: foreignkey
+    label: >
+      File from the media library (formatted
+      text, image, PDF, etc,)
+    description: >
+      A single file that has been imported
+      into the files repository.
+    usage: itemproperty
+    long: 'false'
+    searchable: 'true'
+    filter:
+      typesource:
+        type: smartest:assettypes
+        label: File Type
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.assettypes.tpl
+      entitysource:
+        type: db
+        table: Assets
+        matchfield: asset_type
+        sortfield: asset_stringid
+        sitefield: asset_site_id
+        sharedfield: asset_shared
+        class: SmartestAsset
+        label: File
+      optionsettype:
+        id: SM_PROPERTY_FILTERTYPE_ASSETGROUP
+        class: SmartestAssetGroup
+        table: Sets
+        sitefield: set_site_id
+        condition:
+          field: set_type
+          value: SM_SET_ASSETGROUP
+          operator: EQUAL
+      condition:
+        - 
+          field: asset_deleted
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: asset_is_archived
+          value: "1"
+          operator: NOT_EQUAL
+    menu:
+      value: id
+      display: url
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.asset.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/asset.tpl
+    class: SmartestRenderableAsset
+  SM_DATATYPE_CMS_ITEM:
+    id: SM_DATATYPE_CMS_ITEM
+    valuetype: foreignkey
+    label: Item
+    description: A single item from a selected model.
+    usage: itemproperty
+    long: 'false'
+    searchable: 'true'
+    filter:
+      typesource:
+        type: smartest:models
+        table: ItemClasses
+        matchfield: id
+        label: Model
+        class: SmartestModel
+        sortfield: itemclass_plural_name
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.models.tpl
+      entitysource:
+        type: db
+        table: Items
+        matchfield: item_itemclass_id
+        sitefield: item_site_id
+        sharedfield: item_shared
+        class: SmartestItem
+        sortfield: item_name
+      optionsettype:
+        id: SM_PROPERTY_FILTERTYPE_DATASET
+        class: SmartestCmsItemSet
+        table: Sets
+        sitefield: set_site_id
+      condition:
+        - 
+          field: item_is_archived
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: item_deleted
+          value: "1"
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.cms_item.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/cms_item.tpl
+    menu:
+      value: id
+      display: name
+    class: SmartestCmsItem
+  SM_DATATYPE_INTERNAL_LINK:
+    id: SM_DATATYPE_INTERNAL_LINK
+    valuetype: string
+    label: Internal link to a page, item or file
+    description: A link to a page, item or file
+    usage: itemproperty,field
+    long: 'false'
+    searchable: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.internal_link.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/internal_link.tpl
+    class: SmartestInternalLink
+  SM_DATATYPE_CMS_ITEM_SELECTION:
+    id: SM_DATATYPE_CMS_ITEM_SELECTION
+    valuetype: manytomany
+    label: Selection of items
+    description: >
+      Choose among items from a selected model
+      (one-way many-to-many).
+    usage: itemproperty
+    long: 'false'
+    manytomany:
+      relationshipcode: SM_MTMLOOKUP_ITEM_SELECTION_PROPERTY
+      ipventityindex: "2"
+      mappedentityindex: "1"
+    filter:
+      typesource:
+        type: smartest:models
+        table: ItemClasses
+        matchfield: id
+        label: Model
+        class: SmartestModel
+        sortfield: itemclass_plural_name
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.models.tpl
+      entitysource:
+        type: db
+        table: Items
+        matchfield: item_itemclass_id
+        sitefield: item_site_id
+        sharedfield: item_shared
+        class: SmartestItem
+        sortfield: item_name
+      optionsettype:
+        id: SM_PROPERTY_FILTERTYPE_DATASET
+        class: SmartestCmsItemSet
+        table: Sets
+        sitefield: set_site_id
+      condition:
+        - 
+          field: item_is_archived
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: item_deleted
+          value: "1"
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.cms_item.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/property.default.tpl
+    menu:
+      value: id
+      display: name
+    class: SmartestCmsItemsCollection
+  SM_DATATYPE_ASSET_SELECTION:
+    id: SM_DATATYPE_ASSET_SELECTION
+    valuetype: manytomany
+    label: Selection of files
+    description: >
+      Choice of one or more files (one-way
+      many-to-many).
+    usage: itemproperty
+    long: 'false'
+    manytomany:
+      relationshipcode: SM_MTMLOOKUP_ASSET_SELECTION_PROPERTY
+      ipventityindex: "2"
+      mappedentityindex: "1"
+    filter:
+      typesource:
+        type: smartest:assettypes
+        label: File Type
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.assettypes.tpl
+      entitysource:
+        type: db
+        table: Assets
+        matchfield: asset_type
+        sortfield: asset_stringid
+        sitefield: asset_site_id
+        sharedfield: asset_shared
+        class: SmartestAsset
+        label: File
+      optionsettype:
+        id: SM_PROPERTY_FILTERTYPE_ASSETGROUP
+        class: SmartestAssetGroup
+        table: Sets
+        sitefield: set_site_id
+        condition:
+          field: set_type
+          value: SM_SET_ASSETGROUP
+          operator: EQUAL
+      condition:
+        - 
+          field: asset_deleted
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: asset_is_archived
+          value: "1"
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.cms_item.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/property.default.tpl
+    menu:
+      value: id
+      display: name
+    class: SmartestAssetsCollection
+  SM_DATATYPE_NUMERIC:
+    id: SM_DATATYPE_NUMERIC
+    valuetype: string
+    label: Number
+    description: >
+      A numeric value in standard notation
+      such as an integer or decimal.
+      Scientific notation and fractions are
+      not supported.
+    usage: field,itemproperty
+    class: SmartestNumeric
+    sortable: 'true'
+    quantity: 'true'
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/numeric.tpl
+    parameters:
+      param:
+        - 
+          name: num_decimal_places
+          label: Number of decimal places
+          type: SM_DATATYPE_NUMERIC
+          default: 'true'
+          usage: field,itemproperty
+        - 
+          name: require_unique
+          label: Require unique values
+          type: SM_DATATYPE_BOOLEAN
+          default: 'false'
+          usage: itemproperty
+  SM_DATATYPE_URL:
+    id: SM_DATATYPE_URL
+    valuetype: string
+    label: External URL
+    description: A web address (starting with http://).
+    usage: field,itemproperty
+    class: SmartestExternalUrl
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.url.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/url.tpl
+  SM_DATATYPE_ML_TEXT:
+    id: SM_DATATYPE_ML_TEXT
+    valuetype: string
+    label: Multi-line plain text
+    description: >
+      Longer piece of text (255 chars or more)
+      in which no formatting is needed.
+    usage: itemproperty
+    class: SmartestString
+    searchable: 'true'
+    long: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/ml_text.tpl
+  SM_DATATYPE_BOOLEAN:
+    id: SM_DATATYPE_BOOLEAN
+    valuetype: string
+    label: True/False
+    description: A simple boolean (true/false) value.
+    usage: field,itemproperty
+    class: SmartestBoolean
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/boolean_switch.tpl
+  SM_DATATYPE_DROPDOWN_MENU:
+    id: SM_DATATYPE_DROPDOWN_MENU
+    valuetype: foreignkey
+    label: Custom dropdown menu
+    description: >
+      A value from one of your custom dropdown
+      menus, created in the dropdown menu
+      editor.
+    usage: field,itemproperty
+    long: 'false'
+    sortable: 'true'
+    searchable: 'true'
+    filter:
+      typesource:
+        type: db
+        table: DropDowns
+        matchfield: id
+        label: Dropdown Menu
+        class: SmartestDropdown
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.dropdownmenus.tpl
+      entitysource:
+        type: db
+        table: DropDownValues
+        matchfield: dropdownvalue_dropdown_id
+        class: SmartestDropdownOption
+        sortfield: dropdownvalue_order
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.dropdownvalue.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/dropdown_menu.tpl
+    menu:
+      value: value
+      display: label
+    class: SmartestDropdownOption
+  SM_DATATYPE_RGB_COLOR:
+    id: SM_DATATYPE_RGB_COLOR
+    valuetype: string
+    label: Color
+    description: A 24-bit RGB color
+    usage: field,itemproperty,dropdown
+    class: SmartestRgbColor
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.rgb_color.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/default.tpl
+  SM_DATATYPE_PAGE:
+    id: SM_DATATYPE_PAGE
+    valuetype: foreignkey
+    label: Web page within Smartest
+    description: Any web page from this website.
+    usage: itemproperty,field
+    long: 'false'
+    searchable: 'true'
+    filter:
+      entitysource:
+        type: db
+        table: Pages
+        sortfield: page_title
+        sitefield: page_site_id
+        class: SmartestPage
+        label: Page
+      optionsettype:
+        id: SM_PROPERTY_FILTERTYPE_PAGEGROUP
+        class: SmartestPageGroup
+        table: Sets
+        sitefield: set_site_id
+      condition:
+        - 
+          field: page_type
+          value: NORMAL
+          operator: EQUAL
+        - 
+          field: page_deleted
+          value: 'TRUE'
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.page.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/page.tpl
+    menu:
+      value: id
+      display: title
+    class: SmartestPage
+  SM_DATATYPE_USER:
+    id: SM_DATATYPE_USER
+    valuetype: foreignkey
+    label: User
+    description: A Smartest user account
+    usage: itemproperty
+    long: 'false'
+    searchable: 'true'
+    filter:
+      entitysource:
+        type: db
+        table: Users
+        sortfield: user_lastname
+        class: SmartestUser
+        label: User
+      condition:
+        - 
+          field: user_type
+          value: SM_USERTYPE_OAUTH_CLIENT_INTERNAL
+          operator: NOT_EQUAL
+        - 
+          field: username
+          value: smartest
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.user.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/user.tpl
+    menu:
+      value: id
+      display: username
+    class: SmartestUser
+  SM_DATATYPE_EMAIL_ADDRESS:
+    id: SM_DATATYPE_EMAIL_ADDRESS
+    valuetype: string
+    label: Email address
+    description: An email address.
+    usage: field,itemproperty,dropdown
+    class: SmartestEmailAddress
+    searchable: 'true'
+    long: 'false'
+    sortable: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.email.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/email.tpl
+  SM_DATATYPE_DATE:
+    id: SM_DATATYPE_DATE
+    valuetype: string
+    label: Date (day, month, year)
+    description: >
+      A date that specifies year, month, and
+      day of the month, but not the time of
+      day.
+    usage: field,itemproperty,feed,dropdown
+    class: SmartestDateTime
+    sortable: 'true'
+    quantity: 'true'
+    chronological: 'true'
+    searchable: 'true'
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.date.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/date.tpl
+    parameters:
+      param:
+        name: resolution
+        label: Resolution
+        type: SM_DATATYPE_SL_TEXT
+        default: SM_DATERESOLUTION_DAY
+        usage: field,itemproperty
+        options:
+          option:
+            - 
+              value: SM_DATERESOLUTION_VARIABLE
+              _content: Variable
+            - 
+              value: SM_DATERESOLUTION_DAY
+              _content: Day
+            - 
+              value: SM_DATERESOLUTION_MONTH
+              _content: Month
+            - 
+              value: SM_DATERESOLUTION_YEAR
+              _content: Year
+  SM_DATATYPE_TIMESTAMP:
+    id: SM_DATATYPE_TIMESTAMP
+    valuetype: string
+    label: Timestamp
+    description: 'An exact point in time - year, month, day, hour, minute, and second.'
+    usage: field,itemproperty,feed,dropdown
+    class: SmartestDateTime
+    sortable: 'true'
+    quantity: 'true'
+    chronological: 'true'
+    searchable: 'true'
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.timestamp.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/timestamp.tpl
+  SM_DATATYPE_CALENDAR_EVENT:
+    id: SM_DATATYPE_CALENDAR_EVENT
+    valuetype: string
+    label: Calendar event
+    description: >
+      An event that has a start and end time,
+      or runs all day.
+    usage: itemproperty
+    class: SmartestCalendarEvent
+    chronological: 'true'
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.calendar_event.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/calendar_event.tpl
+  SM_DATATYPE_SINGLE_TAG:
+    id: SM_DATATYPE_SINGLE_TAG
+    valuetype: foreignkey
+    label: Single tag
+    description: One of the tags in use within Smartest.
+    usage: field,itemproperty
+    long: 'false'
+    filter:
+      entitysource:
+        type: db
+        table: Tags
+        class: SmartestTag
+        sortfield: tag_name
+      condition:
+        field: tag_type
+        value: SM_TAGTYPE_TAG
+        operator: EQUAL
+    menu:
+      value: id
+      display: url
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.tag.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/tag.tpl
+    class: SmartestTag
+  SM_DATATYPE_TEMPLATE:
+    id: SM_DATATYPE_TEMPLATE
+    valuetype: foreignkey
+    label: Template
+    description: A single-item template.
+    usage: itemproperty
+    long: 'false'
+    filter:
+      entitysource:
+        type: db
+        table: Assets
+        matchfield: asset_type
+        sortfield: asset_stringid
+        sitefield: asset_site_id
+        sharedfield: asset_shared
+        class: SmartestTemplateAsset
+        label: Template
+      condition:
+        - 
+          field: asset_deleted
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: asset_is_archived
+          value: "1"
+          operator: NOT_EQUAL
+        - 
+          field: asset_type
+          value: SM_ASSETTYPE_SINGLE_ITEM_TEMPLATE
+          operator: EQUAL
+    menu:
+      value: id
+      display: url
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.asset.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/asset.tpl
+    class: >
+      SmartestRenderableSingleItemTemplateAsset
+  SM_DATATYPE_ASSET_GROUP:
+    id: SM_DATATYPE_ASSET_GROUP
+    valuetype: foreignkey
+    label: Ordinary file group
+    description: >
+      One of the file groups from the files
+      repository.
+    usage: itemproperty
+    long: 'false'
+    filter:
+      typesource:
+        type: smartest:assettypes
+        label: File Type
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.assettypes.tpl
+      entitysource:
+        type: db
+        table: Sets
+        sortfield: set_name
+        sitefield: set_site_id
+        sharedfield: set_shared
+        class: SmartestAssetGroup
+        label: Group
+      condition:
+        field: set_type
+        value: SM_SET_ASSETGROUP
+        operator: EQUAL
+    menu:
+      value: id
+      display: url
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/asset_group.tpl
+    class: SmartestAssetGroup
+  SM_DATATYPE_ASSET_GALLERY:
+    id: SM_DATATYPE_ASSET_GALLERY
+    valuetype: foreignkey
+    label: File gallery
+    description: >
+      One of the file groups from the files
+      repository.
+    usage: itemproperty,field
+    long: 'false'
+    filter:
+      entitysource:
+        type: db
+        table: Sets
+        sortfield: set_name
+        sitefield: set_site_id
+        sharedfield: set_shared
+        class: SmartestAssetGroup
+        label: Group
+      condition:
+        field: set_type
+        value: SM_SET_ASSETGALLERY
+        operator: EQUAL
+    menu:
+      value: id
+      display: label
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/asset_group.tpl
+    class: SmartestAssetGroup
+  SM_DATATYPE_CMS_ITEM_SET:
+    id: SM_DATATYPE_CMS_ITEM_SET
+    valuetype: foreignkey
+    label: Set of items
+    description: >
+      A predefined group of items belonging to
+      the same model.
+    usage: itemproperty
+    entitytype: Sets:id,label
+    long: 'false'
+    filter:
+      typesource:
+        type: smartest:models
+        table: ItemClasses
+        matchfield: id
+        label: Model
+        class: SmartestModel
+        sortfield: itemclass_plural_name
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.models.tpl
+      entitysource:
+        type: db
+        table: Sets
+        sitefield: set_site_id
+        sharedfield: set_shared
+        class: SmartestCmsItemSet
+        filterfield: set_itemclass_id
+      condition:
+        - 
+          field: set_type
+          value: SM_SET_ASSETGROUP
+          operator: NOT_EQUAL
+        - 
+          field: set_type
+          value: SM_SET_PAGEGROUP
+          operator: NOT_EQUAL
+        - 
+          field: set_type
+          value: SM_SET_ASSETGALLERY
+          operator: NOT_EQUAL
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.cms_item_set.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/property.default.tpl
+    menu:
+      value: id
+      display: name
+    class: SmartestCmsItemSet
+  SM_DATATYPE_TWITTER_ACCT:
+    id: SM_DATATYPE_TWITTER_ACCT
+    valuetype: string
+    label: Twitter account
+    description: >
+      A user account on the social networking
+      service Twitter
+    usage: field,itemproperty,dropdown
+    class: SmartestTwitterAccountName
+    long: 'true'
+    sortable: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/twitter_acct.tpl
+  SM_DATATYPE_FEED:
+    id: SM_DATATYPE_FEED
+    valuetype: string
+    label: RSS or Atom feed
+    description: >
+      A feed of external content using RSS or
+      Atom
+    usage: itemproperty
+    class: SmartestExternalFeed
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.url.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/url.tpl
+  SM_DATATYPE_PLACEMARK:
+    id: SM_DATATYPE_PLACEMARK
+    valuetype: string
+    label: Geographical coordinates
+    description: >
+      Pair of integers that can be used to
+      position something on a page or graphic
+    usage: ""
+    class: SmartestGeoPoint
+    long: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/lat_long.tpl
+  SM_DATATYPE_COUNTRY:
+    id: SM_DATATYPE_COUNTRY
+    valuetype: string
+    label: Country
+    description: >
+      A country of the world. Uses the ISO
+      3166-1 alpha-2 standard.
+    usage: field,itemproperty
+    class: SmartestCountry
+    searchable: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/license.tpl
+  SM_DATATYPE_ISBN:
+    id: SM_DATATYPE_ISBN
+    valuetype: string
+    label: ISBN code for books
+    description: >
+      ISBN is a standardised number for
+      identifying published books.
+    usage: field,itemproperty
+    class: SmartestString
+    searchable: 'true'
+    long: 'false'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/sl_text.tpl
+  SM_DATATYPE_LICENSE:
+    id: SM_DATATYPE_LICENSE
+    valuetype: string
+    label: Intellectual property license
+    description: >
+      A license for software, writing, images,
+      or other intellectual property
+    usage: field,itemproperty
+    class: SmartestLicense
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/license.tpl
+  SM_DATATYPE_PIXEL_COORDINATES:
+    id: SM_DATATYPE_PIXEL_COORDINATES
+    valuetype: string
+    label: Screen position (X,Y pixel coordinates)
+    description: >
+      Pair of integers that can be used to
+      position something on a page or graphic
+    usage: field,itemproperty
+    class: SmartestScreenPosition
+    long: 'true'
+    render:
+      template: >
+        System/Presentation/WebPageBuilder/property.default.tpl
+    input:
+      template: >
+        System/Presentation/InterfaceBuilder/Inputs/pixel_coordinates.tpl
+  SM_DATATYPE_AUTO_ITEM_FK:
+    id: SM_DATATYPE_AUTO_ITEM_FK
+    valuetype: auto
+    label: Auto-query
+    description: Automatic query based on foreign keys.
+    usage: itemproperty
+    long: 'false'
+    filter:
+      typesource:
+        template: >
+          System/Applications/Items/Presentation/FKFilterSelectors/filtertype.referring_properties.tpl
+    class: SmartestCmsItemsCollection

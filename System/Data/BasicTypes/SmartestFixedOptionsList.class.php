@@ -6,6 +6,8 @@ class SmartestFixedOptionsList implements ArrayAccess, IteratorAggregate, Counta
     protected $_type = 'SM_DATATYPE_SL_TEXT';
     
     public function __construct($options, $type='SM_DATATYPE_SL_TEXT'){
+        $this->_options = new SmartestParameterHolder('Fixed Options List Options');
+
         if($this->setType($type)){
             if(is_array($options)){
                 if(count($options)){
@@ -23,7 +25,7 @@ class SmartestFixedOptionsList implements ArrayAccess, IteratorAggregate, Counta
                         $this->loadRawOptions($options, $this->_type);
                     }
                 }else{
-                    // There are zero options. Hmmmm.
+                    // There are zero options.
                 }
             }else{
                 // $options is not an array. SHould probably throw an exception.
@@ -58,7 +60,7 @@ class SmartestFixedOptionsList implements ArrayAccess, IteratorAggregate, Counta
             $o->loadArray($options);
             $this->_options = $o;
             
-        }else if($options instanceof $options){
+        }else if($options instanceof SmartestParameterHolder){
             
             $this->_options = $options;
             
@@ -67,10 +69,10 @@ class SmartestFixedOptionsList implements ArrayAccess, IteratorAggregate, Counta
     }
     
     public function count(){
-        return count($this->_options);
+        return $this->_options instanceof SmartestParameterHolder ? count($this->_options) : 0;
     }
     
-    public function &getIterator(){
+    public function getIterator(): Traversable{
         return new ArrayIterator($this->_options->getArray());
     }
     

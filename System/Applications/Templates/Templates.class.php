@@ -890,7 +890,7 @@ class Templates extends SmartestSystemApplication{
 	                    
     	                    // DELETE ALL PER-ITEM DEFINITIONS
     	                    $pmh = new SmartestPageManagementHelper;
-    	                    $pmh->removePerItemDefinitions($page->getId(), $container->getId());
+    	                    $pmh->removePerItemDefinitions($page->getId(), $container->getId(), $instance_name);
 	                    
     	                }
 	                

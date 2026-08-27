@@ -96,7 +96,7 @@ class SmartestPlaceholderDefinition extends SmartestAssetIdentifier{
             
             if($placeholder->hydrateBy('name', $name)){
                 
-                return $this->loadWithObjects($placeholder, $page, $item_id, $instance_name);
+                return $this->loadWithObjects($placeholder, $page, false, $item_id, $instance_name);
                 
             }else{
                 // Placeholder by that name doesn't exist
@@ -106,10 +106,15 @@ class SmartestPlaceholderDefinition extends SmartestAssetIdentifier{
         }
     }
     
-    public function loadWithObjects(SmartestPlaceholder $placeholder, SmartestPage $page, $item_id=null, $instance_name='default'){
+    public function loadWithObjects(SmartestPlaceholder $placeholder, SmartestPage $page, $draft=false, $item_id=null, $instance_name='default'){
         
         $this->_asset_class = $placeholder;
         $this->_page = $page;
+        if(is_string($item_id) && !is_numeric($item_id) && $instance_name == 'default'){
+            $instance_name = $item_id;
+            $item_id = null;
+        }
+
         $instance_name = SmartestStringHelper::toVarName($instance_name);
         
         $sql = "SELECT * FROM AssetIdentifiers WHERE assetidentifier_assetclass_id='".$this->_asset_class->getId()."' AND assetidentifier_page_id='".$this->_page->getId()."'";
@@ -184,11 +189,7 @@ class SmartestPlaceholderDefinition extends SmartestAssetIdentifier{
         
         $this->getAsset($draft);
         
-        if(!$this->_asset){
-            return true;
-        }else{
-            return false;
-        }
+        return is_object($this->_asset);
         
     }
     

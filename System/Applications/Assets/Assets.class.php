@@ -16,7 +16,10 @@ class Assets extends SmartestSystemApplication{
 	public function startPage(){
 	    if($this->getApplicationPreference('startpage_view') == 'groups'){
 	        $this->forward('assets', 'assetGroups');
-    	}elseif($this->getApplicationPreference('startpage_view') == 'galleries'){
+	    }elseif($this->getApplicationPreference('startpage_view') == 'categories'){
+            $this->getRequest()->setMeta('presentation', 'assetTypeCategories.tpl');
+            $this->forward('assets', 'assetTypeCategories');
+	    }elseif($this->getApplicationPreference('startpage_view') == 'galleries'){
             $this->getRequest()->setMeta('presentation', 'assetGroups.tpl');
             $this->forward('assets', 'assetGalleries');
 	    }else{
@@ -138,7 +141,6 @@ class Assets extends SmartestSystemApplication{
 		$this->setFormReturnUri(); // set the url of the page to be return to
 		$this->setFormReturnDescription('file types');
 		
-		// $assetTypes_old = $this->manager->getAssetTypes();
 		$assetTypes = $h->getTypesByCategory(array('templates'));
 		$locations = $h->getUnWritableStorageLocations();
 		
@@ -148,6 +150,108 @@ class Assets extends SmartestSystemApplication{
 		$recent = $this->getUser()->getRecentlyEditedAssets($this->getSite()->getId());
         $this->send($recent, 'recent_assets');
 		
+	}
+
+    public function assetTypeCategories(){
+
+        $this->requireOpenProject();
+
+        $h = new SmartestAssetsLibraryHelper;
+
+        $this->setApplicationPreference('startpage_view', 'categories');
+
+        $this->setTitle("Files by category");
+        $this->setFormReturnUri();
+        $this->setFormReturnDescription('file categories');
+
+        $assetTypeCats = $h->getTypesByCategory(array('templates'));
+        $categories = array();
+
+        foreach($assetTypeCats as $short_name => $category){
+            if(isset($category['types']) && count($category['types'])){
+                $category['short_name'] = isset($category['short_name']) ? $category['short_name'] : $short_name;
+                $category['type_count'] = count($category['types']);
+                $categories[] = $category;
+            }
+        }
+
+        $this->send($categories, 'assetTypeCategories');
+        $this->send($h->getUnWritableStorageLocations(), 'locations');
+
+        $recent = $this->getUser()->getRecentlyEditedAssets($this->getSite()->getId());
+        $this->send($recent, 'recent_assets');
+
+    }
+
+    public function getAssetTypeCategoryMembers($get){
+
+        $this->requireOpenProject();
+
+        $h = new SmartestAssetsLibraryHelper;
+        $category_code = '';
+
+        if(isset($get['asset_category'])){
+            $category_code = $get['asset_category'];
+        }else if(isset($get['category'])){
+            $category_code = $get['category'];
+        }
+
+        $category_code = SmartestStringHelper::toVarName($category_code);
+        $mode = isset($get["mode"]) ? (int) $get["mode"] : 1;
+
+        $this->send($this->getApplicationPreference('asset_list_style', 'grid'), 'list_view');
+        $this->send($mode, 'mode');
+        $this->setFormReturnUri();
+
+        $assetTypeCats = $h->getTypesByCategory(array('templates'));
+
+        if(isset($assetTypeCats[$category_code])){
+
+            $category = $assetTypeCats[$category_code];
+            $category['short_name'] = isset($category['short_name']) ? $category['short_name'] : $category_code;
+            $types = isset($category['types']) && is_array($category['types']) ? $category['types'] : array();
+            $type_codes = array();
+
+            foreach($types as $type){
+                if(isset($type['id'])){
+                    $type_codes[] = $type['id'];
+                }
+            }
+
+            $assets = count($type_codes) ? $this->manager->getAssetsByTypeCode($type_codes, $this->getSite()->getId(), $mode) : array();
+
+            $this->send($category, 'category');
+            $this->send(new SmartestString($category['l10n_label']), 'category_label');
+            $this->send($category_code, 'category_code');
+            $this->send($types, 'asset_types');
+            $this->send($type_codes, 'type_codes');
+            $this->send(count($assets), 'num_assets');
+            $this->send($assets, 'assets');
+
+            $recent = $this->getUser()->getRecentlyEditedAssets($this->getSite()->getId());
+            $recent_assets = array();
+
+            foreach($recent as $recent_asset){
+                if(in_array($recent_asset->getType(), $type_codes)){
+                    $recent_assets[] = $recent_asset;
+                }
+            }
+
+            $this->send($recent_assets, 'recent_assets');
+            $this->setTitle($category['l10n_label']." Files");
+            $this->setFormReturnDescription('files');
+
+        }else{
+            $this->send(array(), 'assets');
+            $this->send(array(), 'asset_types');
+            $this->send(array(), 'type_codes');
+            $this->send(array(), 'recent_assets');
+            $this->send(0, 'num_assets');
+            $this->send(new SmartestString('Unknown'), 'category_label');
+            $this->send($category_code, 'category_code');
+            $this->setTitle("Files by category");
+        }
+
 	}
 	
 	public function getAssetTypeMembers($get){
@@ -2242,11 +2346,11 @@ class Assets extends SmartestSystemApplication{
     			            $content = htmlspecialchars(stripslashes($asset->getTextFragment()->getContent()), ENT_COMPAT, 'UTF-8');
     			        }
 			        }else{
-			            $file = SM_ROOT_DIR.$asset_type['storage'].$asset->getUrl();
 			            $content = htmlspecialchars(SmartestFileSystemHelper::load($asset->getFullPathOnDisk()), ENT_COMPAT, 'UTF-8');
 			        }
 
 			        $this->send($content, 'textfragment_content');
+				        $this->send($this->getCodeMirrorModeForAssetType($assettype_code), 'codemirror_mode');
 			        
 			        if(isset($asset_type['parsable']) && SmartestStringHelper::toRealBool($asset_type['parsable'])){
         		        $this->send(true, 'show_publish');
@@ -2278,6 +2382,40 @@ class Assets extends SmartestSystemApplication{
 		}
 	}
     
+        protected function getCodeMirrorModeForAssetType($assettype_code){
+            switch($assettype_code){
+                case 'SM_ASSETTYPE_MARKDOWN_TEXT':
+                    return 'smartest-markdown';
+
+                case 'SM_ASSETTYPE_TEXTILE_TEXT':
+                    return 'smartest-textile';
+
+                case 'SM_ASSETTYPE_JAVASCRIPT':
+                    return 'smartest-javascript';
+
+                case 'SM_ASSETTYPE_STYLESHEET':
+                    return 'smartest-css';
+
+                case 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET':
+                    return 'smartest-scss';
+
+                case 'SM_ASSETTYPE_SVG_IMAGE':
+                    return 'xml';
+
+                case 'SM_ASSETTYPE_HTML_FRAGMENT':
+                case 'SM_ASSETTYPE_MASTER_TEMPLATE':
+                case 'SM_ASSETTYPE_CONTAINER_TEMPLATE':
+                case 'SM_ASSETTYPE_ITEMSPACE_TEMPLATE':
+                case 'SM_ASSETTYPE_COMPOUND_LIST_TEMPLATE':
+                case 'SM_ASSETTYPE_BLOCKLIST_TEMPLATE':
+                case 'SM_ASSETTYPE_SINGLE_ITEM_TEMPLATE':
+                    return 'smartest-htmlmixed';
+
+                default:
+                    return 'smartest-htmlmixed';
+            }
+        }
+
 	public function updateAsset($get, $post){
         
         $asset_id = $this->getRequestParameter('asset_id');
@@ -2286,55 +2424,17 @@ class Assets extends SmartestSystemApplication{
 
 		if($asset->find($asset_id)){
             
-            if($asset->getUserId() == $this->getUser()->getId() || $this->getUser()->hasToken('modify_assets')){
-            
-                $filter = $asset->isEditable() && (!$this->requestParameterIsSet('filter_markup') || (bool) $this->getRequestParameter('filter_markup'));
-                
-		        $param_values = serialize($this->getRequestParameter('params'));
-    		    $asset->setParameterDefaults($param_values);
-                
-                if($asset->isEditable()){
-                    $content = mb_convert_encoding($this->getRequestParameter('asset_content'), 'UTF-8');
-                }else{
-                    $content = null;
-                }
-                
-                if($filter){
-                    $content = SmartestStringHelper::unProtectSmartestTags($content);
-        		    $content = SmartestTextFragmentCleaner::convertDoubleLineBreaks($content);
-                    $update_success = $asset->setContentFromEditor($content);
-                }else{
-                    if($asset->isEditable()){
-                        $asset->setContent($content);
-                    }
-                    $update_success = true;
-                }
-                
-    	        $asset->setLanguage(strtolower(substr($this->getRequestParameter('asset_language'), 0, 3)));
-    	        $asset->setModified(time());
-                
-                $asset->save();
-                
-                if($update_success){
-                    $this->addUserMessageToNextRequest("The file has been successfully updated.", SmartestUserMessage::SUCCESS);
-    		        $success = true;
-                }else{
-                    if($asset->usesTextFragment()){
-                        $this->addUserMessageToNextRequest("The file \"".$asset->getLabel()."\" could not be updated because of illegal characters in the submitted text that prevented validation parsing.", SmartestUserMessage::WARNING, true);
-                    }else{
-                        $this->addUserMessageToNextRequest("The file could not be updated because of file permissions while writing to disk.", SmartestUserMessage::WARNING);
-                    }
-    		        $success = false;
-                }
-		    
-		    }else{
-    	        $this->addUserMessageToNextRequest("You don't have permission to edit assets created by other users.", SmartestUserMessage::WARNING);
-    	        $success = false;
-    	    }
+            $update_helper = new SmartestAssetUpdateHelper;
+            $result = $update_helper->updateAssetFromParameters($asset, $this->getRequestParameters(), $this->getUser());
+
+            if($result['success']){
+                $this->addUserMessageToNextRequest($result['message'], $result['message_type']);
+            }else{
+                $this->addUserMessageToNextRequest($result['message'], $result['message_type'], $asset->usesTextFragment());
+            }
 
 		}else{
 		    $this->addUserMessageToNextRequest("The file you are trying to update no longer exists or has been deleted by another user.", SmartestUserMessage::WARNING);
-		    $success = false;
 		}
 	    
 	    $this->handleSaveAction();
@@ -2469,7 +2569,7 @@ class Assets extends SmartestSystemApplication{
                 
                 $message = SmartestStringHelper::sanitize($this->getRequestParameter('todoitem_description'));
                 
-        	    if(isset($message{1})){
+		    if(isset($message[1])){
         	        $input_message = SmartestStringHelper::sanitize($message);
         	    }else{
         	        $input_message = $type->getDescription();
@@ -2696,6 +2796,8 @@ class Assets extends SmartestSystemApplication{
 	    $asset_id = $this->getRequestParameter('asset_id');
         $attachment_name = SmartestStringHelper::toVarName($this->getRequestParameter('attachment'));
         $this->send($attachment_name, 'attachment_name');
+        $this->send(false, 'has_attached_asset');
+        $this->send(false, 'attached_asset_is_image');
         
 		$asset = new SmartestAsset;
 
@@ -2727,6 +2829,9 @@ class Assets extends SmartestSystemApplication{
                         
                         $attached_asset = $current_def->getAsset();
                         $this->send($attached_asset, 'attached_asset');
+                        $has_attached_asset = is_object($attached_asset) && $attached_asset->getId();
+                        $this->send($has_attached_asset, 'has_attached_asset');
+                        $this->send($has_attached_asset && $attached_asset->isBinaryImage(), 'attached_asset_is_image');
                         
                         if(is_object($attached_asset)){
                             
@@ -3175,6 +3280,19 @@ class Assets extends SmartestSystemApplication{
                     
                 }
                 
+            }else if($this->getRequestParameter('for') == 'site_logo'){
+
+                $site_logos_group = new SmartestAssetGroup;
+
+                if($site_logos_group->find(SmartestSystemSettingHelper::getSiteLogosFileGroupId())){
+                    $assets = $site_logos_group->getMembers(1, $this->getSite()->getId());
+                }else{
+                    $assets = array();
+                }
+
+                $this->send($this->getRequestParameter('for'), 'for');
+                $this->send("Logo for ".$this->getSite()->getInternalLabel()." - ".date('M d Y'), 'suggested_label');
+
             }else{
                 
                 $alh = new SmartestAssetsLibraryHelper;
@@ -3392,6 +3510,50 @@ class Assets extends SmartestSystemApplication{
             $this->send(false, 'show_editor');
         }
         
+    }
+
+    public function editTextFragmentAttachmentLite(){
+
+        $helper = new SmartestTextFragmentAttachmentEditor;
+        $attachment_data = $helper->getAttachmentData(
+            $this->getRequestParameter('asset_id', $this->getRequestParameter('file_id')),
+            $this->getRequestParameter('attachment', $this->getRequestParameter('attachment_name')),
+            $this->getUser()
+        );
+
+        if($attachment_data){
+
+            $this->send($attachment_data['asset_id'], 'asset_id');
+            $this->send($attachment_data['attachment_name'], 'attachment_name');
+            $this->send($attachment_data['textfragment_id'], 'textfragment_id');
+            $this->send($attachment_data['has_asset'], 'has_attached_asset');
+            $this->send($attachment_data['attached_asset_is_image'], 'attached_asset_is_image');
+            $this->send($attachment_data['attached_asset_label'], 'attached_asset_label');
+            $this->send($attachment_data['attached_asset_url'], 'attached_asset_url');
+            $this->send($attachment_data['thumbnail_url'], 'thumbnail_url');
+            $this->send($attachment_data['modal_thumbnail_url'], 'modal_thumbnail_url');
+            $this->send($attachment_data['image_is_resized'], 'image_is_resized');
+            $this->send($attachment_data['resize_label'], 'resize_label');
+            $this->send($attachment_data['preview_kind'], 'preview_kind');
+            $this->send($attachment_data['preview_label'], 'preview_label');
+            $this->send($attachment_data['preview_badge'], 'preview_badge');
+            $this->send($attachment_data['alignment'], 'alignment');
+            $this->send($attachment_data['float'], 'float');
+            $this->send($attachment_data['caption'], 'caption');
+            $this->send($attachment_data['caption_alignment'], 'caption_alignment');
+            $this->send($attachment_data['border'], 'border');
+            $this->send($attachment_data['full_editor_url'], 'full_editor_url');
+            $this->send(strip_tags($this->getRequestParameter('editor_id')), 'editor_id');
+
+        }else{
+
+            $this->send(false, 'asset_id');
+            $this->send(SmartestStringHelper::toVarName($this->getRequestParameter('attachment')), 'attachment_name');
+            $this->send(strip_tags($this->getRequestParameter('editor_id')), 'editor_id');
+            $this->send('The attachment could not be found.', 'message');
+
+        }
+
     }
     
     public function createAssetGalleryForItemPropertyValue(){

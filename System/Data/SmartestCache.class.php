@@ -123,7 +123,7 @@ class SmartestCache{
         $filesize_total = 0;
         
         foreach($files as $filename){
-            if(($filename{0} == 's' && $is_smartest) || ($filename{0} == 'u' && !$is_smartest) && mtime(SM_ROOT_DIR.'System/Cache/Data/'.$filename) < $last_mtime){
+            if(($filename[0] == 's' && $is_smartest) || ($filename[0] == 'u' && !$is_smartest) && mtime(SM_ROOT_DIR.'System/Cache/Data/'.$filename) < $last_mtime){
                 $filesize_total += filesize(SM_ROOT_DIR.'System/Cache/Data/'.$filename);
                 $num_files_removed++;
                 unlink(SM_ROOT_DIR.'System/Cache/Data/'.$filename);
@@ -142,7 +142,7 @@ class SmartestCache{
         $filesize_total = 0;
         
         foreach($files as $filename){
-            if(($filename{0} == 's' && $is_smartest) || ($filename{0} == 'u' && !$is_smartest)){
+            if(($filename[0] == 's' && $is_smartest) || ($filename[0] == 'u' && !$is_smartest)){
                 $filesize_total += filesize(SM_ROOT_DIR.'System/Cache/Data/'.$filename);
             }
         }

@@ -854,7 +854,7 @@ class ItemsAjax extends SmartestSystemApplication{
         if(strlen($name) < 3){
             $response->permitted = false;
             $response->reason = 'This property name is too short.';
-        }elseif(is_numeric($name{0})){
+        }elseif(is_numeric($name[0])){
             $response->permitted = false;
             $response->reason = 'Property names cannot start with a number.';
         }elseif(in_array($name, $GLOBALS['reserved_keywords'])){

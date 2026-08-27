@@ -1308,6 +1308,46 @@ div.image-picker-caption{
     background-image:url('../Images/attachment-align-right-on.png');
 }
 
+#attachment-lite-float-left{
+    background-image:url('../Images/attachment-float-left-off.png');
+}
+
+#attachment-lite-float-right{
+    background-image:url('../Images/attachment-float-right-off.png');
+}
+
+#attachment-lite-align-center{
+    background-image:url('../Images/attachment-align-center-off.png');
+}
+
+#attachment-lite-align-left{
+    background-image:url('../Images/attachment-align-left-off.png');
+}
+
+#attachment-lite-align-right{
+    background-image:url('../Images/attachment-align-right-off.png');
+}
+
+#attachment-lite-float-left.selected{
+    background-image:url('../Images/attachment-float-left-on.png');
+}
+
+#attachment-lite-float-right.selected{
+    background-image:url('../Images/attachment-float-right-on.png');
+}
+
+#attachment-lite-align-center.selected{
+    background-image:url('../Images/attachment-align-center-on.png');
+}
+
+#attachment-lite-align-left.selected{
+    background-image:url('../Images/attachment-align-left-on.png');
+}
+
+#attachment-lite-align-right.selected{
+    background-image:url('../Images/attachment-align-right-on.png');
+}
+
 #sm-loading-wrapper{
     position:relative;
     height:100%;

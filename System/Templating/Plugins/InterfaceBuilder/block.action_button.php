@@ -1,7 +1,11 @@
 <?php
 
 function smarty_block_action_button($params, $content, &$smarty, &$repeat){
-	
+
+    if($repeat){
+        return '';
+    }
+		
 	$html = "<a class=\"action-button\" ";
 	
 	if($content){

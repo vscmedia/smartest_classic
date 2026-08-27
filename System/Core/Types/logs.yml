@@ -1,0 +1,56 @@
+# Generated from logs.xml during PHP 8 migration.
+---
+log:
+  SM_LOG_DEFAULT:
+    id: SM_LOG_DEFAULT
+    name: default
+    description: Default log, used in cases of ambiguity
+    file: Logs/default.log
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE% (%FILE%:%LINE% %CLASS%%CALLTYPE%%FUNCTION%())'
+  SM_LOG_SYSTEM_INTERNAL:
+    id: SM_LOG_SYSTEM_INTERNAL
+    name: system
+    description: Internal System Debug Log
+    file: 'System/Logs/%DAY%_system.log'
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE% (%FILE%:%LINE% %CLASS%%CALLTYPE%%FUNCTION%())'
+  SM_LOG_AUTH:
+    id: SM_LOG_AUTH
+    name: auth
+    description: >
+      All authentication attempts, successful
+      and failed
+    file: System/Logs/authentication.log
+    format: '%TIMESTAMP%: %MESSAGE%'
+  SM_LOG_SITE_ACTIONS:
+    id: SM_LOG_SITE_ACTIONS
+    name: site
+    description: Per-site User Actions Log
+    file: 'Logs/%MONTH%_%SITEID%_actions.log'
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE%'
+  SM_LOG_APP_ACTIONS:
+    id: SM_LOG_APP_ACTIONS
+    name: app
+    description: Per-site User Actions Log
+    file: 'Logs/%APP%_%MONTH%_actions.log'
+    systemfile: 'System/Logs/%APP%_%MONTH%_actions.log'
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE%'
+  SM_LOG_INSTALL:
+    id: SM_LOG_INSTALL
+    name: installer
+    description: Default log, used in cases of ambiguity
+    file: System/Logs/install.log
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE%'
+  SM_LOG_RENDER:
+    id: SM_LOG_RENDER
+    name: renderer
+    description: >
+      Logs errors, warnings and notices that
+      arise when pages are rendered.
+    file: 'Logs/Site_%SITEID%_render.log'
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE%'
+  SM_LOG_DATABASE_RAW_QUERY:
+    id: SM_LOG_DATABASE_RAW_QUERY
+    name: database_raw_query
+    description: Legacy raw SQL query usage during the PDO/prepared statement migration
+    file: 'System/Logs/%DAY%_database_raw_query.log'
+    format: '%TIMESTAMP%: (%LEVEL%) %MESSAGE%'

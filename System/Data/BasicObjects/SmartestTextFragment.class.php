@@ -118,8 +118,9 @@ class SmartestTextFragment extends SmartestBaseTextFragment{
     
     public function parseAttachmentNames(){
         
-        if($this->getAsset()->getType() == 'SM_ASSETTYPE_TEXTILE_TEXT'){
-            $regexp = preg_match_all('/\{attach:([\w_-]+)\}/', $this->_properties['content'], $matches);
+        if(in_array($this->getAsset()->getType(), array('SM_ASSETTYPE_TEXTILE_TEXT', 'SM_ASSETTYPE_MARKDOWN_TEXT'))){
+            $format = $this->getAsset()->getType() == 'SM_ASSETTYPE_MARKDOWN_TEXT' ? 'markdown' : 'textile';
+            return SmartestTextAssetRenderPipeline::extractFormattedTextAttachmentNames($this->_properties['content'], $format);
         }else{
             $regexp = preg_match_all('/<\?sm:attachment.+?name="([\w_-]+)"/', $this->_properties['content'], $matches);
         }
@@ -138,8 +139,8 @@ class SmartestTextFragment extends SmartestBaseTextFragment{
     
     public function containsAttachmentTags(){
         
-        if($this->getAsset()->getType() == 'SM_ASSETTYPE_TEXTILE_TEXT'){
-            $c = !(strpos($this->_properties['content'], '{attach:') === FALSE);
+        if(in_array($this->getAsset()->getType(), array('SM_ASSETTYPE_TEXTILE_TEXT', 'SM_ASSETTYPE_MARKDOWN_TEXT'))){
+            $c = count($this->parseAttachmentNames()) > 0;
         }else{
             $c = !(strpos($this->_properties['content'], '<?sm:att') === FALSE);
         }
@@ -279,6 +280,8 @@ class SmartestTextFragment extends SmartestBaseTextFragment{
             foreach($matches[0] as $key => $attachment){
                 
                 $att_name = str_replace('-', '_', $matches[1][$key]);
+                $alignment = '';
+                $additional_style = '';
                 
                 if(isset($att_objects[$att_name]) && is_object($att_objects[$att_name])){
                     $float = (bool) $att_objects[$att_name]->getFloat();
@@ -442,14 +445,21 @@ class SmartestTextFragment extends SmartestBaseTextFragment{
             $content = str_replace('<p>&nbsp;</p>', '', $content);
             $content = str_replace('&nbsp;', ' ', $content);
             
-            if($element = simplexml_load_string(SmartestStringHelper::removeHtmlEntitiesExceptXmlEssentials('<div>'.$content.'</div>'))){
+            $xml_content = preg_replace('/<\?sm:([\s\S]*?):\?>/', '<!--PROTECTED-SMARTEST-TAG:$1:PROTECTED-SMARTEST-TAG-->', $content);
+            $previous_libxml_error_setting = libxml_use_internal_errors(true);
+            libxml_clear_errors();
+            $element = simplexml_load_string(SmartestStringHelper::removeHtmlEntitiesExceptXmlEssentials('<div>'.$xml_content.'</div>'));
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous_libxml_error_setting);
+
+            if($element){
             
                 $content = preg_replace( "/\r|\n/", "", $content);
                 $divs = (array) $element->xpath('/div/figure');
             
                 foreach($divs as $divelement){
                     $attributes = (array) $divelement->attributes();
-                    if(strpos($attributes['@attributes']['class'], 'sm-attachment-proxy') !== false){
+                    if(isset($attributes['@attributes']['class']) && strpos($attributes['@attributes']['class'], 'sm-attachment-proxy') !== false){
                         $attachment_name = $attributes['@attributes']['data-attachmentname'];
                         $content = str_replace($divelement->asXML(), '<?sm:attachment name="'.$attachment_name.'":?>', $content);
                     }
@@ -459,7 +469,7 @@ class SmartestTextFragment extends SmartestBaseTextFragment{
             
                 foreach($divs as $divelement){
                     $attributes = (array) $divelement->attributes();
-                    if(strpos($attributes['@attributes']['class'], 'sm-attachment-proxy') !== false){
+                    if(isset($attributes['@attributes']['class']) && strpos($attributes['@attributes']['class'], 'sm-attachment-proxy') !== false){
                         $attachment_name = $attributes['@attributes']['data-attachmentname'];
                         $content = str_replace($divelement->asXML(), '<?sm:attachment name="'.$attachment_name.'":?>', $content);
                     }

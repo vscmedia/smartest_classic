@@ -28,8 +28,8 @@
     <link rel="stylesheet" type="text/css" href="{$domain}Resources/System/Stylesheets/sm_tabs.css?r={$smartest_info.revision}{if $sm_developer_mode}&amp;n={$global_random_nonce}{/if}" />
     {if $section=="assets" && $method=="previewAsset"}<link rel="stylesheet" type="text/css" href="{$domain}Resources/System/Stylesheets/sm_attachments.css?r={$smartest_info.revision}{if $sm_developer_mode}&amp;n={$global_random_nonce}{/if}" />{/if}
     <link rel="stylesheet" type="text/css" href="{$domain}Resources/System/Stylesheets/sm_modals.css?r={$smartest_info.revision}{if $sm_developer_mode}&amp;n={$global_random_nonce}{/if}" />
-    <link rel="stylesheet" href="{$domain}Resources/System/Javascript/CodeMirror-5.2/lib/codemirror.css">
-    <link rel="stylesheet" href="{$domain}Resources/System/Javascript/CodeMirror-5.2/addon/display/fullscreen.css">
+    <link rel="stylesheet" href="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/lib/codemirror.css">
+    <link rel="stylesheet" href="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/addon/display/fullscreen.css">
 		
 		<script type="text/javascript" language="javascript">
 
@@ -55,12 +55,16 @@
     <script type="text/javascript" src="{$domain}Resources/System/Javascript/smartest/prefs.js?r={$smartest_info.revision}{if $sm_developer_mode}&amp;n={$global_random_nonce}{/if}"></script>
     <script type="text/javascript" src="{$domain}Resources/System/Javascript/vsclabs/vsc-scrollwatcher.js"></script>
     
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/lib/codemirror.js"></script>
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/mode/css/css.js"></script>
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/mode/javascript/javascript.js"></script>
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/mode/xml/xml.js"></script>
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/mode/htmlmixed/htmlmixed.js"></script>
-    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.2/mode/htmlembedded/htmlembedded.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/lib/codemirror.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/css/css.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/javascript/javascript.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/xml/xml.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/htmlmixed/htmlmixed.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/markdown/markdown.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/textile/textile.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/addon/mode/multiplex.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/htmlembedded/htmlembedded.js"></script>
+    <script type="text/javascript" src="{$domain}Resources/System/Javascript/CodeMirror-5.65.21/mode/smartest/smartest.js"></script>
     
     <script type="text/javascript">
       {literal}

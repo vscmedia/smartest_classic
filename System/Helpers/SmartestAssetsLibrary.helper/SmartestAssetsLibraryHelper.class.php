@@ -34,6 +34,13 @@ class SmartestAssetsLibraryHelper{
     		
         return $types;
     }
+
+    public function getTypeInfoFromTypeCode($type_code){
+
+        $types = $this->getTypes();
+        return isset($types[$type_code]) ? $types[$type_code] : null;
+
+    }
     
     public function getSelectedTypes($type_codes=''){
         
@@ -81,8 +88,12 @@ class SmartestAssetsLibraryHelper{
             }else{
                 $cats[$k]['l10n_label'] = $cats[$k]['label'];
             }
+
+            if(!isset($cats[$k]['fa_iconname']) || !strlen((string) $cats[$k]['fa_iconname'])){
+                $cats[$k]['fa_iconname'] = 'folder-open-o';
+            }
         }
-        
+
         if($importable_only){
             foreach($cats as $k=>$cat){
                 if(!$cat['importable']){
@@ -90,10 +101,30 @@ class SmartestAssetsLibraryHelper{
                 }
             }
         }
-        
+
         return $cats;
     }
-    
+
+    public function getCategoryByShortName($short_name){
+
+        $short_name = SmartestStringHelper::toVarName($short_name);
+        $categories = $this->getCategories();
+
+        if(isset($categories[$short_name])){
+            return $categories[$short_name];
+        }
+
+        return array();
+
+    }
+
+    public function getAssetTypeCategoryIcon($short_name){
+
+        $category = $this->getCategoryByShortName($short_name);
+        return isset($category['fa_iconname']) ? $category['fa_iconname'] : 'folder-open-o';
+
+    }
+
     public function getCategoryShortNames($importable_only=false){
         
         $names = array();
@@ -591,16 +622,28 @@ class SmartestAssetsLibraryHelper{
     
     public function getTypeInfoBySuffix($suffix){
         
-        $suffix = strtolower($suffix);
+        $suffix = strtolower((string) $suffix);
         
         if(array_key_exists($suffix, $this->typesSuffixesMap)){
             return $this->typesSuffixesMap[$suffix];
         }else{
         
             foreach($this->getTypes() as $code => $type){
-                
-                foreach($type['suffix'] as $s){
-                    if(strtolower($s['_content']) == $suffix){
+
+                if(!isset($type['suffix'])){
+                    continue;
+                }
+
+                $suffixes = is_array($type['suffix']) ? $type['suffix'] : array($type['suffix']);
+
+                foreach($suffixes as $s){
+                    if(is_array($s) && isset($s['_content'])){
+                        $check_suffix = $s['_content'];
+                    }else{
+                        $check_suffix = $s;
+                    }
+
+                    if(strtolower((string) $check_suffix) == $suffix){
                         $this->typesSuffixesMap[$suffix] = $type;
                         return $type;
                     }
@@ -618,13 +661,15 @@ class SmartestAssetsLibraryHelper{
             $type = $types[$type_code];
             $suffixes = array();
             
-            if(is_array($type['suffix'])){
-    	        foreach($type['suffix'] as $s){
-    	            $suffixes[] = $s['_content'];
-    	        }
-    	    }
-    	    
-    	    return $suffixes;
+            if(isset($type['suffix']) && is_array($type['suffix'])){
+                foreach($type['suffix'] as $s){
+                    if(is_array($s) && isset($s['_content'])){
+                        $suffixes[] = $s['_content'];
+                    }
+                }
+            }
+
+            return $suffixes;
     	    
         }else{
             
@@ -643,7 +688,7 @@ class SmartestAssetsLibraryHelper{
         }else{
         
             foreach($this->getTypes() as $code => $type){
-                if(is_array($type['suffix'])){
+                if(isset($type['suffix']) && is_array($type['suffix'])){
                     foreach($type['suffix'] as $s){
                         if(strtolower($s['_content']) == $suffix){
                             $this->typesSuffixesMap[$suffix] = $type;
@@ -884,7 +929,7 @@ class SmartestAssetsLibraryHelper{
 	    return in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE'));
 	}
 	
-	public function getAssetsByModelId($model_id=0, $site_id='', $mode=1, $avoid_ids='', $code){
+	public function getAssetsByModelId($model_id=0, $site_id='', $mode=1, $avoid_ids='', $code=''){
 		
 		$sql = "SELECT * FROM Assets WHERE asset_model_id='".$model_id."' AND asset_deleted != 1";
 	    
@@ -1089,13 +1134,17 @@ class SmartestAssetsLibraryHelper{
 	            // find only groups that accept ALL of the given types
 	            $ok_assetclass_types = $this->getAssetClassCodesThatAcceptType($types);
 	            $ok_types = array_merge($ok_assetclass_types, $types);
-	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR set_filter_value IN ('".implode($ok_types, "', '")."'))";
+	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR set_filter_value IN ('".implode("', '", $ok_types)."'))";
 	            
 	        }else{
 	            
 	            // just one type
 	            $ok_assetclass_types = $this->getAssetClassCodesThatAcceptType($types);
-	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR (set_filter_type='SM_SET_FILTERTYPE_ASSETTYPE' AND set_filter_value='".$types[0]."') OR set_filter_value IN ('".implode($ok_assetclass_types, "', '")."'))";
+	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR (set_filter_type='SM_SET_FILTERTYPE_ASSETTYPE' AND set_filter_value='".$types[0]."')";
+	            if(count($ok_assetclass_types)){
+	                $sql .= " OR set_filter_value IN ('".implode("', '", $ok_assetclass_types)."')";
+	            }
+	            $sql .= ")";
 	            
 	        }
 	        
@@ -1136,13 +1185,17 @@ class SmartestAssetsLibraryHelper{
 	            // more than one type is being supplied
 	            // find only groups that accept ALL of the given types
 	            $ok_assetclass_types = $this->getAssetClassCodesThatAcceptType($types);
-	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR set_filter_value IN ('".implode($ok_assetclass_types, "', '")."'))";
+	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR set_filter_value IN ('".implode("', '", $ok_assetclass_types)."'))";
 	            
 	        }else{
 	            
 	            // just one type
 	            $ok_assetclass_types = $this->getAssetClassCodesThatAcceptType($types);
-	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR (set_filter_type='SM_SET_FILTERTYPE_ASSETTYPE' AND set_filter_value='".$types[0]."') OR set_filter_value IN ('".implode($ok_assetclass_types, "', '")."'))";
+	            $sql .=  " AND (set_filter_type='SM_SET_FILTERTYPE_NONE' OR (set_filter_type='SM_SET_FILTERTYPE_ASSETTYPE' AND set_filter_value='".$types[0]."')";
+	            if(count($ok_assetclass_types)){
+	                $sql .= " OR set_filter_value IN ('".implode("', '", $ok_assetclass_types)."')";
+	            }
+	            $sql .= ")";
 	            
 	        }
 	        
@@ -1274,16 +1327,24 @@ class SmartestAssetsLibraryHelper{
 	    
 	    $types = $this->getTypes();
 	    
-	    if(isset($types[$type_code])){
+        if(isset($types[$type_code])){
 	        
 	        $type = $types[$type_code];
 	        $suffixes = array();
 	        
+	        if(!isset($type['suffix']) || !is_array($type['suffix'])){
+	            return;
+	        }
+
 	        foreach($type['suffix'] as $s){
-	            $suffixes[] = '\.'.str_replace('.', '\.', $s['_content']);
+	            if(is_array($s) && isset($s['_content'])){
+	                $suffixes[] = '\.'.str_replace('.', '\.', $s['_content']);
+	            }
 	        }
 	        
-	        if(count($suffixes) > 1){
+	        if(!count($suffixes)){
+	            return;
+	        }else if(count($suffixes) > 1){
 	            $regex = '/('.implode('|', $suffixes).')$/';
             }else{
                 $regex = '/('.$suffixes[0].')$/';

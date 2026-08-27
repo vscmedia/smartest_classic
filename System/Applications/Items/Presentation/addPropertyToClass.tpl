@@ -46,7 +46,7 @@ function setVarName(){
       <select name="itemproperty_datatype" id='itemproperty_datatype' onchange="$('type_chooser').submit()">
         <option value="">Choose a type...</option>
 {foreach from=$data_types item="data_type"}
-  	    <option value="{$data_type.id}"{if $data_type.id==$property.datatype} selected="selected"{/if}>{$data_type.label}</option>
+  	    <option value="{$data_type.id}"{if $data_type.id==$selected_data_type} selected="selected"{/if}>{$data_type.label}</option>
 {/foreach}
       </select>
       {if $show_full_form}<p style="margin:10px;font-size:11px;margin:3px 0 0 0">{$type_description}</p>{/if}

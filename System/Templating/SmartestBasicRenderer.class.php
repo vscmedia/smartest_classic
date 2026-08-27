@@ -1,7 +1,5 @@
 <?php
 
-require SM_ROOT_DIR.'System/Library/scssphp/scss.inc.php';
-
 class SmartestBasicRenderer extends SmartestEngine{
     
     protected $_asset; // used when rendering an Asset
@@ -14,13 +12,16 @@ class SmartestBasicRenderer extends SmartestEngine{
     
     public function __construct($pid){
         
+        SmartestResponse::debugTrace('SmartestBasicRenderer::__construct start');
         parent::__construct($pid);
+        SmartestResponse::debugTrace('SmartestBasicRenderer::__construct parent complete');
         $this->assign('domain', $this->_request_data->g('domain'));
         
-        $this->plugins_dir[] = SM_ROOT_DIR."System/Templating/Plugins/WebPageBuilder/";
-	    $this->left_delimiter = '<'.'?sm:';
-		$this->right_delimiter = ':?'.'>';
-		$this->caching = false;
+        SmartestResponse::debugTrace('SmartestBasicRenderer::__construct adding WebPageBuilder plugins');
+        $this->addPluginDirectory(SM_ROOT_DIR."System/Templating/Plugins/WebPageBuilder/");
+        SmartestResponse::debugTrace('SmartestBasicRenderer::__construct added WebPageBuilder plugins');
+	    $this->setSmartestDelimiters('<'.'?sm:', ':?'.'>');
+		$this->setSmartestCaching(false);
 		$this->_tpl_vars['sm_draft_mode'] = false;
         $this->_tpl_vars['sm_draft_mode_obj'] = new SmartestBoolean(false);
 		
@@ -29,9 +30,24 @@ class SmartestBasicRenderer extends SmartestEngine{
         $this->_preferences_helper = new SmartestPreferencesHelper;
         
         if($this->_request_data->g('action') == "renderEditableDraftPage" || ($this->_request_data->g('action') == "pageFragment" && SmartestSession::isRegistered() && is_object(SmartestSession::get('user')) && $this->_request_data->g('request_parameters')->hasParameter('draft') && SmartestStringHelper::toRealBool($this->_request_data->g('request_parameters')->getParameter('draft')))){
-            $this->_hide_edit_buttons = (bool) $this->_preferences_helper->getApplicationPreference('hide_preview_edit_buttons', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), SM_CMS_PAGE_SITE_ID);
+            $site_id = $this->getPreviewPreferenceSiteId();
+            $this->_hide_edit_buttons = (bool) $this->_preferences_helper->getApplicationPreference('hide_preview_edit_buttons', 'com.smartest.CmsFrontEnd', SmartestSession::get('user')->getId(), $site_id);
         }
         
+    }
+
+    protected function getPreviewPreferenceSiteId(){
+
+        if(defined('SM_CMS_PAGE_SITE_ID')){
+            return SM_CMS_PAGE_SITE_ID;
+        }
+
+        if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+            return $GLOBALS['_site']->getId();
+        }
+
+        return 0;
+
     }
     
     public function getDraftMode(){
@@ -172,6 +188,10 @@ class SmartestBasicRenderer extends SmartestEngine{
                 $content = $this->_asset->getFullWebPath();
             }else{
                 
+                if($this->_asset->getType() == 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET'){
+                    return $this->renderDynamicStylesheetAsset($render_template, $render_data, $asset_type_info);
+                }
+                
                 if($this->_asset->usesTextFragment()){
                     
                     if($this->_asset->getCategory() == 'user_text'){
@@ -233,42 +253,30 @@ class SmartestBasicRenderer extends SmartestEngine{
                         
                         if($this->_asset->getType() == 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET'){
                             
+                            $compiler = new SmartestDynamicStylesheetCompiler;
+                            $site = $this->getSite();
+                            $page = ($site instanceof SmartestSite) ? $site->getHomePage($this->getDraftMode()) : null;
+                            $type_info = $this->_asset->getTypeInfo();
+                            $site_id = ($site instanceof SmartestSite) ? $site->getId() : 0;
+                            
                             if($this->getDraftMode()){
-                                
-                                $hash = md5($this->_asset->getContent(true));
-                                $filename = substr($hash, 0, 16).'.css';
-                                $type_info = $this->_asset->getTypeInfo();
                                 
                                 // Render a <link> or <script> tag that points to a method on the CMSFrontEnd app that will parse the dynamic CSS or JS
                                 // The 'nonce' part will prevent caching by making the URL different if the content is different
-                                $address = 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$this->getSite()->getId().'&draft=true';
+                                $address = 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$site_id.'&draft=true';
+                                if($page instanceof SmartestPage){
+                                    $address .= '&page_id='.$page->getWebid();
+                                }
                                 
                                 ob_start();
                                 $this->assign('sass_web_path', $address);
+                                $compiled_css = '';
                                 
                                 if($this->getPreviewMode()){
-                                    // This line is needed in order to show the preview
-                                    $this->assign('sass_live_web_path', str_replace('Public/','',$type_info['storage']['live_cache']).$filename);
-                                    $raw_scss = $this->_asset->getContent(true);
-                                    $header = '$sm_domain: \''.$this->_request_data->g('domain')."';\n";
-                                    $header .= '$sm_url_base: \''.$this->_request_data->g('domain')."';\n";
-                                    // Loop through the site's global fields and add them as SCSS variables
-                                    foreach($this->getSite()->getGlobalFields(true) as $field_name => $global_field_value){
-                                        if($global_field_value instanceof SmartestRgbColor){
-                                            $header .= '$field_'.$field_name.': #'.(string) $global_field_value.";\n";
-                                        }else{
-                                            $header .= '$field_'.$field_name.': "'.(string) $global_field_value."\";\n";
-                                        }
-                                    }
-                                    $raw_scss = $header.$raw_scss;
-                                    $scss = new scssc();
-                                    
-                                    try{
-                                        $compiled_css = $scss->compile($raw_scss);
-                                    }catch(Exception $e){
-                                        $compiled_css = "/** SCSS Error: ".$e->getMessage().' **'.'/';
-                                    }
-                                    
+                                    $compiled = $compiler->compileAsset($this->_asset, $site, $page, true, $this->_request_data->g('domain'));
+                                    $compiled_css = $compiled['css'];
+                                    $this->assign('sass_live_web_path', $compiled['cache_web_path']);
+                                    $this->assign('sass_compile_result', $compiled);
                                 }
                                 
                                 $this->assign('compiled_css', $compiled_css);
@@ -282,39 +290,10 @@ class SmartestBasicRenderer extends SmartestEngine{
                             
                                 if(isset($asset_type_info['storage']['live_cache'])){
                                     
-                                    $raw_scss = $this->_asset->getContent(true);
-                                    $header = '$sm_domain: \''.$this->_request_data->g('domain')."';\n";
-                                    $header .= '$sm_url_base: \''.$this->_request_data->g('domain')."';\n";
+                                    $compiled = $compiler->compileAsset($this->_asset, $site, $page, false, $this->_request_data->g('domain'));
                                     
-                                    // Loop through the site's global fields and add them as SCSS variables
-                                    foreach($this->getSite()->getGlobalFields() as $field_name => $global_field_value){
-                                        if($global_field_value instanceof SmartestRgbColor){
-                                            $header .= '$field_'.$field_name.': #'.(string) $global_field_value.";\n";
-                                        }else{
-                                            $header .= '$field_'.$field_name.': "'.(string) $global_field_value."\";\n";
-                                        }
-                                    }
-                                    
-                                    $raw_scss = $header.$raw_scss;
-                                    $hash = md5($raw_scss);
-                                    $filename = substr($hash, 0, 16).'.css';
-                                    $type_info = $this->_asset->getTypeInfo();
-                                    
-                                    if(!is_file(SM_ROOT_DIR.$type_info['storage']['live_cache'].$filename)){
-                                        // Parse the dynamic CSS or JS now, save to a file,
-                                        $scss = new scssc();
-                                        try{
-                                            $compiled_css = $scss->compile($raw_scss);
-                                            SmartestFileSystemHelper::save(SM_ROOT_DIR.$type_info['storage']['live_cache'].$filename, $compiled_css);
-                                        }catch(Exception $e){
-                                            // The SCSS was bad - don't save file
-                                        }
-                                        
-                                    }
-                            
                                     // then render a <link> or <script> tag that points to the saved file
-                                    // $address = $this->_asset->getLiveCacheWebPath();
-                                    $address = str_replace('Public/','',$type_info['storage']['live_cache']).$filename;
+                                    $address = $compiled['ok'] ? $compiled['cache_web_path'] : 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$site_id;
                                     
                                     ob_start();
                                     $this->assign('sass_web_path', $address);
@@ -437,6 +416,59 @@ class SmartestBasicRenderer extends SmartestEngine{
         
     }
     
+    protected function renderDynamicStylesheetAsset($render_template, $render_data, $asset_type_info){
+
+        $compiler = new SmartestDynamicStylesheetCompiler;
+        $site = $this->getSite();
+        $page = ($site instanceof SmartestSite) ? $site->getHomePage($this->getDraftMode()) : null;
+        $site_id = ($site instanceof SmartestSite) ? $site->getId() : 0;
+
+        if($this->getDraftMode()){
+
+            $address = 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$site_id.'&draft=true';
+
+            if($page instanceof SmartestPage){
+                $address .= '&page_id='.$page->getWebid();
+            }
+
+            ob_start();
+            $this->assign('sass_web_path', $address);
+            $this->assign('sass_live_web_path', $address);
+            $compiled_css = '';
+
+            if($this->getPreviewMode()){
+                $compiled = $compiler->compileAsset($this->_asset, $site, $page, true, $this->_request_data->g('domain'));
+                $compiled_css = $compiled['css'];
+                $this->assign('sass_live_web_path', $compiled['ok'] ? $compiled['cache_web_path'] : $address);
+                $this->assign('sass_compile_result', $compiled);
+            }
+
+            $this->assign('compiled_css', $compiled_css);
+            $this->run($render_template, array('asset_info'=>$this->_asset, 'render_data'=>$render_data));
+            $content = ob_get_contents();
+            ob_end_clean();
+
+            return $content;
+
+        }else if(isset($asset_type_info['storage']['live_cache'])){
+
+            $compiled = $compiler->compileAsset($this->_asset, $site, $page, false, $this->_request_data->g('domain'));
+            $address = $compiled['ok'] ? $compiled['cache_web_path'] : 'website/renderDynamicStylesheet?file_id='.$this->_asset->getWebId().'&nonce='.substr($this->_asset->getContentHash(), 0, 8).'&site_id='.$site_id;
+
+            ob_start();
+            $this->assign('sass_web_path', $address);
+            $this->run($render_template, array('asset_info'=>$this->_asset, 'render_data'=>$render_data));
+            $content = ob_get_contents();
+            ob_end_clean();
+
+            return $content;
+
+        }
+
+        return $this->raiseError('Dynamic stylesheet could not be rendered because no CSS cache location is configured.');
+
+    }
+    
     public function renderEditAssetButton($asset_id, $render_data='', $editableonly=true){
         
         if(is_object($this->_asset) && $this->_asset->getId() == $asset_id){
@@ -522,9 +554,9 @@ class SmartestBasicRenderer extends SmartestEngine{
         
         $this->_tpl_vars['_linkparameters'] = $link_params;
         
-        $this->caching = false;
+        $this->setSmartestCaching(false);
         $html = $this->fetch(SM_ROOT_DIR."System/Presentation/WebPageBuilder/basic_link.tpl");
-        $this->caching = true;
+        $this->setSmartestCaching(true);
         
         return $html;
         

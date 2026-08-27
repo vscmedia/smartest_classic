@@ -2,7 +2,7 @@
 
 function smarty_function_load_template($params, &$smarty){
     
-    $smarty->_smarty_include(array('smarty_include_tpl_file'=>$params['file'], 'smarty_include_vars'=>$smarty->_tpl_vars));
+    return $smarty->_smarty_include(array('smarty_include_tpl_file'=>$params['file'], 'smarty_include_vars'=>$smarty->_tpl_vars));
     
     /* if(isset($params['data'])){
         

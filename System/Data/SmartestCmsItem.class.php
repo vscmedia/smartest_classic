@@ -1473,7 +1473,7 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
 
                 if(is_object($raw_value)){
                     $r = $raw_value;
-                }else if($value_ob = SmartestDataUtility::objectize($raw_value, $this->_properties[$key]->getDatatype(), $this->_properties[$key]->getForeignKeyFilter())){
+                }else if($value_obj = SmartestDataUtility::objectize($raw_value, $this->_properties[$key]->getDatatype(), $this->_properties[$key]->getForeignKeyFilter())){
                     $r = $value_obj;
                 }else if(is_null($raw_value) && $c = SmartestDataUtility::getClassForDataType($this->_properties[$key]->getDatatype(), $this->_properties[$key]->getForeignKeyFilter())){
                     $r = new $c;
@@ -1535,7 +1535,7 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
             // print_r($raw_value);
             if(is_object($raw_value)){
                 return $raw_value;
-            }else if($value_ob = SmartestDataUtility::objectize($raw_value, $this->_properties[$this->_varnames_lookup[$varname]]->getDatatype())){
+            }else if($value_obj = SmartestDataUtility::objectize($raw_value, $this->_properties[$this->_varnames_lookup[$varname]]->getDatatype(), $this->_properties[$this->_varnames_lookup[$varname]]->getForeignKeyFilter())){
                 // echo $value_obj;
                 return $value_obj;
             }

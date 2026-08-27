@@ -8,7 +8,7 @@
       
       var bgcolors = ['blue', 'magenta', 'orange', 'red'];
       
-      document.observe('hash:changed', function(){
+      var showLoginMessageFromHash = function(){
         
         var hash = document.location.hash.substring(1);
         var messageId = 'message-'+hash;
@@ -27,7 +27,9 @@
           
         }
         
-      });
+      };
+      
+      document.observe('hash:changed', showLoginMessageFromHash);
       
       var loginSubmit = function(){
         
@@ -99,6 +101,8 @@
           window.open('http://smartestproject.org/?ref=login');
           
         });
+        
+        showLoginMessageFromHash();
         
       });
       

@@ -7,15 +7,20 @@ class SmartestAssetClass extends SmartestBaseAssetClass{
     protected $_type_info;
     
 	public function exists($name, $site_id=0){
-	    
-	    $sql = "SELECT * FROM AssetClasses WHERE assetclass_name='".$name."'";
-        if($site > 0){
-            $sql .= " AND assetclass_site_id='".$site_id."'";
+		    
+	    $sql = "SELECT * FROM AssetClasses WHERE assetclass_name=:name";
+	    $params = array('name'=>$name);
+
+        if($site_id > 0){
+            $sql .= " AND (assetclass_site_id=:site_id OR assetclass_shared='1')";
+            $params['site_id'] = $site_id;
         }
-	    $query_result = $this->database->queryToArray($sql);
-	    
-	    if(count($result) > 0){
-	        $this->hydrate($result[0]);
+
+        $sql .= " LIMIT 1";
+	    $query_result = $this->database->preparedQuery($sql, $params);
+		    
+	    if(is_array($query_result) && count($query_result) > 0){
+	        $this->hydrate($query_result[0]);
 	        return true;
 	    }else{
 	        return false;

@@ -16,11 +16,11 @@ class SmartestRgbColor implements ArrayAccess, SmartestBasicType, SmartestStorab
     }
     
     public function setValue($v){
-        
+
         if(!strlen($v)){
             $v = '#ff9900';
         }
-        
+
         if(preg_match(self::RGB_HEX_MATCH, $v, $matches)){
             
             $code = $matches[1];
@@ -108,7 +108,13 @@ class SmartestRgbColor implements ArrayAccess, SmartestBasicType, SmartestStorab
     }
     
     public function hydrateFromStorableFormat($v){
-        if($v{0} == '#'){
+        $v = trim((string) $v);
+
+        if(!strlen($v)){
+            return $this->setValue($v);
+        }
+
+        if($v[0] == '#'){
             return $this->setValue(substr($v, 1));
         }else{
             return $this->setValue($v);

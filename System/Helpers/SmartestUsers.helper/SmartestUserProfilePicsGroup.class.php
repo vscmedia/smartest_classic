@@ -17,7 +17,7 @@ class SmartestUserProfilePicsGroup extends SmartestAssetGroup{
         
     }
     
-    public function _getMemberships($user_id=null, $site_id=null){
+    public function _getMemberships($user_id=null, $site_id=null, $approved_only=false){
         
         if(!is_numeric($site_id)){
             $site_id = $this->getCurrentSiteId();
@@ -53,7 +53,7 @@ class SmartestUserProfilePicsGroup extends SmartestAssetGroup{
         
     }
     
-    public function getMemberIds($site_id='', $refresh=false){
+    public function getMemberIds($mode=1, $site_id='', $refresh=false){
         
         if($refresh || !count($this->_member_ids)){
         

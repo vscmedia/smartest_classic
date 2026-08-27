@@ -1,6 +1,6 @@
 <?php
 
-function smarty_function_template($params, &$smartest_engine){
+function smarty_function_webpagebuilder_template($params, &$smartest_engine){
 	
 	if(isset($params["name"]) && strlen($params["name"])){
 	    

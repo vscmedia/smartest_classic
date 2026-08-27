@@ -17,6 +17,12 @@ module:
     new_model:
       action: addItemClass
       url: /smartest/model/new
+    new_model_from_kit:
+      action: addItemClassFromKit
+      url: /smartest/model/new/from-kit
+    install_model_kit:
+      action: executeItemClassKit
+      url: /smartest/model/new/from-kit/install/:modelkit
     browse_model:
       action: getItemClassMembers
       url: /smartest/items/$plural_name
@@ -50,4 +56,4 @@ module:
       class: ItemsModals
     test:
       class: ItemsFunctionalityTest
-      
+

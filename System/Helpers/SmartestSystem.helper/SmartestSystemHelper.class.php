@@ -6,7 +6,7 @@ class SmartestSystemHelper{
         
         if(self::isOsx()){
             // sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'
-            $linux = "Mac OS X ".`sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'`;
+            $linux = "macOS ".`sw_vers | grep 'ProductVersion:' | grep -o '[0-9]*\.[0-9]*\.[0-9]*'`;
             return $linux;
         }else{
             
@@ -70,7 +70,7 @@ class SmartestSystemHelper{
     }
     
     public static function isOsx(){
-        return is_file('/Applications/Utilities/Terminal.app/Contents/version.plist');
+        return is_file('/Applications/Utilities/Terminal.app/Contents/version.plist') || is_file('/System/Applications/Utilities/Terminal.app/Contents/version.plist');
     }
     
     public static function getInstallDate($refresh=false){
@@ -125,7 +125,7 @@ class SmartestSystemHelper{
     
     public static function getWebServerSoftware(){
         // TODO: When Smartest has been tested on other web serers, this function will need to be amended
-        preg_match('/(Apache\/(1|2.\d.\d))/', $_SERVER['SERVER_SOFTWARE'], $matches);
+        preg_match('/(Apache\/(1|2.\d.\d+))/', $_SERVER['SERVER_SOFTWARE'], $matches);
         $server = str_replace('/', ' ', $matches[1]);
         return $server;
     }
@@ -143,7 +143,7 @@ class SmartestSystemHelper{
     
     public static function getPhpVersion(){
         $v = phpversion();
-        preg_match('/^([4567]\.\d+(\.\d+)?)/', $v, $matches);
+        preg_match('/^([4578]\.\d+(\.\d+)?)/', $v, $matches);
         return $matches[1];
     }
     
@@ -188,7 +188,7 @@ class SmartestSystemHelper{
 	
 	public function checkRequiredExtensionsLoaded(){
 		
-		$extensions = get_loaded_extensions();
+		$extensions = array_map('strtolower', get_loaded_extensions());
 		
 		$dependencies = array(
 		    "dom",
@@ -196,12 +196,14 @@ class SmartestSystemHelper{
 			"curl",
 			"xmlreader",
 			"xml",
-			"mysql",
+			"pdo",
+			"pdo_mysql",
 		);
 		
+		$missing_extensions = array();
+		
 		foreach($dependencies as $dep){	
-		    $missing_extensions = array();
-			if(!in_array($dep, $extensions)){
+			if(!in_array($dep, $extensions, true)){
 			    $missing_extensions[] = $dep;
 				// $this->error("The PHP extension \"".$dep."\" is not installed or failed to load.", SM_ERROR_PHP);
 			}

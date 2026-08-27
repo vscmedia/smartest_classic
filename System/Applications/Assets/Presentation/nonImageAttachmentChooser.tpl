@@ -117,7 +117,7 @@
     if(!CodeMirrorShowing){
       CM = CodeMirror.fromTextArea($('asset-content'), {
         lineNumbers: true,
-        mode: "htmlmixed",
+        mode: "smartest-htmlmixed",
         lineWrapping: true,
         autofocus: true
       });

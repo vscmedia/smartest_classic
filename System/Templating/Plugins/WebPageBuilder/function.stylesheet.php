@@ -1,6 +1,6 @@
 <?php
 
-function smarty_function_stylesheet($params, &$smartest_engine){
+function smarty_function_webpagebuilder_stylesheet($params, &$smartest_engine){
     
     if(isset($params['file']) && strlen($params['file'])){
         

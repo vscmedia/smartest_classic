@@ -6,7 +6,7 @@ class SmartestAssetGalleryMembership extends SmartestManyToManyLookup{
     protected $_group;
     protected $_thumbnail_asset;
     
-    public function hydrate($raw_data){
+    public function hydrate($raw_data, $site_id='', $dup=false){
         
         if(isset($raw_data['asset_id'])){
             $asset = new SmartestRenderableAsset;

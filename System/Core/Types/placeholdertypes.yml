@@ -1,0 +1,232 @@
+# Generated from placeholdertypes.xml during PHP 8 migration.
+---
+type:
+  SM_ASSETCLASS_RICH_TEXT:
+    id: SM_ASSETCLASS_RICH_TEXT
+    label: Formatted text files
+    accept:
+      - SM_ASSETTYPE_RICH_TEXT
+      - SM_ASSETTYPE_MARKDOWN_TEXT
+      - SM_ASSETTYPE_TEXTILE_TEXT
+    default: SM_ASSETTYPE_RICH_TEXT
+    setfrompreview: 'true'
+    descriptive: 'true'
+  SM_ASSETCLASS_STATIC_IMAGE:
+    id: SM_ASSETCLASS_STATIC_IMAGE
+    label: Images in any format
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_PNG_IMAGE
+      - SM_ASSETTYPE_GIF_IMAGE
+      - SM_ASSETTYPE_SVG_IMAGE
+    default: SM_ASSETTYPE_JPEG_IMAGE
+    gallery: 'true'
+  SM_ASSETCLASS_TEXT:
+    id: SM_ASSETCLASS_TEXT
+    label: Any text, formatted or unformatted
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_RICH_TEXT
+      - SM_ASSETTYPE_MARKDOWN_TEXT
+      - SM_ASSETTYPE_PLAIN_TEXT
+      - SM_ASSETTYPE_TEXTILE_TEXT
+    default: SM_ASSETTYPE_RICH_TEXT
+    descriptive: 'true'
+  SM_ASSETCLASS_MARKUP:
+    id: SM_ASSETCLASS_MARKUP
+    label: Markup fragments
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_OEMBED_URL
+  SM_ASSETCLASS_RICH_MEDIA:
+    id: SM_ASSETCLASS_RICH_MEDIA
+    label: Movie, sound or 3rd party embed code
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_QUICKTIME_MOVIE
+      - SM_ASSETTYPE_MPEG_MOVIE
+      - SM_ASSETTYPE_WMV
+      - SM_ASSETTYPE_YOUTUBE_CLIP
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_SVG_IMAGE
+      - SM_ASSETTYPE_MP3
+      - SM_ASSETTYPE_OGG_VORBIS
+      - SM_ASSETTYPE_MPEG4_AUDIO
+    default: SM_ASSETTYPE_YOUTUBE_CLIP
+    gallery: 'true'
+  SM_ASSETCLASS_MAIN_FEATURE_NOTEXT:
+    id: SM_ASSETCLASS_MAIN_FEATURE_NOTEXT
+    label: Multimedia or image
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_QUICKTIME_MOVIE
+      - SM_ASSETTYPE_YOUTUBE_CLIP
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_SVG_IMAGE
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_PNG_IMAGE
+      - SM_ASSETTYPE_GIF_IMAGE
+      - SM_ASSETTYPE_MP3
+      - SM_ASSETTYPE_OGG_VORBIS
+    default: SM_ASSETTYPE_YOUTUBE_CLIP
+    gallery: 'true'
+  SM_ASSETCLASS_MAIN_FEATURE:
+    id: SM_ASSETCLASS_MAIN_FEATURE
+    label: Multimedia, image or text
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_RICH_TEXT
+      - SM_ASSETTYPE_MARKDOWN_TEXT
+      - SM_ASSETTYPE_TEXTILE_TEXT
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_QUICKTIME_MOVIE
+      - SM_ASSETTYPE_YOUTUBE_CLIP
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_SVG_IMAGE
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_PNG_IMAGE
+      - SM_ASSETTYPE_GIF_IMAGE
+      - SM_ASSETTYPE_MP3
+      - SM_ASSETTYPE_OGG_VORBIS
+    default: SM_ASSETTYPE_YOUTUBE_CLIP
+    gallery: 'true'
+  SM_ASSETCLASS_RESOURCE:
+    id: SM_ASSETCLASS_RESOURCE
+    label: 'Archive resource - Text, Image, PDF, Embedded Video or MS office'
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_RICH_TEXT
+      - SM_ASSETTYPE_MARKDOWN_TEXT
+      - SM_ASSETTYPE_TEXTILE_TEXT
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_PNG_IMAGE
+      - SM_ASSETTYPE_GIF_IMAGE
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_PDF
+      - SM_ASSETTYPE_MS_WORD
+      - SM_ASSETTYPE_MS_EXCEL
+      - SM_ASSETTYPE_MS_POWERPOINT
+    default: SM_ASSETTYPE_PDF
+  SM_ASSETCLASS_TEXT_RESOURCE:
+    id: SM_ASSETCLASS_TEXT_RESOURCE
+    label: Text resource
+    accept:
+      - SM_ASSETTYPE_RICH_TEXT
+      - SM_ASSETTYPE_MARKDOWN_TEXT
+      - SM_ASSETTYPE_TEXTILE_TEXT
+      - SM_ASSETTYPE_PDF
+      - SM_ASSETTYPE_MS_WORD
+    setfrompreview: 'true'
+    descriptive: 'false'
+    default: SM_ASSETTYPE_RICH_TEXT
+  SM_ASSETCLASS_MOVIE:
+    id: SM_ASSETCLASS_MOVIE
+    label: A movie in any format
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_QUICKTIME_MOVIE
+      - SM_ASSETTYPE_FLASH_VIDEO
+      - SM_ASSETTYPE_YOUTUBE_CLIP
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_MPEG_MOVIE
+      - SM_ASSETTYPE_WMV
+    gallery: 'true'
+    default: SM_ASSETTYPE_YOUTUBE_CLIP
+  SM_ASSETCLASS_HOMEPAGE_SPLASH:
+    id: SM_ASSETCLASS_HOMEPAGE_SPLASH
+    label: >
+      Homepage splash (high-impact, high
+      compatibility)
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_SHOCKWAVE_FLASH
+      - SM_ASSETTYPE_QUICKTIME_MOVIE
+      - SM_ASSETTYPE_VIMEO_CLIP
+      - SM_ASSETTYPE_YOUTUBE_CLIP
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_PNG_IMAGE
+      - SM_ASSETTYPE_GIF_IMAGE
+      - SM_ASSETTYPE_SVG_IMAGE
+      - SM_ASSETTYPE_FLASH_VIDEO
+    default: SM_ASSETTYPE_JPEG_IMAGE
+    gallery: 'true'
+  SM_ASSETCLASS_JAVASCRIPT:
+    id: SM_ASSETCLASS_JAVASCRIPT
+    label: Javascript
+    setfrompreview: 'false'
+    accept: SM_ASSETTYPE_JAVASCRIPT
+  SM_ASSETCLASS_STYLESHEET:
+    id: SM_ASSETCLASS_STYLESHEET
+    label: CSS Stylesheet
+    setfrompreview: 'false'
+    accept:
+      - SM_ASSETTYPE_STYLESHEET
+      - SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET
+    default: SM_ASSETTYPE_STYLESHEET
+  SM_ASSETCLASS_CUFON_FONT:
+    id: SM_ASSETCLASS_CUFON_FONT
+    label: Font (using Cufón, WOFF or EOT)
+    setfrompreview: 'false'
+    accept:
+      - SM_ASSETTYPE_CUFON_FONT
+      - SM_ASSETTYPE_WEB_OPEN_FONT_FORMAT
+      - SM_ASSETTYPE_EOT_FONT_FORMAT
+    default: SM_ASSETTYPE_WEB_OPEN_FONT_FORMAT
+  SM_ASSETCLASS_BROWSER_INSTRUCTION:
+    id: SM_ASSETCLASS_BROWSER_INSTRUCTION
+    label: CSS or Javascript
+    setfrompreview: 'false'
+    accept:
+      - SM_ASSETTYPE_JAVASCRIPT
+      - SM_ASSETTYPE_STYLESHEET
+      - SM_ASSETTYPE_DYNAMIC_CSS
+      - SM_ASSETTYPE_CUFON_FONT
+    default: SM_ASSETTYPE_JAVASCRIPT
+  SM_ASSETCLASS_SHOCKWAVE_FLASH:
+    id: SM_ASSETCLASS_SHOCKWAVE_FLASH
+    label: Adobe Flash content
+    setfrompreview: 'true'
+    accept: SM_ASSETTYPE_SHOCKWAVE_FLASH
+  SM_ASSETCLASS_SOUND:
+    id: SM_ASSETCLASS_SOUND
+    label: Audio files
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_MP3
+      - SM_ASSETTYPE_OGG_VORBIS
+      - SM_ASSETTYPE_MPEG4_AUDIO
+    default: SM_ASSETTYPE_MP3
+  SM_ASSETCLASS_DOWNLOAD:
+    id: SM_ASSETCLASS_DOWNLOAD
+    label: Files that usually need to be downloaded
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_PDF
+      - SM_ASSETTYPE_MS_WORD
+      - SM_ASSETTYPE_MS_EXCEL
+      - SM_ASSETTYPE_MS_POWERPOINT
+    default: SM_ASSETTYPE_PDF
+  SM_ASSETCLASS_EXP1:
+    id: SM_ASSETCLASS_EXP1
+    label: Exp1
+    hide: 'true'
+    setfrompreview: 'true'
+    accept:
+      - SM_ASSETTYPE_HTML_FRAGMENT
+      - SM_ASSETTYPE_JPEG_IMAGE
+      - SM_ASSETTYPE_CONTAINER_TEMPLATE
+  SM_ASSETCLASS_CONTAINER:
+    id: SM_ASSETCLASS_CONTAINER
+    hide: 'true'
+    label: A Container
+    accept: SM_ASSETTYPE_CONTAINER_TEMPLATE
+  SM_ASSETCLASS_ITEM_SPACE:
+    id: SM_ASSETCLASS_ITEM_SPACE
+    hide: 'true'
+    label: A Dynamically loaded item

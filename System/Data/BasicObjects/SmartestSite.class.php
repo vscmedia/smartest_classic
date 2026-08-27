@@ -16,13 +16,14 @@ class SmartestSite extends SmartestBaseSite{
     public static $special_page_ids = array();
     
 	public function getHomePage($draft_mode=false){
-	    
-	    if($this->_home_page === null){
-	        $page = new SmartestPage;
-    	    $page->find($this->getTopPageId());
-    	    $page->setDraftMode($draft_mode);
-    	    $this->_home_page = $page;
-        }
+		    
+		    if($this->_home_page === null){
+		        $page = new SmartestPage;
+	    	    $page->find($this->getTopPageId());
+	    	    $page->setParentSite($this);
+	    	    $page->setDraftMode($draft_mode);
+	    	    $this->_home_page = $page;
+	        }
 	    
 	    return $this->_home_page;
 	    
@@ -123,9 +124,11 @@ class SmartestSite extends SmartestBaseSite{
 	}
 	
 	public function getSpecialPageIds(){
-	    
-	    if(count(self::$special_page_ids)){
-	        return self::$special_page_ids;
+
+	    $site_id = $this->getId();
+
+	    if(isset(self::$special_page_ids[$site_id]) && self::$special_page_ids[$site_id] instanceof SmartestParameterHolder){
+	        return self::$special_page_ids[$site_id];
 	    }else{
             $ids = new SmartestParameterHolder('Special page IDs for site \''.$this->getName().'\'');
             $ids->setParameter('tag_page_id', $this->getTagPageId());
@@ -133,10 +136,10 @@ class SmartestSite extends SmartestBaseSite{
             $ids->setParameter('error_page_id', $this->getErrorPageId());
             $ids->setParameter('search_page_id', $this->getSearchPageId());
             $ids->setParameter('holding_page_id', $this->getHoldingPageId());
-            self::$special_page_ids = $ids;
+            self::$special_page_ids[$site_id] = $ids;
             return $ids;
         }
-        
+	        
     }
     
     public function pageIdIsSpecial($page_id){
@@ -817,7 +820,7 @@ class SmartestSite extends SmartestBaseSite{
             return $this->getHomePage();
         }
         
-        if(strlen($url) > 1 && $url{0} == '/'){
+        if(strlen($url) > 1 && $url[0] == '/'){
             $url = substr($url, 1);
         }
         
@@ -1086,6 +1089,7 @@ class SmartestSite extends SmartestBaseSite{
     
     public function setUserPageId($id){
         $ph = new SmartestPreferencesHelper;
+        $this->clearSpecialPageIdsCache();
         return $ph->setGlobalPreference('site_user_page_id', $id, null, $this->getId());
     }
     
@@ -1112,6 +1116,7 @@ class SmartestSite extends SmartestBaseSite{
     
     public function setTagPageId($id){
         $ph = new SmartestPreferencesHelper;
+        $this->clearSpecialPageIdsCache();
         return $ph->setGlobalPreference('site_tag_page_id', $id, null, $this->getId());
     }
     
@@ -1138,6 +1143,7 @@ class SmartestSite extends SmartestBaseSite{
     
     public function setSearchPageId($id){
         $ph = new SmartestPreferencesHelper;
+        $this->clearSpecialPageIdsCache();
         return $ph->setGlobalPreference('site_search_page_id', $id, null, $this->getId());
     }
     
@@ -1164,6 +1170,7 @@ class SmartestSite extends SmartestBaseSite{
     
     public function setErrorPageId($id){
         $ph = new SmartestPreferencesHelper;
+        $this->clearSpecialPageIdsCache();
         return $ph->setGlobalPreference('site_error_page_id', $id, null, $this->getId());
     }
     
@@ -1187,7 +1194,12 @@ class SmartestSite extends SmartestBaseSite{
     
     public function setHoldingPageId($id){
         $ph = new SmartestPreferencesHelper;
+        $this->clearSpecialPageIdsCache();
         return $ph->setGlobalPreference('site_holding_page_id', $id, null, $this->getId());
+    }
+
+    protected function clearSpecialPageIdsCache(){
+        unset(self::$special_page_ids[$this->getId()]);
     }
     
     public function getHoldingPage(){

@@ -51,7 +51,7 @@ class SmartestObjectModelHelper{
     			$constant_name  = SmartestStringHelper::toConstantName($property->getName());
     			$constant_value = $property->getId();
 			
-    			if(is_numeric($constant_name{0})){
+			if(is_numeric($constant_name[0])){
     				$constant_name = '_'.$constant_name;
     			}
 			

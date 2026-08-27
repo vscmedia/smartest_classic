@@ -17,9 +17,9 @@ class Smartest8BitInteger extends SmartestObject implements SmartestBasicType, S
                     throw new SmartestException("Smartest8BitInteger expects a value between 0 and 255.");
                 }
             }else{
-                if(preg_match('/[0-9a-f]{1,2}/i', $v)){
+                if(preg_match('/[0-9a-f][1,2]/i', $v)){
                     // bit is being provided as hex
-                    if(isset($v{1})){
+                    if(isset($v[1])){
                         $this->_value = (int) hexdec($v);
                     }else{
                         $this->_value = (int) hexdec($v.$v);

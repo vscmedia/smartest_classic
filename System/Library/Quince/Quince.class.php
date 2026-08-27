@@ -201,7 +201,7 @@ class QuinceAction{
             $this->_action_object->__pre();
             
             // now call the function. If it forwards, this will be the last line that gets executed
-            $result = call_user_func_array(array($this->_action_object, $this->_action), $args);
+            $result = call_user_func_array(array($this->_action_object, $this->_action), array_values($args));
             
             // call the module's post-action function
             $this->_action_object->__post();
@@ -277,7 +277,7 @@ class QuinceRequest{
     
     final public function getRequestStringWithVars(){
         $rs = $this->_request_string;
-        if(isset($_SERVER['QUERY_STRING']{0})){
+        if(isset($_SERVER['QUERY_STRING'][0])){
             $rs .= '?'.$_SERVER['QUERY_STRING'];
         }
         return $rs;
@@ -477,7 +477,7 @@ class QuinceBase{
 			
 			$destination = $this->_request->getDomain();
 			
-		}else if($to{0} == "/"){
+		}else if($to[0] == "/"){
 		    
 		    if($this->_request->getDomain() == '/' || substr($to, 0, strlen($this->_request->getDomain())) == $this->_request->getDomain()){
 		        $destination = $to;
@@ -629,7 +629,7 @@ class QuinceUtilities{
 
 		while (false !== ($file = readdir($res))) {
 
-    		if($file{0} != '.'){
+		if($file[0] != '.'){
     		    
     		    $files[] = is_dir($dir.$file) ? $dir.utf8_encode($file).'/' : $dir.utf8_encode($file);
     		    
@@ -859,10 +859,10 @@ class QuinceRedirectException extends QuinceException{
 	public function redirect($sc=303, $exit=true){
 	    
 	    header("HTTP/1.1 ".$sc." ".$this->_status_codes[$sc]);
-	    header("Location: ".$this->getRedirectUrl());
+        header("Location: ".$this->getRedirectUrl());
         
         if($exit){
-            // exit;
+            exit;
         }
 	    
 	}
@@ -990,7 +990,7 @@ class Quince{
             
     	    // TAKE ALL THE BITS OF THE REQUEST_URI THAT AREN'T IN THE DOCUMENT_ROOT AND MAKE THEM THE DOMAIN
 	    
-    	    $test_url = $url{(strlen($url)-1)} == '/' ? substr($url, 0, -1) : $url;
+	    $test_url = $url[(strlen($url)-1)] == '/' ? substr($url, 0, -1) : $url;
 	    
     	    // Calculate the domain
     	    $dr = realpath($_SERVER["DOCUMENT_ROOT"]).'/';
@@ -1592,8 +1592,8 @@ class QuinceLegacy extends Quince{
         }
     }
     
-    public function dispatch(){
-        $this->_request = parent::dispatch(Quince::CURRENT_URL);
+    public function dispatch($url='___QUINCE_CURRENT_URL', $prepare=true){
+        $this->_request = parent::dispatch($url, $prepare);
         $this->_module = QuinceUtilities::cacheGet('module_config_'.$this->_request());
     }
     

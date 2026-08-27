@@ -22,6 +22,12 @@ class SmartestWebPagePreparationHelper{
     }
     
     public function createBuilder(){
+
+        $existing_builder = SmartestPersistentObject::get('presentationLayer');
+
+        if($existing_builder instanceof SmartestWebPageBuilder){
+            return $existing_builder;
+        }
         
         $m = new SmartyManager("WebPageBuilder");
         $wpb = $m->initialize();
@@ -31,9 +37,11 @@ class SmartestWebPagePreparationHelper{
     
     public function fetch($draft_mode=false){
         
-        if($this->cachedPagesAllowed()){	
+        if($this->cachedPagesAllowed()){
+            SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::fetch cache '.$this->_page->getCacheFileName());
 			return SmartestFileSystemHelper::load(SM_ROOT_DIR.'System/Cache/Pages/'.$this->_page->getCacheFileName(), true);
 		}else{
+            SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::fetch build page='.$this->_page->getId());
 			return $this->build($draft_mode);
 		}
         
@@ -60,7 +68,9 @@ class SmartestWebPagePreparationHelper{
             throw new SmartestException("Supplied data is not a valid SmartestPage object.");
         }
         
+        SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::build creating builder');
         $b = $this->createBuilder();
+        SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::build builder='.get_class($b));
         
         $b->assign('domain', $this->_request->getDomain());
         $b->assign('method', $this->_request->getAction());
@@ -82,7 +92,9 @@ class SmartestWebPagePreparationHelper{
         $b->assign('sm_draft_mode', $draft_mode);
         $b->assign('sm_draft_mode_obj', new SmartestBoolean($draft_mode));
         
+        SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::build rendering page draft='.(int) $draft_mode);
         $content = $b->renderPage($this->_page, $draft_mode);
+        SmartestResponse::debugTrace('SmartestWebPagePreparationHelper::build rendered bytes='.strlen((string) $content));
         
         if($this->_page->getCacheAsHtml() == "TRUE" && !$draft_mode && !SmartestInfo::$prevent_cache){
         

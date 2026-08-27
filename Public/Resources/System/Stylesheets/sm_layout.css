@@ -1106,6 +1106,65 @@ a.attachment-position-selector{
     background-repeat:no-repeat;
 }
 
+a.compact-attachment-position-selector{
+    width:49px;
+    height:37px;
+    padding:3px;
+    margin:0 3px 5px 0;
+    background-size:49px 37px;
+    background-position:3px 3px;
+    vertical-align:top;
+}
+
+div.smartest-attachment-lite-media{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    max-width:560px;
+}
+
+div.smartest-attachment-lite-preview{
+    flex:0 0 96px;
+    width:96px;
+    height:96px;
+    border:1px solid #b9c5d3;
+    background:#eef3f7;
+    overflow:hidden;
+    box-sizing:border-box;
+}
+
+div.smartest-attachment-lite-preview img{
+    display:block;
+    width:96px;
+    height:96px;
+}
+
+div.smartest-attachment-lite-preview span{
+    display:block;
+    width:94px;
+    height:94px;
+    line-height:94px;
+    text-align:center;
+    color:#526477;
+    font-weight:bold;
+}
+
+div.smartest-attachment-lite-details{
+    flex:1 1 auto;
+    min-width:0;
+}
+
+div.smartest-attachment-lite-details strong,
+div.smartest-attachment-lite-details span,
+div.smartest-attachment-lite-details code{
+    display:block;
+}
+
+div.smartest-attachment-lite-details code{
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+
 div.layout-column{
     float:left;
     margin-right:15px;

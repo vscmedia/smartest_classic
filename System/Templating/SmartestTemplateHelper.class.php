@@ -550,7 +550,7 @@ class SmartestTemplateHelper{
 					if(@SM_OPTIONS_IMAGES_LOCAL){
 					
 						$local_img_dir = SM_SYSTEM_IMAGES_DIR;
-						if($local_img_dir{0} == "/"){
+						if($local_img_dir[0] == "/"){
 							$html .= $startHtml.SM_SYSTEM_IMAGES_DIR.$params["file"];
 						}else{
 							$html .= $startHtml.SM_CONTROLLER_DOMAIN.SM_SYSTEM_IMAGES_DIR.$params["file"];
@@ -642,7 +642,7 @@ class SmartestTemplateHelper{
 					if(@SM_OPTIONS_IMAGES_LOCAL){
 					
 						$local_img_dir = SM_SYSTEM_IMAGES_DIR;
-						if($local_img_dir{0} == "/"){
+						if($local_img_dir[0] == "/"){
 							$html .= $startHtml.SM_SYSTEM_IMAGES_DIR.$params["file"];
 						}else{
 							$html .= $startHtml."/".SM_SYSTEM_IMAGES_DIR.$params["file"];

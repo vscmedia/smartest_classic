@@ -204,6 +204,10 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
             case "is_image":
             return $this->isImage();
             
+            case "is_editable":
+            case "editable":
+            return $this->isEditable();
+            
             case "is_binary_image":
             return $this->isBinaryImage();
             

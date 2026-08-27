@@ -1,0 +1,65 @@
+buildkit:
+  shortname: sm_infosite
+  label: Informational website
+  title_format: $page | $site
+  minimum_smartest_build: 744
+  eu_cookie_mode:
+    enabled: true
+  responsive_mode:
+    enabled: true
+    mobiles: true
+    tablets: false
+    oldpcs: true
+  third_party_licenses:
+    isotope:
+      label: Isotope
+      cost: 25
+      currency: USD
+      pay_url: 'http://isotope.metafizzy.co/#commercial-license'
+      info_url: 'http://isotope.metafizzy.co/'
+      developer: Metafizzy
+      technology: Javascript
+      purpose: Smart layout
+    packery:
+      label: Packery
+      cost: 25
+      currency: USD
+      pay_url: 'http://packery.metafizzy.co/#commercial-license'
+      info_url: http://packery.metafizzy.co/
+      developer: Metafizzy
+      technology: Javascript
+      purpose: Smart layout
+    highslide:
+      label: Highslide
+      cost: 29
+      currency: USD
+      pay_url: http://shop.highsoft.com/highslide.html
+      info_url: http://highslide.com
+      developer: Highsoft
+      technology: Javascript
+      purpose: Zoomable images
+  required_write_dirs:
+    - Public/Resources/Images/
+    - Public/Resources/Javascript/
+    - Public/Resources/Stylesheets/
+    - Presentation/Masters/
+    - Presentation/Layouts/
+    - Applications/
+  configure_options:
+    strapline: 
+      datatype: SM_DATATYPE_SL_TEXT
+      default: "A brand-new Smartest website"
+      label: Blog strapline
+      hint: Enter a short description of your site in here
+  data_structure:
+    enabled: true # models, properties, dropdown menus, sets and tags
+    required: true
+  frontend_structure: # Pages, lists, itemspaces, templates and javascript
+    enabled: true
+    required: true
+  templates: # HTML templates, Javascript and essential layout CSS
+    enabled: true
+    required: true
+  content: # Stylesheets, images, fonts, text, movies, other files
+    enabled: true
+    required: true

@@ -202,16 +202,23 @@ class CmsFrontEnd extends SmartestSystemApplication{
 		define('SM_AJAX_CALL', false);
         define('SM_DRAFT_MODE', true);
 		
-		define('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN', $this->getUser()->hasToken('edit_containers_in_preview', false));
+			if(!defined('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN')){
+			    define('SM_OPTIONS_ALLOW_CONTAINER_EDIT_PREVIEW_SCREEN', $this->getUser()->hasToken('edit_containers_in_preview', false));
+			}
 		
 		$page_webid = $this->getRequestParameter('page_id');
 		
         $this->send($this->getApplicationPreference('hide_preview_bar', 0), 'sm_hide_preview_bar');
         
-		if($this->_site = $this->manager->getSiteByPageWebId($page_webid)){
-		    
-		    define('SM_CMS_PAGE_SITE_ID', $this->_site->getId());
-	        define('SM_CMS_PAGE_SITE_UNIQUE_ID', $this->_site->getUniqueId());
+			if($this->_site = $this->manager->getSiteByPageWebId($page_webid)){
+			    
+			    if(!defined('SM_CMS_PAGE_SITE_ID')){
+			        define('SM_CMS_PAGE_SITE_ID', $this->_site->getId());
+			    }
+
+		        if(!defined('SM_CMS_PAGE_SITE_UNIQUE_ID')){
+		            define('SM_CMS_PAGE_SITE_UNIQUE_ID', $this->_site->getUniqueId());
+		        }
 	        
             if($this->_page = $this->manager->getNormalPageByWebId($page_webid, true)){
                 
@@ -584,30 +591,33 @@ class CmsFrontEnd extends SmartestSystemApplication{
                 $site = $this->_site;
             }
             
-            $raw_scss = $asset->getContent(true);
-            $header = '$sm_domain: \''.$this->getRequest()->getDomain()."';\n";
-            $header .= '$sm_url_base: \''.$this->getRequest()->getDomain()."';\n";
-            
-            // Loop through the site's global fields and add them as SCSS variables
-            foreach($site->getGlobalFields($draft_mode) as $field_name => $global_field_value){
-                if($global_field_value instanceof SmartestRgbColor){
-                    $header .= '$field_'.$field_name.': #'.(string) $global_field_value.";\n";
+            $page = null;
+
+            if($this->requestParameterIsSet('page_id')){
+                $page = new SmartestPage;
+                $page_id = $this->getRequestParameter('page_id');
+
+                if(!$page->findBy('webid', $page_id) && is_numeric($page_id)){
+                    $page->find($page_id);
+                }
+
+                if(!$page->getId()){
+                    $page = null;
                 }else{
-                    $header .= '$field_'.$field_name.': "'.(string) $global_field_value."\";\n";
+                    $page->setParentSite($site);
+                    $page->setDraftMode($draft_mode);
                 }
             }
-            
-            $raw_scss = $header.$raw_scss;
-            $scss = new scssc();
-            
-            try{
-                $css = $scss->compile($raw_scss);
-            }catch(Exception $e){
-                $css = "/** SCSS Error: ".$e->getMessage()." **/";
+
+            if(!$page instanceof SmartestPage && $site instanceof SmartestSite){
+                $page = $site->getHomePage($draft_mode);
             }
             
+            $compiler = new SmartestDynamicStylesheetCompiler;
+            $result = $compiler->compileAsset($asset, $site, $page, $draft_mode, $this->getRequest()->getDomain());
+            
             header('Content-type: text/css');
-            echo $css;
+            echo $result['css'];
             
         }else{
             $this->renderNotFoundPage(SM_ERROR_FILE_NOT_FOUND);
@@ -618,6 +628,8 @@ class CmsFrontEnd extends SmartestSystemApplication{
     }
 	
 	private function renderPage($draft_mode=false){
+
+        SmartestResponse::debugTrace('CmsFrontEnd::renderPage start page='.($this->_page instanceof SmartestPage ? $this->_page->getId() : 'none').' draft='.(int) $draft_mode);
 	    
         if($draft_mode || (is_object($this->_site) && (bool) $this->_site->getIsEnabled()) || ($this->_page->getId() == $this->_site->getHoldingPageId())){
 	        
@@ -640,11 +652,13 @@ class CmsFrontEnd extends SmartestSystemApplication{
     		SmartestPersistentObject::get('timing_data')->setParameter('overhead_time_taken', $overhead_time_taken);
 	    
     	    $html = $ph->fetch($draft_mode);
+            SmartestResponse::debugTrace('CmsFrontEnd::renderPage fetched bytes='.strlen((string) $html));
 	        
 	        ///// START FILTER CHAIN
     	    $fc = new SmartestFilterChain("WebPageBuilder");
     	    $fc->setDraftMode($draft_mode);
 	        $html = $fc->execute($html);
+            SmartestResponse::debugTrace('CmsFrontEnd::renderPage filtered bytes='.strlen((string) $html));
 	        
 	        header('X-Powered-By: Smartest v'.SmartestInfo::$version.' ('.SmartestInfo::$revision.')');
 	        $cth = 'Content-Type: '.$this->getRequest()->getContentType().'; charset='.$this->getRequest()->getCharSet();
@@ -655,6 +669,7 @@ class CmsFrontEnd extends SmartestSystemApplication{
 	        }
 	        
     	    echo $html;
+            SmartestResponse::debugTrace('CmsFrontEnd::renderPage echoed bytes='.strlen((string) $html));
             
             if(!$draft_mode){
                 $cron->internalMaintenanceTrigger();

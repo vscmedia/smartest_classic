@@ -28,8 +28,17 @@ function smarty_function_save_buttons($params, &$smartest_engine){
     if(isset($params['publish_action'])){
         $vars['_publish_message'] = isset($params['publish_message']) ? $params['publish_message'] : $global_ui_strings['system_wide_buttons']['save_and_publish'];
         $vars['_publish_action'] = $params['publish_action'];
+    }else{
+        $vars['_publish_action'] = false;
+    }
+
+    if(isset($params['referring_action'])){
+        $vars['_referring_action'] = $params['referring_action'];
+    }else{
+        $request_data = SmartestPersistentObject::get('request_data');
+        $vars['_referring_action'] = $request_data ? $request_data->getParameter('request_string') : $_SERVER['REQUEST_URI'];
     }
     
-    $smartest_engine->_smarty_include(array('smarty_include_tpl_file'=>SM_ROOT_DIR.'System/Presentation/InterfaceBuilder/editform_buttons.tpl', 'smarty_include_vars'=>$vars));
+    return $smartest_engine->_smarty_include(array('smarty_include_tpl_file'=>SM_ROOT_DIR.'System/Presentation/InterfaceBuilder/editform_buttons.tpl', 'smarty_include_vars'=>$vars));
     
 }

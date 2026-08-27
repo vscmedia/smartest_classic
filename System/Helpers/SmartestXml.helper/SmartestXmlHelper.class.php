@@ -11,42 +11,56 @@
 SmartestHelper::register('Xml');
 
 class SmartestXmlHelper extends SmartestHelper{
+
+    protected static function elementToArray(SimpleXMLElement $element){
+
+        $data = array();
+
+        foreach($element->attributes() as $key => $value){
+            $data[str_replace('-', '_', (string) $key)] = (string) $value;
+        }
+
+        $has_children = false;
+
+        foreach($element->children() as $name => $child){
+
+            $has_children = true;
+            $key = str_replace('-', '_', (string) $name);
+            $value = self::elementToArray($child);
+
+            if(array_key_exists($key, $data)){
+                if(!is_array($data[$key]) || !array_key_exists(0, $data[$key])){
+                    $data[$key] = array($data[$key]);
+                }
+                $data[$key][] = $value;
+            }else{
+                $data[$key] = $value;
+            }
+        }
+
+        $text = trim((string) $element);
+
+        if($has_children || count($data)){
+            if(strlen($text)){
+                $data['_content'] = $text;
+            }
+            return $data;
+        }
+
+        return $text;
+    }
 	
-	static function loadFile($filename){
+    static function loadFile($filename){
 		
 		if(is_file($filename)){
-			
-			if(!class_exists("PEAR")){
-				@include_once 'PEAR.php';
-			}
-			
-			if(!class_exists("XML_Unserializer")){
-				@include_once 'XML/Unserializer.php'; 
-				@include_once 'XML/Serializer.php';
-			}
-			
-			if(class_exists("XML_Unserializer")){
 
-	    		$option = array('complexType' => 'array', 'parseAttributes' => TRUE);
-	    		$unserialized = new XML_Unserializer($option);
-	    		$result = $unserialized->unserialize($filename, true);
+		    $xml = simplexml_load_file($filename, 'SimpleXMLElement', LIBXML_NOCDATA);
 
-	    		if (PEAR::isError($result)) {
-					// ERROR: XML file could not be parsed: PEAR said "$result->getMessage()"
-					// echo 'xml file unparsable';
-					throw new SmartestException('Couldn\'t parse file: '.$filename.'. PEAR said: '.$result->getMessage());
-					// return false;
-	    		}else{
-	    			// load contents from xml file
-	    			$data = $unserialized->getUnserializedData();
-	    			// print_r($data);
-	    			return $data;
-	    		}
-	
-	    	}else{
-	    		// ERROR: XML file could not be parsed because the PEAR XML_Unserializer library could not be found.
-				// echo 'required pear libraries missing';
-	    	}
+		    if($xml instanceof SimpleXMLElement){
+		        return self::elementToArray($xml);
+            }else{
+                throw new SmartestException('Couldn\'t parse XML file: '.$filename.'.');
+            }
 		}else{
 			// ERROR: File does not exist
 			// echo 'no such file';
@@ -56,33 +70,14 @@ class SmartestXmlHelper extends SmartestHelper{
 	static function loadString($string){
 		
 		if(strlen($string)){
-			
-			if(!class_exists("XML_Unserializer")){
-				@include_once 'PEAR.php';
-				@include_once 'XML/Unserializer.php'; 
-				@include_once 'XML/Serializer.php';
-			}
-			
-			if(class_exists("XML_Unserializer")){
 
-	    		$option = array('complexType' => 'array', 'parseAttributes' => TRUE);
-	    		$unserialized = new XML_Unserializer($option);
-	    		$result = $unserialized->unserialize($string);
+		    $xml = simplexml_load_string($string, 'SimpleXMLElement', LIBXML_NOCDATA);
 
-	    		if (PEAR::isError($result)) {
-					// ERROR: XML file could not be parsed: PEAR said "$result->getMessage()"
-					// echo 'xml file unparsable';
-					return false;
-	    		}else{
-	    			// load contents from xml file
-	    			$data = $unserialized->getUnserializedData();
-	    			return $data;
-	    		}
-	
-	    	}else{
-	    		// ERROR: XML file could not be parsed because the PEAR XML_Unserializer library could not be found.
-				// echo 'required pear libraries missing';
-	    	}
+		    if($xml instanceof SimpleXMLElement){
+		        return self::elementToArray($xml);
+            }else{
+                return false;
+            }
 		}else{
 			// ERROR: File does not exist
 			// echo 'no such file';

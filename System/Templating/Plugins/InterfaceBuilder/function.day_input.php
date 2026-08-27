@@ -16,11 +16,13 @@ function smarty_function_day_input($params, &$smartest_engine){
         if(isset($params['value'])){
             if($params['value'] instanceof SmartestDateTime){
                 $input->setParameter('value', $params['value']);
+            }elseif($params['value'] === null || $params['value'] === ''){
+                $input->setParameter('value', new SmartestDateTime(SmartestDateTime::NEVER));
             }else{
                 $input->setParameter('value', new SmartestDateTime($params['value']));
             }
         }else{
-            $input->setParameter('value', null);
+            $input->setParameter('value', new SmartestDateTime(SmartestDateTime::NEVER));
         }
         
         // TODO: fill these defaults in properly
@@ -29,7 +31,10 @@ function smarty_function_day_input($params, &$smartest_engine){
         $input->setParameter('default_year', date("Y"));
         
         $smartest_engine->assign('_input_data', $input);
-        $smartest_engine->run(SM_ROOT_DIR.'System/Presentation/InterfaceBuilder/Inputs/date.tpl', array());
+        return $smartest_engine->_smarty_include(array(
+            'smarty_include_tpl_file' => SM_ROOT_DIR.'System/Presentation/InterfaceBuilder/Inputs/date.tpl',
+            'smarty_include_vars' => $input->getParameters()
+        ));
         
     }else{
         

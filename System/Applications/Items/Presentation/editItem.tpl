@@ -90,7 +90,7 @@
 <input type="hidden" name="nextAction" id="next-action" value="" />
 <input type="hidden" name="property_id" id="property-id" value="" />
 
-{if $request_parameters.from}<input type="hidden" name="from" value="{$smarty.get.from}" />{/if}
+{if $request_parameters.from}<input type="hidden" name="from" value="{$request_parameters.from}" />{/if}
 
 {if $item._model.item_name_field_visible || count($metapages)}
 <div class="edit-form-row">

@@ -5,7 +5,7 @@ class SmartestPageGroupMembership extends SmartestManyToManyLookup{
     protected $_page;
     protected $_group;
     
-    public function hydrate($raw_data){
+    public function hydrate($raw_data, $site_id='', $dup=false){
         
         if(isset($raw_data['page_id'])){
             $page = new SmartestPage;

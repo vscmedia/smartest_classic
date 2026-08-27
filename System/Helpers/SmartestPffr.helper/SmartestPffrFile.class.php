@@ -26,7 +26,7 @@ class SmartestPffrFile{
         $lines = explode("\n", trim($this->_file->getContent()));
         
         foreach($lines as $k=>$l){
-            if($l{0} == '#'){
+            if($l[0] == '#'){
                 unset($lines[$k]);
             }
         }

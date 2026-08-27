@@ -81,9 +81,15 @@ class SmartestLog{
     }
     
     public static function getLogTypesXmlData(){
-	    
+
+	    $yml_file_path = SM_ROOT_DIR.'System/Core/Types/logs.yml';
 	    $file_path = SM_ROOT_DIR.'System/Core/Types/logs.xml';
 	    
+	    if(is_file($yml_file_path)){
+	        $raw_data = SmartestYamlHelper::fastLoad($yml_file_path);
+	        return $raw_data['log'];
+	    }
+
 	    if(SmartestCache::hasData('logtypes_xml_file_hash', true)){
 	        
 	        $old_hash = SmartestCache::load('logtypes_xml_file_hash', true);
@@ -201,9 +207,9 @@ class SmartestLog{
         $message = str_replace('%MESSAGE%', $m, $message);
         $message = str_replace('%FILE%', (isset($bt['file']) ? $bt['file'] : 'Unknown'), $message);
         $message = str_replace('%LINE%', (isset($bt['line']) ? $bt['line'] : 'Unknown'), $message);
-        $message = str_replace('%CLASS%', $bt['class'], $message);
-        $message = str_replace('%CALLTYPE%', $bt['type'], $message);
-        $message = str_replace('%FUNCTION%', $bt['function'], $message);
+        $message = str_replace('%CLASS%', (isset($bt['class']) ? $bt['class'] : ''), $message);
+        $message = str_replace('%CALLTYPE%', (isset($bt['type']) ? $bt['type'] : ''), $message);
+        $message = str_replace('%FUNCTION%', (isset($bt['function']) ? $bt['function'] : 'unknown'), $message);
         // $message = str_replace('%APPLICATIONID%');
         
         return $message."\n";

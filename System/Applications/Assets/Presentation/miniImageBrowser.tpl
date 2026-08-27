@@ -122,7 +122,22 @@
     
       var uploadComplete = function(evt) {
         /* This event is raised when the server send back a response */
-        var jsonResponse = JSON.parse(evt.target.responseText);
+        var jsonResponse;
+        
+        try{
+          jsonResponse = JSON.parse(evt.target.responseText);
+        }catch(e){
+          alert('The image could not be uploaded. The server returned an unexpected response.');
+          $('upload-progress-outer').hide();
+          return;
+        }
+        
+        if(jsonResponse.error){
+          alert(jsonResponse.message || 'The image could not be uploaded.');
+          $('upload-progress-outer').hide();
+          return;
+        }
+        
         var modalURL = 'assets/miniImageBrowser?input_id='+inputId;
       
         if(jsonResponse.for){

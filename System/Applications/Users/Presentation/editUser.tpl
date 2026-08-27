@@ -322,7 +322,7 @@
   </ul>
 </div>
 
-{if $sites._count > 1}
+{if !empty($sites) && $sites._count > 1}
 <script type="text/javascript">
 {literal}
   
@@ -352,7 +352,8 @@
 
 {/if}
 
-<script src="{$domain}Resources/System/Javascript/tinymce4/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+<script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
 <script language="javascript" type="text/javascript">
 {literal}
 

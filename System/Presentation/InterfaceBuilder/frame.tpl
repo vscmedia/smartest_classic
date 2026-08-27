@@ -57,7 +57,11 @@ $$('div.ui-message.not-sticky').each(function(msgDiv){
   </div>
   
   <div id="user-info">
-    {if $show_left_nav_options}{$_l10n_global_strings.top_bar.signed_in_before_site_name} <strong>{$_site.internal_label}</strong>{else}{$_l10n_global_strings.top_bar.signed_in_without_site_name}{/if} {$_l10n_global_strings.top_bar.signed_in_after_site_name} <strong>{$_user.firstname} {$_user.lastname}</strong>&nbsp;&nbsp;{if $show_left_nav_options || $show_create_button}<a href="#create" id="sm-button-create" title="Create something new" class="sm-top-bar-button">&nbsp;</a>{/if}<a href="{$domain}smartest/profile" id="sm-button-profile" title="Edit your user account" class="sm-top-bar-button">&nbsp;</a>{if $show_left_nav_options && ($_user.num_allowed_sites > 1 || $_user_allow_site_create)}<a href="{$domain}smartest/close" id="sm-button-close" title="Close this site" class="sm-top-bar-button">&nbsp;</a>{/if}<a href="{$domain}smartest/logout" id="sm-button-exit" title="Sign out" class="sm-top-bar-button">&nbsp;</a>&nbsp;&nbsp;
+    {if $show_left_nav_options}{$_l10n_global_strings.top_bar.signed_in_before_site_name} <strong><a href="{$domain}smartest/sitesettings">{$_site.internal_label}</a></strong>{else}{$_l10n_global_strings.top_bar.signed_in_without_site_name}{/if} {$_l10n_global_strings.top_bar.signed_in_after_site_name} <strong>{$_user.firstname} {$_user.lastname}</strong>&nbsp;
+    {if $show_left_nav_options || $show_create_button}<a href="#create" id="sm-button-create" title="Create something new" class="sm-top-bar-button">&nbsp;</a>{/if}
+    <a href="{$domain}smartest/profile" id="sm-button-profile" title="Edit your user account" class="sm-top-bar-button">&nbsp;</a>
+    {if $show_left_nav_options && ($_user.num_allowed_sites > 1 || $_user_allow_site_create)}<a href="{$domain}smartest/close" id="sm-button-close" title="Close this site" class="sm-top-bar-button">&nbsp;</a>{/if}
+    <a href="{$domain}smartest/logout" id="sm-button-exit" title="Sign out" class="sm-top-bar-button">&nbsp;</a>&nbsp;&nbsp;
   </div>
   
   <div id="primary-ajax-loader" style="display:none">

@@ -1,0 +1,46 @@
+<?php
+  
+// include any needed files - optional of course.
+// require_once "EXAMPLE_FILE.php";
+
+// Extend SmartestUserApplication
+// not strictly required if you like to do everything by hand, but no good reason not to.
+// Gives access to many aspects of Smartest API that would otherwise be unavailable
+// Gives access to Controller values and templating object
+class %CLASSNAME% extends SmartestUserApplication{
+  
+	// declare any vars/constants/whatever, as normal
+	protected $_foo;
+	const FOO = 'BAR';
+
+	// SmartestBaseApplication already has a constructor, so if you want your class to have a constructor,
+	// put it here called __smartestApplicationInit() and SmartestApplication will call it.
+	public function __smartestApplicationInit(){
+		
+	}
+	
+	// no other requirements at all.
+	// define your methods as normal and have fun...
+	
+	// By convention, the default action for a module is called startAction,
+	// but you can make this whatever you like in %APPDIR%Configuration/quince.yml
+	public function startAction(){
+	    
+	}
+	
+	// will be accessible in the url via example.com/%SHORTNAME%/otherAction
+	public function otherAction(){          	
+		
+	}
+	
+	// will be accessible in the url via example.com/%SHORTNAME%/yetAnotherAction
+	public function yetAnotherAction(){
+		
+	}
+	
+	// will not be accessible in the url
+	private function foobar(){
+	    
+	}
+	
+}

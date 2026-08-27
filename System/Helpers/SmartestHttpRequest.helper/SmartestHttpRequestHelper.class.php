@@ -50,7 +50,7 @@ class SmartestHttpRequestHelper extends SmartestHelper{
     			if(is_array($urls)){
     				foreach($urls as $resource_url){
     				    if(!in_array($resource_url, $already_processed)){
-    					    if($resource_url{0} == '/'){
+				    if($resource_url[0] == '/'){
 					        
     					        $regexp = SmartestStringHelper::toRegularExpression($resource_url);
         						$regexp = '/href=[\'"]?'.$regexp.'[\'"]/';
@@ -74,7 +74,7 @@ class SmartestHttpRequestHelper extends SmartestHelper{
     			if(is_array($res)){
     				foreach($res as $resource_url){
     				    if(!in_array($resource_url, $already_processed)){
-    					    if($resource_url{0} == '/'){
+				    if($resource_url[0] == '/'){
         						$page = str_replace($resource_url, $protocol.$hostname.$resource_url, $page);
         						$already_processed[] = $resource_url;
         					}else{

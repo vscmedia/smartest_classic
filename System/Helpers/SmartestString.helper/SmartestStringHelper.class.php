@@ -4,11 +4,9 @@ SmartestHelper::register('String');
 
 define("SM_OPTIONS_MAGIC_QUOTES", (bool) ini_get('magic_quotes_gpc'));
 
-require_once(SM_ROOT_DIR.'System/Library/Textile/classTextile.php');
-
 class SmartestStringHelper extends SmartestHelper{
     
-    const EMAIL_ADDRESS = '/^[A-Z0-9._%\'-]+@[A-Z0-9-]+\.[\w]{2,}(\.[\w]{2,})?/i';
+    const EMAIL_ADDRESS = '/^[A-Z0-9._%+\'-]+@(?:[A-Z0-9-]+\.)+[A-Z]{2,}$/i';
     const US_ZIP_CODE = '/^(\d{5})(-\d{4})?/';
     const UK_POST_CODE = '/^([A-Z][A-Z]?\d\d?[A-Z]?)\s*(\d[A-Z][A-Z])?/i';
     
@@ -95,7 +93,7 @@ class SmartestStringHelper extends SmartestHelper{
 	    $s = '';
 	    
 	    for($i=0; $i<$l; $i++){
-	        $c = $format{$i};
+	        $c = $format[$i];
 	        
 	        if($c == "L"){
 	            $nl = $uppercase_letters[mt_rand(0, count($uppercase_letters)-1)];
@@ -141,8 +139,8 @@ class SmartestStringHelper extends SmartestHelper{
 	    
 	    $hex = md5(microtime(true).self::random(12));
 	    $digits = array('a','b',8,9);
-	    $hex{12} = 4;
-	    $hex{16} = $digits[rand(0,3)];
+	    $hex[12] = 4;
+	    $hex[16] = $digits[rand(0,3)];
 	    return substr($hex, 0, 8).'-'.substr($hex, 8, 4).'-'.substr($hex, 12, 4).'-'.substr($hex, 16, 4).'-'.substr($hex, 20, 12);
 	    
 	}
@@ -255,7 +253,7 @@ class SmartestStringHelper extends SmartestHelper{
 	    
 	    if(preg_match('/^((htt?ps?):\/\/?\/?)?(.+)\/?$/', $url, $matches)){
             
-            if(isset($matches[2]{4})){
+            if(isset($matches[2][4])){
                 return str_replace(' ', '', trim('https://'.$matches[3]));
             }else{
                 return str_replace(' ', '', trim('http://'.$matches[3]));
@@ -406,7 +404,7 @@ class SmartestStringHelper extends SmartestHelper{
 	
 	public static function capitalizeFirstLetter($string){
 	    if(strlen($string)){
-	        $string{0} = strtoupper($string{0});
+	        $string[0] = strtoupper($string[0]);
 	        return $string;
         }else{
             return '';
@@ -472,10 +470,10 @@ class SmartestStringHelper extends SmartestHelper{
         $chars = array();
         
 	    for ($c = 0; $c < strlen($string); $c++) {
-            if(preg_match('!\w!', $string{$c})) {
-                $chars[] = '%'.bin2hex($string{$c});
+            if(preg_match('!\w!', $string[$c])) {
+                $chars[] = '%'.bin2hex($string[$c]);
             }else{
-                $chars[] = $string{$c};
+                $chars[] = $string[$c];
             }
         }
         
@@ -487,10 +485,10 @@ class SmartestStringHelper extends SmartestHelper{
         $chars = array();
         
 	    for ($c = 0; $c < strlen($string); $c++) {
-            if(preg_match('!\w!', $string{$c})) {
-                $chars[] = '&#x'.bin2hex($string{$c}).';';
+            if(preg_match('!\w!', $string[$c])) {
+                $chars[] = '&#x'.bin2hex($string[$c]).';';
             }else{
-                $chars[] = $string{$c};
+                $chars[] = $string[$c];
             }
         }
         
@@ -564,7 +562,7 @@ class SmartestStringHelper extends SmartestHelper{
 	    
 	    if(mb_strlen($word)){
 	        $pos = (mb_strlen($word) - 1);
-	        if($word{$pos} == $symbol){
+	        if($word[$pos] == $symbol){
 	            return true;
 	        }else{
 	            return false;
@@ -577,7 +575,7 @@ class SmartestStringHelper extends SmartestHelper{
 	public static function startsWith($word, $symbol){
 	    if(mb_strlen($word)){
 	        $pos = 0;
-	        if($word{$pos} == $symbol){
+	        if($word[$pos] == $symbol){
 	            return true;
 	        }else{
 	            return false;
@@ -589,12 +587,14 @@ class SmartestStringHelper extends SmartestHelper{
 	
 	public static function getDotSuffix($filename){
 	    
-	    $file = end(explode('/', $filename));
+	    $path_parts = explode('/', $filename);
+	    $file = end($path_parts);
 	    
 	    if(strpos($file, '.') === false){
 	        return null;
 	    }else{
-	        return end(explode('.', $file));
+	        $suffix_parts = explode('.', $file);
+	        return end($suffix_parts);
 	    }
 	}
 	
@@ -1112,46 +1112,12 @@ class SmartestStringHelper extends SmartestHelper{
 	}
 	
 	public static function parseTextile($content){
-	    
-	    $content = str_replace(' (R)', ' ®', $content);
-        $content = str_replace(' (C)', ' ©', $content);
-	    
-	    $textile = new Textile();
-        $content = $textile->TextileThis($content);
-        $content = str_replace('<3', '♥', $content);
-        
-        return $content;
+	    return SmartestTextAssetRenderPipeline::parseTextileContent($content);
 	    
 	}
 	
 	public static function parseTextileIntoColumns($content){
-	    
-	    $text = str_ireplace('~~NewColumn~~', '~~NewColumn~~', $content);
-	    $columns = preg_split('/~~NewColumn~~/i', $text);
-	    $num_columns = count($columns);
-	    
-	    if($num_columns > 1){
-	        
-	        $newtext = '';
-	        $column_open = '<div class="smartest-column column-width-'.$num_columns.'">';
-	        $last_column_open = '<div class="smartest-column column-width-'.$num_columns.' last">';
-	        $column_close = "</div>\n";
-	        $i = 1;
-	        
-	        foreach($columns as $c){
-	            if($i<$num_columns){
-	                $newtext .= $column_open.self::parseTextile($c).$column_close;
-                }else{
-                    $newtext .= $last_column_open.self::parseTextile($c).$column_close;
-                }
-	            ++$i;
-	        }
-	        
-	        return $newtext;
-	        
-	    }else{
-	        return $content;
-	    }
+	    return SmartestTextAssetRenderPipeline::parseTextileIntoColumns($content);
 	    
 	}
 	

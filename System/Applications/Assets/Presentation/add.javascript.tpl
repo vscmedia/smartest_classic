@@ -22,7 +22,7 @@
 
   var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {ldelim}
       lineNumbers: true,
-      mode: "javascript",
+      mode: "smartest-javascript",
       lineWrapping: true
     {rdelim});
   

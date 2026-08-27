@@ -59,6 +59,45 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
         }
 		
 	}
+
+    public function __sleep(){
+
+        $properties = array_keys(get_object_vars($this));
+        $transient_properties = array(
+            'database',
+            '_request',
+            '_dbTableHelper',
+            '_preferences_helper',
+            '_cached_global_preferences'
+        );
+
+        return array_values(array_diff($properties, $transient_properties));
+
+    }
+
+    public function __wakeup(){
+
+        if(class_exists('SmartestPersistentObject')){
+            $this->database = SmartestPersistentObject::get('db:main');
+
+            if(SmartestPersistentObject::get('controller')){
+                $this->_request = SmartestPersistentObject::get('controller')->getCurrentRequest();
+            }
+
+            if(SmartestPersistentObject::get('prefs_helper')){
+                $this->_preferences_helper = SmartestPersistentObject::get('prefs_helper');
+            }
+        }
+
+        if(class_exists('SmartestParameterHolder')){
+            $this->_cached_global_preferences = new SmartestParameterHolder('Cached global preferences');
+        }
+
+        if(class_exists('SmartestDatabaseTableHelper')){
+            $this->_dbTableHelper = new SmartestDatabaseTableHelper;
+        }
+
+    }
 	
 	private function generateModel(){
 		
@@ -845,7 +884,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 
         // Magic Quotes is deprecated but if switched on can still fuck things up.
         // if(!SM_OPTIONS_MAGIC_QUOTES){
-            $value = mysql_real_escape_string($value);
+            $value = SmartestMysql::escapeString($value);
         //}
 
         return SmartestStringHelper::sanitize($value);
@@ -1061,7 +1100,7 @@ class SmartestDataObject extends SmartestObject implements SmartestJsonCompatibl
 			$column_name = $this->_table_prefix.$field;
 		}
 		
-		$value = mysql_real_escape_string($value);
+		$value = SmartestMysql::escapeString($value);
 	    
 	    $sql = "SELECT * FROM ".$this->_table_name." WHERE ".$column_name." = '".$value."'";
 	    

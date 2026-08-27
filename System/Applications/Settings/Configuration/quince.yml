@@ -21,6 +21,9 @@ module:
     cms_settings:
       action: editCmsSettings
       url: /smartest/cmssettings
+    build_kits:
+      action: listBuildKits
+      url: /smartest/buildkits
   meta:
     system: true
   namespaces:

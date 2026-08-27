@@ -1,0 +1,13 @@
+module:
+  class: %CLASSNAME%
+  shortname: %SHORTNAME%
+  identifier: %APPIDENTIFIER%
+  longname: Functionalities to aid the front end of the website
+  default_action: startAction
+  meta:
+    system: false
+    author: Marcus Gilroy-Ware
+  namespaces:
+    ajax:
+      meta:
+        foo: bar

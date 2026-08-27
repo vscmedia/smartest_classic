@@ -1,7 +1,7 @@
 <script type="text/javascript">
 
 var selectedAssetId = {if $attached_asset_id}{$attached_asset_id}{else}null{/if};
-var currentSelectedType = {if $attached_asset.id && $attached_asset.is_binary_image}'image'{elseif $attached_asset.id && !$attached_asset.is_binary_image}'embed'{else}null{/if};
+var currentSelectedType = {if $has_attached_asset && $attached_asset_is_image}'image'{elseif $has_attached_asset && !$attached_asset_is_image}'embed'{else}null{/if};
 {literal}
 var selectedAssetInfo = {};
 
@@ -179,34 +179,34 @@ document.observe('dom:loaded', function(){
       <div class="form-section-label">Attached media</div>
       
       <ul class="round-buttons-list">
-        <li><a id="attachment-filetype-selector-image" href="#image"{if $attached_asset.id && $attached_asset.is_binary_image} class="selected"{/if}><i class="fa fa-image"></i></a></li>
-        <li><a id="attachment-filetype-selector-embed" href="#embed"{if $attached_asset.id && !$attached_asset.is_binary_image} class="selected"{/if}><i class="fa fa-code"></i></a></li>
-        <li><a id="attachment-filetype-selector-clear" href="#clear"{if !$attached_asset.id} style="display:none"{/if}><i class="fa fa-times"></i></a></li>
+        <li><a id="attachment-filetype-selector-image" href="#image"{if $has_attached_asset && $attached_asset_is_image} class="selected"{/if}><i class="fa fa-image"></i></a></li>
+        <li><a id="attachment-filetype-selector-embed" href="#embed"{if $has_attached_asset && !$attached_asset_is_image} class="selected"{/if}><i class="fa fa-code"></i></a></li>
+        <li><a id="attachment-filetype-selector-clear" href="#clear"{if !$has_attached_asset} style="display:none"{/if}><i class="fa fa-times"></i></a></li>
       </ul>
       
-      <input type="hidden" name="attachment_file_type" id="attachment-file-type" value="{if $attached_asset.id && $attached_asset.is_binary_image}image{elseif $attached_asset.id && !$attached_asset.is_binary_image}embed{/if}" />
+      <input type="hidden" name="attachment_file_type" id="attachment-file-type" value="{if $has_attached_asset && $attached_asset_is_image}image{elseif $has_attached_asset && !$attached_asset_is_image}embed{/if}" />
       
       <div class="edit-form-sub-row">
         
-        <div id="image-selector" {if !$attached_asset.id || !$attached_asset.is_binary_image} style="display:none"{/if}>
-          {if $attached_asset.id && $attached_asset.is_binary_image}
+        <div id="image-selector" {if !$has_attached_asset || !$attached_asset_is_image} style="display:none"{/if}>
+          {if $has_attached_asset && $attached_asset_is_image}
           {image_select name="attached_file_id_img" id="asset-selector-img" changehook="imageSelected" value=$attached_asset}
           {else}
           {image_select name="attached_file_id_img" id="asset-selector-img" changehook="imageSelected"}
           {/if}
         </div>
         
-        <div id="embed-selector" {if !$attached_asset.id || $attached_asset.is_binary_image} style="display:none"{/if}>
+        <div id="embed-selector" {if !$has_attached_asset || $attached_asset_is_image} style="display:none"{/if}>
           <!--<select name="attached_file_id_embed" id="asset-selector-embed">
             <option value="">No file attached</option>
             {foreach from=$non_image_files item="file"}
             <option value="{$file.id}"{if $file.id == $attached_asset_id} selected="selected"{/if}>{$file.stringid} ({$file.url})</option>
             {/foreach}
           </select>-->
-          <input type="hidden" name="attached_file_id_embed" value="{$attached_asset.id}" id="attached-file-id-embed" />
+          <input type="hidden" name="attached_file_id_embed" value="{if $has_attached_asset}{$attached_asset.id}{/if}" id="attached-file-id-embed" />
           <div class="item-chooser-input" id="embed-file-indicator-holder">
             <span id="embed-file-indicator" style="margin-right:10px">
-              <i class="fa fa-file-o"></i> <span id="embed-file-name" class="{if !$attached_asset.id || $attached_asset.is_binary_image}null-notice{/if}">{if !$attached_asset.id || $attached_asset.is_binary_image}No embed file selected{else}{$attached_asset.label}{/if}</span>
+              <i class="fa fa-file-o"></i> <span id="embed-file-name" class="{if !$has_attached_asset || $attached_asset_is_image}null-notice{/if}">{if !$has_attached_asset || $attached_asset_is_image}No embed file selected{else}{$attached_asset.label}{/if}</span>
             </span>
             <a href="#select" id="embed-selector-button" class="button">Select</a>
           </div>
@@ -252,8 +252,8 @@ document.observe('dom:loaded', function(){
       
     </div>
     
-    {if !$attached_asset.is_binary_image || !$attached_asset.id}<script type="text/javascript">$('image-resize-options').hide();</script>{/if}
-    {if $attached_asset.is_binary_image || !$attached_asset.id}<script type="text/javascript">$('embed-resize-options').hide();</script>{/if}
+    {if !$attached_asset_is_image || !$has_attached_asset}<script type="text/javascript">$('image-resize-options').hide();</script>{/if}
+    {if $attached_asset_is_image || !$has_attached_asset}<script type="text/javascript">$('embed-resize-options').hide();</script>{/if}
     
     <div class="edit-form-row">
       <div class="form-section-label">Position</div>

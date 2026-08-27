@@ -10,20 +10,22 @@ function smarty_block_repeat($params, $content, &$smartest_engine, &$repeat){
 	
 	$dah = new SmartestDataAppearanceHelper;
 	
-	if(is_string($params['from'])){
-	    if($params['from'] == '_authors'){
+    $from = isset($params['from']) ? $params['from'] : array();
+	
+	if(is_string($from)){
+	    if($from == '_authors'){
             $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "author";
-        }else if(substr($params['from'], 0, 6) == 'pagegr' || substr($params['from'], 0, 6) == 'page_g'){
+        }else if(substr($from, 0, 6) == 'pagegr' || substr($from, 0, 6) == 'page_g'){
             $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_page";
-        }else if(substr($params['from'], 0, 7) == 'gallery'){
+        }else if(substr($from, 0, 7) == 'gallery'){
             $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_asset";
         }else{
 	        $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_item";
         }
     }else{
-        if($params['from'] instanceof SmartestPageGroup){
+        if($from instanceof SmartestPageGroup){
             $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_page";
-        }else if($params['from'] instanceof SmartestAssetGroup){
+        }else if($from instanceof SmartestAssetGroup){
             $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_asset";
         }else{
 	        $item_name = (isset($params['item']) && strlen($params['item'])) ? SmartestStringHelper::toVarName($params['item']) : "repeated_item";
@@ -58,6 +60,10 @@ function smarty_block_repeat($params, $content, &$smartest_engine, &$repeat){
 		if($items instanceof SmartestCmsItemSet){
 		    $items = $items->getMembers();
 		}
+
+        if(!is_array($items)){
+            $items = array();
+        }
 		
         if(count($items)){
 		    $smartest_engine->assign("first", $items[0]);

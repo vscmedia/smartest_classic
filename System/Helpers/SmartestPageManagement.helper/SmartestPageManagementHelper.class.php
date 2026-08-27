@@ -4,6 +4,8 @@
 
 class SmartestPageManagementHelper extends SmartestHelper{
 
+	const TEMPLATE_ELEMENT_MAX_DEPTH = 32;
+
 	private $database;
 	private $displayPages;
 	private $displayPagesIndex;
@@ -372,11 +374,11 @@ class SmartestPageManagementHelper extends SmartestHelper{
     		$page_url = $this->getAutomaticUrl($page_id);
     	}
     	
-    	$page_keywords = mysql_real_escape_string($pageData['page_keywords']);
-    	$page_title = mysql_real_escape_string($pageData['page_title']);
-    	$page_description = mysql_real_escape_string($pageData['page_description']);
-    	$page_cache_as_html = mysql_real_escape_string($pageData['page_cache_as_html']);
-    	$page_cache_interval = mysql_real_escape_string($pageData['page_cache_interval']);
+		$page_keywords = SmartestMysql::escapeString($pageData['page_keywords']);
+		$page_title = SmartestMysql::escapeString($pageData['page_title']);
+		$page_description = SmartestMysql::escapeString($pageData['page_description']);
+		$page_cache_as_html = SmartestMysql::escapeString($pageData['page_cache_as_html']);
+		$page_cache_interval = SmartestMysql::escapeString($pageData['page_cache_interval']);
     	
     	$sql = "UPDATE `Pages` SET `page_keywords` = '".$page_keywords."', `page_title` = '".$page_title."', `page_description` = '".$page_description."', `page_parent` = '".$page_parent."', page_cache_as_html='".$page_cache_as_html."', page_cache_interval='".$page_cache_interval."', page_modified='".time()."' WHERE `page_id` = '".$page_id."' LIMIT 1";
     	$result = $this->database->rawQuery($sql);
@@ -442,15 +444,15 @@ class SmartestPageManagementHelper extends SmartestHelper{
 	////////////////////////////////////// NEW CODE //////////////////////////////////////////////
 	
 	
-	public function getPageTemplateAssetClasses($page_id, $version="draft"){
+	public function getPageTemplateAssetClasses($page_id, $version="draft", $item_id=false){
 		// echo $page_id;
 		$page_id = $this->getPageIdFromPageWebId($page_id);
-		$tree = $this->getPageAssetClassTree($page_id, $version);
+		$tree = $this->getPageAssetClassTree($page_id, $version, $item_id);
 		// $list = $this->getSerialisedAssetClassTree($tree);
 		return array("tree"=>$tree, "list"=>array());
 	}
 	
-	public function getPageAssetClassTree($page_id, $version){
+	public function getPageAssetClassTree($page_id, $version, $item_id=false){
 	
 		$page = new SmartestPage;
 		
@@ -458,12 +460,12 @@ class SmartestPageManagementHelper extends SmartestHelper{
 		    
 		    $template = ($version == "live") ? $page->getLiveTemplate() : $page->getDraftTemplate();
     		$draft = ($version == "live") ? false : true;
-    		
-    		$template_file = SM_ROOT_DIR."Presentation/Masters/".$template;
+	    		
+	    		$template_file = SM_ROOT_DIR."Presentation/Masters/".$template;
 
-    		$assetClasses = $this->getTemplateAssetClasses($template_file, $page, 0, $version);
+	    		$assetClasses = $this->getTemplateAssetClasses($template_file, $page, 0, $version, $item_id);
 
-    		return $assetClasses;
+	    		return $assetClasses;
 		
 	    }else{
 	        
@@ -524,14 +526,22 @@ class SmartestPageManagementHelper extends SmartestHelper{
 		
 	}
 		
-    public function getTemplateAssetClasses($template_file_path, $page, $level=0, $version="draft"){
-		
-		$i = 0;
-		$info = array();
-		$site_id = $page->getSiteId();
-		$version = ($version == 'live') ? 'live' : 'draft';
-		
-		$fieldNames = $this->getTemplateFieldNames($template_file_path);
+    public function getTemplateAssetClasses($template_file_path, $page, $level=0, $version="draft", $item_id=false, $parent_instance='default', $template_stack=array()){
+			
+			$i = 0;
+			$info = array();
+			$site_id = $page->getSiteId();
+			$version = ($version == 'live') ? 'live' : 'draft';
+			$parent_instance = $this->normaliseTemplateInstanceName($parent_instance);
+			$template_file_key = realpath($template_file_path) ? realpath($template_file_path) : $template_file_path;
+
+			if($level > self::TEMPLATE_ELEMENT_MAX_DEPTH || isset($template_stack[$template_file_key])){
+			    return array($this->getTemplateRecursionWarningNode($template_file_path, $level));
+			}
+
+			$template_stack[$template_file_key] = true;
+			
+			$fieldNames = $this->getTemplateFieldNames($template_file_path);
 			
 		if(is_array($fieldNames)){
 			
@@ -546,9 +556,9 @@ class SmartestPageManagementHelper extends SmartestHelper{
                 
 				// $info[$i]['info']['exists'] = $this->getFieldExists($fieldName);
 				$info[$i]['info']['exists'] = (count($result) > 0) ? 'true' : 'false';
-				$info[$i]['info']['defined'] = $this->getFieldDefinedOnPage($fieldName, $page->getId());
-				$info[$i]['info']['assetclass_name'] = $fieldName;
-				$info[$i]['info']['assetclass_id'] = 'field_'.$field->getId();
+					$info[$i]['info']['defined'] = $this->getFieldDefinedOnPage($fieldName, $page->getId());
+					$info[$i]['info']['assetclass_name'] = $fieldName;
+					$info[$i]['info']['assetclass_id'] = 'field_'.$field->getId();
 				
 				// beware - hack
 				$info[$i]['info']['asset_id'] = $field->getId();
@@ -560,26 +570,31 @@ class SmartestPageManagementHelper extends SmartestHelper{
 
 		}
 		
-		$placeholderNames = $this->getTemplatePlaceholderNames($template_file_path);
-			
-		if(is_array($placeholderNames)){
-		
-			foreach($placeholderNames as $placeholderName){
-			    
-			    $info[$i]['info'] = $this->getAssetClassInfo($placeholderName);
-				
-				$info[$i]['info']['exists'] = $this->getAssetClassExists($placeholderName);
-				$info[$i]['info']['defined'] = $this->getAssetClassDefinedOnPage($placeholderName, $page->getId());
-				
-				$info[$i]['info']['assetclass_name'] = $placeholderName;
-				$info[$i]['info']['assetclass_id'] = 'placeholder_'.$placeholderName;
-				$info[$i]['info']['type'] = "placeholder";
-				
-				if($version == "live"){
-					$asset = $this->getAssetClassLiveDefinition($info[$i]['info']['assetclass_name'], $page->getId());
-				}else{
-					$asset = $this->getAssetClassDraftDefinition($info[$i]['info']['assetclass_name'], $page->getId());
-				}
+			$placeholderTags = $this->getTemplateTagsByType($template_file_path, 'placeholder');
+
+			if(is_array($placeholderTags)){
+
+				foreach($placeholderTags as $placeholderTag){
+
+				    $placeholderName = $placeholderTag['attributes']['name']['value'];
+				    $instance_name = $this->resolveTemplateElementInstanceName($placeholderTag, $parent_instance, true);
+				    
+				    $info[$i]['info'] = $this->getAssetClassInfo($placeholderName);
+					
+					$info[$i]['info']['exists'] = $this->getAssetClassExists($placeholderName);
+					$info[$i]['info']['defined'] = $this->getAssetClassDefinedOnPage($placeholderName, $page->getId(), $item_id, $instance_name);
+					
+					$info[$i]['info']['assetclass_name'] = $placeholderName;
+					$info[$i]['info']['assetclass_id'] = $placeholderName.'_'.$instance_name;
+					$info[$i]['info']['type'] = "placeholder";
+					$info[$i]['info']['instance'] = $instance_name;
+					$info[$i]['state'] = 'open';
+					
+					if($version == "live"){
+						$asset = $this->getAssetClassDefinition($info[$i]['info']['assetclass_name'], $page->getId(), false, $item_id, $instance_name);
+					}else{
+						$asset = $this->getAssetClassDefinition($info[$i]['info']['assetclass_name'], $page->getId(), true, $item_id, $instance_name);
+					}
 				
 				$info[$i]['info']['asset_id'] = $asset;
 				$assetObj = new SmartestAsset();
@@ -628,39 +643,44 @@ class SmartestPageManagementHelper extends SmartestHelper{
 
 		} */
 
-		$containerNames = $this->getTemplateContainerNames($template_file_path);
-		
-		if(is_array($containerNames)){
-		
-			foreach($containerNames as $containerName){
-			    
-			    $container = new SmartestContainer;
+			$containerTags = $this->getTemplateTagsByType($template_file_path, 'container');
+			
+			if(is_array($containerTags)){
+			
+				foreach($containerTags as $containerTag){
+
+				    $containerName = $containerTag['attributes']['name']['value'];
+				    $instance_name = $this->resolveTemplateElementInstanceName($containerTag, $parent_instance, false);
+				    
+				    $container = new SmartestContainer;
 			    
 			    if($container->hydrateBy('name', $containerName)){
 			    
-				    $info[$i]['info'] = $this->getAssetClassInfo($containerName);
-				    $info[$i]['info']['exists'] = 'true';
-				    $info[$i]['info']['defined'] = $this->getAssetClassDefinedOnPage($containerName, $page->getId());
-				
-			    }else{
-			        $info[$i]['info']['exists'] = 'false';
+					    $info[$i]['info'] = $this->getAssetClassInfo($containerName);
+					    $info[$i]['info']['exists'] = 'true';
+					    $info[$i]['info']['defined'] = $this->getAssetClassDefinedOnPage($containerName, $page->getId(), $item_id, $instance_name);
+					
+				    }else{
+				        $info[$i]['info']['exists'] = 'false';
 			        $info[$i]['info']['defined'] = 'UNDEFINED';
 			        
 			    }
-				
-				$info[$i]['info']['assetclass_name'] = $containerName;
-				$info[$i]['info']['assetclass_id'] = 'container_'.$containerName;
-				$info[$i]['info']['type'] = "container";
-				
-				$info[$i]['level'] = $level;
-				
-				if($info[$i]['info']['assetclass_type'] == 'SM_ASSETCLASS_CONTAINER'){
 					
-					if($version == "live"){
-						$asset = $this->getAssetClassLiveDefinition($info[$i]['info']['assetclass_name'], $page->getId());
-					}else{
-						$asset = $this->getAssetClassDraftDefinition($info[$i]['info']['assetclass_name'], $page->getId());
-					}
+					$info[$i]['info']['assetclass_name'] = $containerName;
+					$info[$i]['info']['assetclass_id'] = $containerName.'_'.$instance_name;
+					$info[$i]['info']['type'] = "container";
+					$info[$i]['info']['instance'] = $instance_name;
+					$info[$i]['state'] = 'open';
+					
+					$info[$i]['level'] = $level;
+					
+					if(isset($info[$i]['info']['assetclass_type']) && $info[$i]['info']['assetclass_type'] == 'SM_ASSETCLASS_CONTAINER'){
+						
+						if($version == "live"){
+							$asset = $this->getAssetClassDefinition($info[$i]['info']['assetclass_name'], $page->getId(), false, $item_id, $instance_name);
+						}else{
+							$asset = $this->getAssetClassDefinition($info[$i]['info']['assetclass_name'], $page->getId(), true, $item_id, $instance_name);
+						}
 					
 					$assetObj = new SmartestTemplateAsset();
 					
@@ -670,11 +690,11 @@ class SmartestPageManagementHelper extends SmartestHelper{
 					    $info[$i]['info']['asset_webid'] = $assetObj->getWebid();
 					    
 					    $child_template_file = SM_ROOT_DIR."Presentation/Layouts/".$assetObj->getUrl();
-					    $info[$i]['info']['filename'] = '';
-					    
-					    $child = $assetObj->getArrayForElementsTree($level+1);
-	                    $child['children'] = $this->getTemplateAssetClasses($child_template_file, $page, $level+2, $version);
-	                    $info[$i]['children'] = array($child);
+						    $info[$i]['info']['filename'] = '';
+						    
+						    $child = $assetObj->getArrayForElementsTree($level+1);
+		                    $child['children'] = $this->getTemplateAssetClasses($child_template_file, $page, $level+2, $version, $item_id, $instance_name, $template_stack);
+		                    $info[$i]['children'] = array($child);
 					
 				    }
 				
@@ -831,29 +851,13 @@ class SmartestPageManagementHelper extends SmartestHelper{
 	}
 	
 	public function getAssetClassInfo($assetClassName){
-		$sql="SELECT AssetClasses.* FROM AssetClasses WHERE assetclass_name='$assetClassName'";
-		$info = $this->database->queryToArray($sql);
-		return @$info[0];
+		$sql = "SELECT AssetClasses.* FROM AssetClasses WHERE assetclass_name=:assetclass_name";
+		$info = $this->database->preparedQuery($sql, array('assetclass_name'=>$assetClassName));
+		return (isset($info[0]) && is_array($info[0])) ? $info[0] : array();
 	}
 	
 	public function getTemplatePlaceholderNames($template_file_path){
-		if(is_file($template_file_path)){
-			if($template_contents = file_get_contents($template_file_path)){
-				$regexp = preg_match_all("/<\?sm:placeholder.+name=\"([\w-_]+)\".*:\?>|with=\"placeholder:([\w-_]+)\"/i", $template_contents, $matches);
-				
-				// loop through two different syntaxes to get all named placeholders
-				
-				// $foundClasses = array_merge($matches[1], $matches[2]);
-				// print_r($foundClasses);
-				$foundClasses = $matches[1];
-				
-				return $foundClasses;
-			}else{
-				return false;
-			}
-		}else{
-			return false;
-		}
+		return $this->getTemplateTagNamesByType($template_file_path, 'placeholder');
 	}
 	
 	public function getTag($template_file_path){
@@ -871,70 +875,118 @@ class SmartestPageManagementHelper extends SmartestHelper{
 	}
 	
 	public function getTemplateContainerNames($template_file_path){
-		if(is_file($template_file_path)){
-			if($template_contents = file_get_contents($template_file_path)){
-
-				$regexp = preg_match_all("/\<\?sm:container.+name=\"([\w-_]+)\".*(instance=\"([\w-_]+)\")?:\?>/i", $template_contents, $matches);
-				// print_r($matches);
-				// print_r($this->getTemplateTags($template_file_path));
-				$foundClasses = $matches[1];
-				return $foundClasses;
-
-			}else{
-				return false;
-			}
-		}else{
-			return false;
-		}
+		return $this->getTemplateTagNamesByType($template_file_path, 'container');
 	}
 	
 	public function getTemplateTags($template_file_path){
-		
-		if(is_file($template_file_path)){
-			
-			if($template_contents = file_get_contents($template_file_path)){
+		return $this->scanTemplateTags($template_file_path);
+	}
 
-				$regexp = preg_match_all("/<\?sm:([\w_]{2,})([^\}]+)?:\?>/i", $template_contents, $matches);
-				$completeTags = $matches[0];
-				$foundTags = $matches[1];
-				$tags = array();
-				
-				if(is_array($completeTags)){
-					
-					foreach($completeTags as $key=>$complete_tag){
-						
-						$tag = array();
-						$tag_name = $foundTags[$key];
-						$tag['type'] = $tag_name;
-						$tag['attributes'] = array();
-						
-						$expression = '/((\w+)=(\$[\w_\.]+|"([^"]+)"))/i';
-						
-						$regexp2 = preg_match_all($expression, $complete_tag, $matches2);
-						
-						for($i=0;$i<count($matches2[0]);$i++){
-							$tag['attributes'][$matches2[2][$i]] = array();
-							if($matches2[4][$i]){
-								$tag['attributes'][$matches2[2][$i]]['type'] = "string";
-								$tag['attributes'][$matches2[2][$i]]['value'] = $matches2[4][$i];
-							}else{
-								$tag['attributes'][$matches2[2][$i]]['type'] = "variable";
-								$tag['attributes'][$matches2[2][$i]]['value'] = $matches2[3][$i];
-							}
-						}
-						
-						$tags[$key] = $tag;
-					}
-				}
-				
-				return $tags;
-			}else{
-				return false;
-			}
-			
-		}else{
+	public function scanTemplateTags($template_file_path){
+
+	    $capture_tags = array('list', 'container', 'placeholder', 'template', 'itemspace', 'blocklist', 'var', 'field', 'parameter');
+
+		if(!is_file($template_file_path)){
 			return false;
 		}
+
+		$template_contents = file_get_contents($template_file_path);
+
+		if($template_contents === false || !strlen($template_contents)){
+			return false;
+		}
+
+		preg_match_all('/<\?sm:([A-Za-z_][A-Za-z0-9_]*)(.*?):\?>/s', $template_contents, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+		$tags = array();
+
+		foreach($matches as $match){
+
+		    $tag_name = strtolower($match[1][0]);
+
+		    if(!in_array($tag_name, $capture_tags)){
+		        continue;
+		    }
+
+		    $raw_tag = $match[0][0];
+		    $offset = $match[0][1];
+		    $tag = array(
+		        'type' => $tag_name,
+		        'attributes' => $this->parseTemplateTagAttributes($match[2][0]),
+		        'raw' => $raw_tag,
+		        'source_file' => $template_file_path,
+		        'line' => substr_count(substr($template_contents, 0, $offset), "\n") + 1,
+		    );
+
+		    if(!isset($tag['attributes']['name'])){
+		        $tag['attributes']['name'] = array('type'=>'string', 'value'=>'default');
+		    }
+
+		    if(!isset($tag['attributes']['instance'])){
+		        $tag['attributes']['instance'] = array('type'=>'string', 'value'=>'default');
+		    }
+
+		    $tags[] = $tag;
+		}
+
+		return $tags;
+	}
+
+	protected function parseTemplateTagAttributes($attribute_string){
+
+	    $attributes = array();
+	    preg_match_all('/([A-Za-z_][A-Za-z0-9_-]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|(\$[A-Za-z_][A-Za-z0-9_\.]*)|([^\s:]+))/s', $attribute_string, $matches, PREG_SET_ORDER);
+
+	    foreach($matches as $match){
+	        $name = $match[1];
+
+	        if(isset($match[2]) && strlen($match[2])){
+	            $attributes[$name] = array('type'=>'string', 'value'=>$match[2]);
+	        }else if(isset($match[3]) && strlen($match[3])){
+	            $attributes[$name] = array('type'=>'string', 'value'=>$match[3]);
+	        }else if(isset($match[4]) && strlen($match[4])){
+	            $attributes[$name] = array('type'=>'variable', 'value'=>$match[4]);
+	        }else{
+	            $attributes[$name] = array('type'=>'string', 'value'=>isset($match[5]) ? $match[5] : '');
+	        }
+	    }
+
+	    return $attributes;
+	}
+
+	protected function getTemplateTagsByType($template_file_path, $type){
+
+	    $tags = $this->getTemplateTags($template_file_path);
+
+	    if(!is_array($tags)){
+	        return false;
+	    }
+
+	    $type_tags = array();
+
+	    foreach($tags as $tag){
+	        if($tag['type'] == $type){
+	            $type_tags[] = $tag;
+	        }
+	    }
+
+	    return $type_tags;
+	}
+
+	protected function getTemplateTagNamesByType($template_file_path, $type){
+
+	    $tags = $this->getTemplateTagsByType($template_file_path, $type);
+
+	    if(!is_array($tags)){
+	        return false;
+	    }
+
+	    $names = array();
+
+	    foreach($tags as $tag){
+	        $names[] = $tag['attributes']['name']['value'];
+	    }
+
+	    return $names;
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -957,20 +1009,20 @@ class SmartestPageManagementHelper extends SmartestHelper{
 	}
 	
 	public function getAssetClassExists($assetclass_name){
-	
-		$assetclass = $this->database->specificQuery("assetclass_id", "assetclass_name", $assetclass_name, "AssetClasses");
 		
-		if($assetclass){
+		$sql = "SELECT assetclass_id FROM AssetClasses WHERE assetclass_name=:assetclass_name LIMIT 1";
+		$result = $this->database->preparedQuery($sql, array('assetclass_name'=>$assetclass_name));
+		
+		if(is_array($result) && count($result)){
 			return 'true';
 		}else{
 			return 'false';
 		}
 	}
 	
-	public function getAssetClassDefinedOnPage($assetclass_name, $page_id){
+	public function getAssetClassDefinedOnPage($assetclass_name, $page_id, $item_id=false, $instance='default'){
 
-		$sql = "SELECT assetidentifier_draft_asset_id, assetidentifier_live_asset_id FROM AssetIdentifiers, AssetClasses WHERE assetidentifier_assetclass_id=assetclass_id AND assetidentifier_page_id='$page_id' AND assetclass_name='$assetclass_name'";
-		$result = $this->database->queryToArray($sql);
+		$result = $this->getAssetClassIdentifierRows($assetclass_name, $page_id, $item_id, $instance, "assetidentifier_draft_asset_id, assetidentifier_live_asset_id");
 		
 		if(!empty($result[0]) && $result[0]["assetidentifier_draft_asset_id"] > 0 && $result[0]["assetidentifier_live_asset_id"] > 0 && $result[0]["assetidentifier_draft_asset_id"] == $result[0]["assetidentifier_live_asset_id"]){
 			$status = "PUBLISHED";
@@ -984,24 +1036,80 @@ class SmartestPageManagementHelper extends SmartestHelper{
 		return $status;
 	}
 	
-	public function getAssetClassDraftDefinition($assetclass_name, $page_id){
-		$sql = "SELECT assetidentifier_draft_asset_id FROM AssetIdentifiers, AssetClasses WHERE assetidentifier_assetclass_id=assetclass_id AND assetidentifier_page_id='$page_id' AND assetclass_name='$assetclass_name'";
-		$result = $this->database->queryToArray($sql);
-		if(!empty($result[0])){
-			return $result[0]["assetidentifier_draft_asset_id"];
-		}else{
-			return false;
-		}
+	public function getAssetClassDefinition($assetclass_name, $page_id, $draft=false, $item_id=false, $instance='default'){
+	    $field = $draft ? 'assetidentifier_draft_asset_id' : 'assetidentifier_live_asset_id';
+	    $result = $this->getAssetClassIdentifierRows($assetclass_name, $page_id, $item_id, $instance, $field);
+
+	    if(!empty($result[0])){
+	        return $result[0][$field];
+	    }else{
+	        return false;
+	    }
+	}
+
+	public function getAssetClassDraftDefinition($assetclass_name, $page_id, $item_id=false, $instance='default'){
+		return $this->getAssetClassDefinition($assetclass_name, $page_id, true, $item_id, $instance);
 	}
 	
-	public function getAssetClassLiveDefinition($assetclass_name, $page_id){
-		$sql = "SELECT assetidentifier_live_asset_id FROM AssetIdentifiers, AssetClasses WHERE assetidentifier_assetclass_id=assetclass_id AND assetidentifier_page_id='$page_id' AND assetclass_name='$assetclass_name'";
-		$result = $this->database->queryToArray($sql);
-		if(!empty($result[0])){
-			return $result[0]["assetidentifier_live_asset_id"];
-		}else{
-			return false;
-		}
+	public function getAssetClassLiveDefinition($assetclass_name, $page_id, $item_id=false, $instance='default'){
+		return $this->getAssetClassDefinition($assetclass_name, $page_id, false, $item_id, $instance);
+	}
+
+	protected function getAssetClassIdentifierRows($assetclass_name, $page_id, $item_id=false, $instance='default', $fields='AssetIdentifiers.*'){
+
+	    $instance = $this->normaliseTemplateInstanceName($instance);
+	    $sql = "SELECT ".$fields." FROM AssetIdentifiers, AssetClasses WHERE assetidentifier_assetclass_id=assetclass_id AND assetidentifier_page_id=:page_id AND assetclass_name=:assetclass_name";
+	    $params = array(
+	        'page_id' => $page_id,
+	        'assetclass_name' => $assetclass_name,
+	        'instance' => $instance,
+	    );
+
+	    if(is_numeric($item_id)){
+	        $sql .= " AND assetidentifier_item_id=:item_id";
+	        $params['item_id'] = $item_id;
+	    }else{
+	        $sql .= " AND assetidentifier_item_id IS NULL";
+	    }
+
+	    $sql .= " AND assetidentifier_instance_name=:instance";
+	    $sql .= " LIMIT 1";
+
+	    return $this->database->preparedQuery($sql, $params);
+	}
+
+	protected function normaliseTemplateInstanceName($instance){
+	    return strlen((string) $instance) ? SmartestStringHelper::toVarName($instance) : 'default';
+	}
+
+	protected function resolveTemplateElementInstanceName($tag, $parent_instance='default', $inherit_from_parent=false){
+
+	    $explicit_instance = isset($tag['attributes']['instance']['value']) ? $this->normaliseTemplateInstanceName($tag['attributes']['instance']['value']) : 'default';
+	    $parent_instance = $this->normaliseTemplateInstanceName($parent_instance);
+
+	    if($inherit_from_parent && $parent_instance != 'default' && $explicit_instance == 'default'){
+	        return '__child_of_'.$parent_instance;
+	    }
+
+	    return $explicit_instance;
+	}
+
+	protected function getTemplateRecursionWarningNode($template_file_path, $level){
+
+	    return array(
+	        'info' => array(
+	            'exists' => 'false',
+	            'defined' => 'UNDEFINED',
+	            'assetclass_name' => basename($template_file_path),
+	            'assetclass_id' => 'template_recursion_'.md5($template_file_path),
+	            'type' => 'template',
+	            'level' => $level,
+	            'filename' => $template_file_path,
+	            'warning' => 'Template recursion was stopped while scanning page elements.',
+	        ),
+	        'level' => $level,
+	        'state' => 'open',
+	    );
 	}
 	
 	public function getMasterTemplates($site_id){
@@ -1425,10 +1533,20 @@ AND PageProperties.pageproperty_id = PagePropertyValues.pagepropertyvalue_pagepr
 		
 	}
 	
-	public function removePerItemDefinitions($page_id, $assetclass_id){
-	    
-	    $sql = "DELETE FROM AssetIdentifiers WHERE assetidentifier_page_id='".$page_id."' AND assetidentifier_assetclass_id='".$assetclass_id."' AND assetidentifier_item_id IS NOT NULL";
-        $this->database->rawQuery($sql);
+	public function removePerItemDefinitions($page_id, $assetclass_id, $instance_name=null){
+
+	    $sql = "DELETE FROM AssetIdentifiers WHERE assetidentifier_page_id=:page_id AND assetidentifier_assetclass_id=:assetclass_id AND assetidentifier_item_id IS NOT NULL";
+	    $params = array(
+	        'page_id' => $page_id,
+	        'assetclass_id' => $assetclass_id,
+	    );
+
+	    if(strlen((string) $instance_name)){
+	        $sql .= " AND assetidentifier_instance_name=:instance_name";
+	        $params['instance_name'] = $this->normaliseTemplateInstanceName($instance_name);
+	    }
+
+        $this->database->preparedQuery($sql, $params);
 	    
 	}
 	

@@ -1,0 +1,64 @@
+# Generated from caches.xml during PHP 8 migration.
+---
+cache:
+  SM_CACHE_QUINCE:
+    id: SM_CACHE_QUINCE
+    label: Quince Controller Cache
+    description: Information for the Quince Controller
+    location: System/Cache/Controller/
+    match: ^quincexml.+\.tmp$
+  SM_CACHE_SYSTEM_DATA:
+    id: SM_CACHE_SYSTEM_DATA
+    label: System Data Cache
+    description: >
+      Information retrieved and stored
+      internally by Smartest
+    location: System/Cache/Data/
+    match: '^scd_[a-f0-9]+.tmp$'
+  SM_CACHE_USER_DATA:
+    id: SM_CACHE_USER_DATA
+    label: User Data Cache
+    description: >
+      Information retrieved and stored by user
+      application and helper code
+    location: System/Cache/Data/
+    match: '^ucd_[a-f0-9]+.tmp$'
+  SM_CACHE_INCLUDES:
+    id: SM_CACHE_INCLUDES
+    label: Includes Cache
+    description: >
+      Production sites save all required
+      includes into a smaller number of large
+      files.
+    location: System/Cache/Includes/
+    match: .+\.php$
+  SM_CACHE_DATA_OBJECTS:
+    id: SM_CACHE_DATA_OBJECTS
+    label: Active Records Base Class Cache
+    description: >
+      SmartestDataObject active records use
+      these auto-generated classes.
+    location: System/Cache/ObjectModel/DataObjects/
+    match: .+\.php$
+  SM_CACHE_MODELS:
+    id: SM_CACHE_MODELS
+    label: Model Class Cache
+    description: >
+      CMS Items/Objects use these
+      auto-generated classes.
+    location: System/Cache/ObjectModel/Models/
+    match: .+\.php$
+  SM_CACHE_PAGES:
+    id: SM_CACHE_PAGES
+    label: Complete Pages Cache
+    description: >
+      HTML pages generated from CMS output and
+      saved for faster page delivery.
+    location: System/Cache/Pages/
+    match: .+\.html$
+  SM_CACHE_SMARTY_COMPILER:
+    id: SM_CACHE_SMARTY_COMPILER
+    label: Smarty Compiled Templates Cache
+    description: "Smarty compiles 'tpl' templates into regular PHP files are stores them here."
+    location: System/Cache/Smarty/
+    match: .+\.tpl\.php$

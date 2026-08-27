@@ -1,0 +1,3 @@
+install:
+  short_name: bloginfinitescroll
+  class_name: BlogInfiniteScroll

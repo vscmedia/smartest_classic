@@ -737,8 +737,8 @@ class Sets extends SmartestSystemApplication{
 		$id=$this->getRequestParameter('set_id');	
 		$set = $this->manager->getSet($id);
 		$set_type = $set['set_type'];
-		$name=mysql_real_escape_string($set['set_name']);		
-		$model_id=mysql_real_escape_string($set['set_itemclass_id']);	
+		$name=SmartestMysql::escapeString($set['set_name']);
+		$model_id=SmartestMysql::escapeString($set['set_itemclass_id']);
 		$set_name=$this->manager->getUniqueSetName($name);
 
 		$set_id=$this->manager->insertSet($set_name,$model_id,$set_type);

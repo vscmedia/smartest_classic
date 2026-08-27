@@ -438,7 +438,7 @@ class TemplateHelper{
 					if(@SM_OPTIONS_IMAGES_LOCAL){
 					
 						$local_img_dir = SM_SYSTEM_IMAGES_DIR;
-						if($local_img_dir{0} == "/"){
+						if($local_img_dir[0] == "/"){
 							$html .= $startHtml.SM_SYSTEM_IMAGES_DIR.$params["file"];
 						}else{
 							$html .= $startHtml."/".SM_SYSTEM_IMAGES_DIR.$params["file"];
@@ -498,7 +498,7 @@ class TemplateHelper{
 					if(@SM_OPTIONS_IMAGES_LOCAL){
 					
 						$local_img_dir = SM_SYSTEM_IMAGES_DIR;
-						if($local_img_dir{0} == "/"){
+						if($local_img_dir[0] == "/"){
 							$html .= $startHtml.SM_SYSTEM_IMAGES_DIR.$params["file"];
 						}else{
 							$html .= $startHtml."/".SM_SYSTEM_IMAGES_DIR.$params["file"];

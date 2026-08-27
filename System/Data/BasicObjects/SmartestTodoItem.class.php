@@ -30,7 +30,7 @@ class SmartestTodoItem extends SmartestBaseTodoItem{
 	    
 	}
 	
-	public function hydrate($data){
+	public function hydrate($data, $site_id='', $dup=false){
 	    
 	    if(is_array($data)){
 	        if(isset($data['user_id'])){

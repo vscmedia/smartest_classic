@@ -5,7 +5,7 @@ class SmartestTemplateGroupMembership extends SmartestManyToManyLookup{
     protected $_template;
     protected $_group;
     
-    public function hydrate($raw_data){
+    public function hydrate($raw_data, $site_id='', $dup=false){
         
         if(isset($raw_data['asset_id'])){
             $template = new SmartestTemplateAsset;

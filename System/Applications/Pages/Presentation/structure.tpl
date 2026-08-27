@@ -119,20 +119,20 @@ Viewing mode:
 {if !empty($assets)}
 
 <ul class="tree-parent-node-open" id="tree-root">
-  {defun name="menurecursion" list=$assets}
-    {capture name="foreach_name" assign="foreach_name"}list_{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
-    {capture name="foreach_id" assign="foreach_id"}{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
+  {defun name="menurecursion" list=$assets parent_id=0}
+    {capture name="foreach_name" assign="foreach_name"}list_{$parent_id}{/capture}
+    {capture name="foreach_id" assign="foreach_id"}{$parent_id}{/capture}
     
-    {foreach from=$list item="assetclass" name=$foreach_name}
+    {foreach from=$list item="assetclass"}
     
-    {if $smarty.foreach.$foreach_name.iteration == 1 && $foreach_id == 0}
+    {if $assetclass@iteration == 1 && $foreach_id == 0}
     <li><img border="0" src="http://smartest.dev.visudo.net/Resources/Icons/page.png" /> {$page.page_title}</li>
     {else}{/if}
     
-    <li {if $smarty.foreach.$foreach_name.last}class="last"{elseif $smarty.foreach.$foreach_name.first}class="first"{else}class="middle"{/if}>
+    <li {if $assetclass@last}class="last"{elseif $assetclass@first}class="first"{else}class="middle"{/if}>
     {if ($assetclass.info.defined == "PUBLISHED" || $assetclass.info.defined == "DRAFT") && in_array($assetclass.info.assetclass_type_code, array("JSCR", "CSS", "HTML", "TMPL", "TEXT", "LINE")) && $content.version == "draft"}<a href="{$domain}assets/editAsset?asset_id={$assetclass.info.asset_webid}" style="float:right;display:block;margin-right:5px;" class="button">Edit This {$assetclass.info.assetclass_type_code} Asset</a>{/if}
       {if !empty($assetclass.children)}
-      <a href="#" onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}')"><img src="{$domain}Resources/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}" /></a>
+      <a href="#" onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$assetclass@iteration}')"><img src="{$domain}Resources/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$assetclass@iteration}" /></a>
       {else}
       <img src="{$domain}Resources/Images/blank.gif" alt="" border="0" />
       {/if}
@@ -182,15 +182,16 @@ Viewing mode:
 	{/if}
       </a>
       {if !empty($assetclass.children)}
-      <ul class="tree-parent-node-open" id="{$foreach_name}_{$smarty.foreach.$foreach_name.iteration}">
-        {fun name="menurecursion" list=$assetclass.children}
+      <ul class="tree-parent-node-open" id="{$foreach_name}_{$assetclass@iteration}">
+        {fun name="menurecursion" list=$assetclass.children parent_id=$assetclass.info.assetclass_id}
       </ul>
       {/if}
     </li>
     {/foreach}
     
-  {/defun}
-</ul>
+	  {/defun}
+	  {fun name="menurecursion" list=$assets parent_id=0}
+	</ul>
 {/if}
 </div>
 

@@ -120,7 +120,7 @@
 
 {foreach from=$properties key="pid" item="property"}
 <div class="edit-form-row">
-  <div class="form-section-label">{if $property.required == 'TRUE'}<strong>{/if}{$property.name}{if $property.required == 'TRUE'}</strong> *{/if}{if $can_edit_properties}<a style="float:left" title="Edit this property" href="{$domain}datamanager/editItemClassProperty?from=item_edit&amp;item_id={$item.id}&amp;itemproperty_id={$property.id}"><img src="{$domain}Resources/System/Images/edit_setting_minimal.png" alt="Edit this property" /></a>{/if}</div>
+  <div class="form-section-label">{if $property.required == 'TRUE'}<strong>{/if}{$property.name}{if $property.required == 'TRUE'}</strong> *{/if}{if $can_edit_properties}<a style="float:left" title="Edit this property" href="{$domain}datamanager/editItemClassProperty?from=addItem&amp;class_id={$model.id}&amp;itemproperty_id={$property.id}"><img src="{$domain}Resources/System/Images/edit_setting_minimal.png" alt="Edit this property" /></a>{/if}</div>
   {item_field property=$property value=$property.default_value value_edit_buttons="false"}
 </div>
 {foreachelse}

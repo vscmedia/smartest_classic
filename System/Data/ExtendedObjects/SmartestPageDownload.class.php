@@ -5,7 +5,7 @@ class SmartestPageDownload extends SmartestManyToManyLookup{
     protected $_asset;
     protected $_page;
     
-    public function hydrate($raw_data){
+    public function hydrate($raw_data, $site_id='', $dup=false){
         
         if(isset($raw_data['asset_id'])){
             $asset = new SmartestRenderableAsset;

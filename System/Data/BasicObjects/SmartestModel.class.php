@@ -16,8 +16,8 @@ class SmartestModel extends SmartestBaseModel{
 		
 	}
 	
-	public function find($id){
-	    $bool = parent::find($id);
+	public function find($id, $site_id='', $include_trash_items=false){
+	    $bool = parent::find($id, $site_id, $include_trash_items);
 	    $this->buildPropertyMap();
 	    return $bool;
 	}
@@ -423,7 +423,7 @@ class SmartestModel extends SmartestBaseModel{
 	        
 	        case '_english_indefinite_article':
 	        $n = $this->getName();
-            $p = in_array(strtolower($n{0}), array('a', 'e', 'i', 'o', 'u')) ? 'An' : 'A';
+            $p = in_array(strtolower($n[0]), array('a', 'e', 'i', 'o', 'u')) ? 'An' : 'A';
             return new SmartestString($p);
             
             case '_related_items':
@@ -1473,8 +1473,11 @@ class SmartestModel extends SmartestBaseModel{
 	    $new_constant_name = strtoupper(SmartestStringHelper::toVarName('Model '.$this->getName(), true));
 		
 		if(!defined($constant_name)){
-			define($constant_name, $this->getId(), true);
-			define($new_constant_name, $this->getId(), true);
+			define($constant_name, $this->getId());
+		}
+		
+		if(!defined($new_constant_name)){
+			define($new_constant_name, $this->getId());
 		}
         
         $last_acceptable_modification_time = time() - 24*60*60;
@@ -1745,7 +1748,7 @@ class SmartestModel extends SmartestBaseModel{
 			$constant_name  = SmartestStringHelper::toConstantName($property->getName());
 			$constant_value = $property->getId();
 		
-			if(is_numeric($constant_name{0})){
+			if(is_numeric($constant_name[0])){
 				$constant_name = '_'.$constant_name;
 			}
 		

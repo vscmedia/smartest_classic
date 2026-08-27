@@ -1,0 +1,166 @@
+# Generated from todoitemtypes.xml during PHP 8 migration.
+---
+category:
+  SM_TODOITEMCATEGORY_ASSETS:
+    id: SM_TODOITEMCATEGORY_ASSETS
+    table: Assets
+    field: asset_id
+    class: SmartestAsset
+    internal_code: "1"
+    description: >
+      Types of todo-item that relate to the
+      Files Repository
+  SM_TODOITEMCATEGORY_PAGES:
+    id: SM_TODOITEMCATEGORY_PAGES
+    table: Pages
+    field: page_id
+    class: SmartestPage
+    internal_code: "2"
+    description: >
+      Types of todo-item that relate to whole
+      web pages
+  SM_TODOITEMCATEGORY_ITEMS:
+    id: SM_TODOITEMCATEGORY_ITEMS
+    table: Items
+    field: item_id
+    class: SmartestItem
+    internal_code: "4"
+    description: >
+      Types of todo-item that relate to the
+      items in the Data Manager
+type:
+  SM_TODOITEMTYPE_APPROVE_ASSET:
+    id: SM_TODOITEMTYPE_APPROVE_ASSET
+    category: SM_TODOITEMCATEGORY_ASSETS
+    label: Approve it
+    description: Approve file for use on site
+    table: Assets
+    class: SmartestAsset
+    foreignkeyfield: asset_id
+    urifield: asset_webid
+    autocomplete: 'false'
+    action: 'assets/previewAsset?asset_id=$asset_id&from=todoList'
+  SM_TODOITEMTYPE_EDIT_ASSET:
+    id: SM_TODOITEMTYPE_EDIT_ASSET
+    category: SM_TODOITEMCATEGORY_ASSETS
+    label: Edit it (please specify how)
+    description: Edit file in some way (see message)
+    table: Assets
+    class: SmartestAsset
+    foreignkeyfield: asset_id
+    urifield: asset_webid
+    autocomplete: 'false'
+    action: assets/editAsset?asset_id=$asset_id
+  SM_TODOITEMTYPE_RELEASE_ASSET:
+    id: SM_TODOITEMTYPE_RELEASE_ASSET
+    category: SM_TODOITEMCATEGORY_ASSETS
+    label: Release it
+    description: Release file
+    table: Assets
+    class: SmartestAsset
+    foreignkeyfield: asset_id
+    urifield: asset_webid
+    autocomplete: 'true'
+    action: 'assets/assetInfo?asset_id=$asset_id&from=todoList'
+  SM_TODOITEMTYPE_APPROVE_PAGE:
+    id: SM_TODOITEMTYPE_APPROVE_PAGE
+    category: SM_TODOITEMCATEGORY_PAGES
+    label: Approve it
+    description: >
+      Approve page so that it is ready for
+      publishing
+    table: Pages
+    class: SmartestPage
+    foreignkeyfield: page_id
+    urifield: page_webid
+    autocomplete: 'true'
+    action: 'websitemanager/preview?page_id=$page_webid&from=todoList'
+  SM_TODOITEMTYPE_EDIT_PAGE:
+    id: SM_TODOITEMTYPE_EDIT_PAGE
+    category: SM_TODOITEMCATEGORY_PAGES
+    label: Edit it (please specify how)
+    description: Edit page in some way (see message)
+    table: Pages
+    class: SmartestPage
+    foreignkeyfield: page_id
+    urifield: page_webid
+    autocomplete: 'false'
+    action: websitemanager/openPage?page_id=$page_id
+  SM_TODOITEMTYPE_RELEASE_PAGE:
+    id: SM_TODOITEMTYPE_RELEASE_PAGE
+    category: SM_TODOITEMCATEGORY_PAGES
+    label: Release it
+    description: >
+      Release page so that it can be edited by
+      others.
+    table: Pages
+    class: SmartestPage
+    foreignkeyfield: page_id
+    urifield: page_webid
+    autocomplete: 'true'
+    action: 'websitemanager/releasePage?page_id=$page_id&from=todoList'
+  SM_TODOITEMTYPE_PUBLISH_PAGE:
+    id: SM_TODOITEMTYPE_PUBLISH_PAGE
+    category: SM_TODOITEMCATEGORY_PAGES
+    label: Publish it
+    description: Publish the page
+    table: Pages
+    class: SmartestPage
+    foreignkeyfield: page_id
+    urifield: page_webid
+    autocomplete: 'true'
+    action: 'websitemanager/preview?page_id=$page_webid&from=todoList'
+  SM_TODOITEMTYPE_EDIT_ITEM:
+    id: SM_TODOITEMTYPE_EDIT_ITEM
+    category: SM_TODOITEMCATEGORY_ITEMS
+    label: Edit it
+    description: Edit the item in some way (see message)
+    table: Items
+    class: SmartestItem
+    foreignkeyfield: item_id
+    urifield: item_id
+    autocomplete: 'false'
+    action: datamanager/openItem?item_id=$item_id
+  SM_TODOITEMTYPE_APPROVE_ITEM:
+    id: SM_TODOITEMTYPE_APPROVE_ITEM
+    category: SM_TODOITEMCATEGORY_ITEMS
+    label: Approve it
+    description: >
+      Approve item so that it is ready for
+      publishing
+    table: Items
+    class: SmartestItem
+    foreignkeyfield: item_id
+    urifield: item_id
+    autocomplete: 'true'
+    action: 'datamanager/openItem?item_id=$item_id&from=todoList'
+  SM_TODOITEMTYPE_RELEASE_ITEM:
+    id: SM_TODOITEMTYPE_RELEASE_ITEM
+    category: SM_TODOITEMCATEGORY_ITEMS
+    label: Release this item
+    description: >
+      Release the item so that it can be
+      edited by others
+    table: Items
+    class: SmartestItem
+    foreignkeyfield: item_id
+    urifield: item_id
+    autocomplete: 'true'
+    action: 'datamanager/releaseItem?item_id=$item_id&from=todoList'
+  SM_TODOITEMTYPE_PUBLISH_ITEM:
+    id: SM_TODOITEMTYPE_PUBLISH_ITEM
+    category: SM_TODOITEMCATEGORY_ITEMS
+    label: Publish this item
+    description: Publish the item
+    table: Items
+    class: SmartestItem
+    foreignkeyfield: item_id
+    urifield: item_id
+    autocomplete: 'true'
+    action: 'datamanager/publishItem?item_id=$item_id&from=todoList'
+  SM_TODOITEMTYPE_GENERIC:
+    id: SM_TODOITEMTYPE_GENERIC
+    category: SM_TODOITEMCATEGORY_ALL
+    label: Any other task (specify in message)
+    description: Indicates the need to approve a file.
+    autocomplete: 'false'

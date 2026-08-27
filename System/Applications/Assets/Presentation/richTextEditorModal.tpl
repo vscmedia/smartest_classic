@@ -14,9 +14,12 @@
     </div>
   </form>
   <div>
+    <script src="{$domain}Resources/System/Javascript/tinymce8/tinymce.min.js"></script>
+    <script src="{$domain}Resources/System/Javascript/smartest/tinymce8-smartest.js"></script>
     <script language="javascript" type="text/javascript">
 // <!--
     var selectorName = "#asset-editor-tinymce-{$random_nonce}";
+    var smartestTinyMceAssetId = "{$asset.id}";
     {literal}
     
     $('cancel-texteditor-modal').observe('click', function(){
@@ -26,6 +29,7 @@
     $('save-texteditor-modal-close').observe('click', function(){
       $('progress').show();
       $('saved-message').hide();
+      tinymce.triggerSave();
       // $('rich-text-updater-form').submit();
       $('rich-text-updater-form').request({
         onComplete: function(){
@@ -39,6 +43,7 @@
     $('save-texteditor-modal').observe('click', function(){
       $('progress').show();
       $('saved-message').hide();
+      tinymce.triggerSave();
       // $('rich-text-updater-form').submit();
       $('rich-text-updater-form').request({
         onComplete: function(response){
@@ -61,6 +66,7 @@
     
     tinymce.init({
         selector: selectorName,
+        smartest_asset_id: smartestTinyMceAssetId,
         menubar: false,
         plugins: [
             "advlist autolink lists charmap print preview anchor",

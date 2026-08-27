@@ -64,7 +64,7 @@ class SmartestRequestUrlHelper{
 	
 	public function getNormalPageByUrl($url, $site_id){
 		
-		$url = mysql_real_escape_string(SmartestStringHelper::sanitize(urldecode($url)));
+		$url = SmartestMysql::escapeString(SmartestStringHelper::sanitize(urldecode($url)));
 		$sql = "SELECT Pages.*, PageUrls.pageurl_id, PageUrls.pageurl_type, PageUrls.pageurl_url, PageUrls.pageurl_redirect_type FROM Pages, PageUrls WHERE Pages.page_id=PageUrls.pageurl_page_id AND page_type='NORMAL' AND Pages.page_site_id='".$site_id."' AND PageUrls.pageurl_url='".$url."' AND Pages.page_is_published='TRUE' AND Pages.page_deleted !='TRUE'";
 		$page = $this->database->queryToArray($sql);
 		
@@ -112,7 +112,7 @@ class SmartestRequestUrlHelper{
 	
 	public function getNormalPageByWebId($web_id, $draft_mode=false, $site_domain=null){
 	    
-	    $web_id = mysql_real_escape_string(SmartestStringHelper::sanitize($web_id));
+	    $web_id = SmartestMysql::escapeString(SmartestStringHelper::sanitize($web_id));
 	    
 	    $sql = "SELECT * FROM Pages";
 	    
@@ -153,7 +153,7 @@ class SmartestRequestUrlHelper{
 	
 	public function getItemClassPageByWebId($web_id, $item_id, $draft_mode=false, $site_domain=''){
 	    
-	    $web_id = mysql_real_escape_string(SmartestStringHelper::toWebId(SmartestStringHelper::sanitize($web_id)));
+	    $web_id = SmartestMysql::escapeString(SmartestStringHelper::toWebId(SmartestStringHelper::sanitize($web_id)));
 	    
 	    if(is_numeric($item_id)){
 	        $item_id = (int) $item_id;
@@ -215,7 +215,7 @@ class SmartestRequestUrlHelper{
 	
 	public function getItemClassPageByUrl($url, $site_id, $response_type='throw'){
 		
-		$url = mysql_real_escape_string(SmartestStringHelper::sanitize(urldecode($url)));
+		$url = SmartestMysql::escapeString(SmartestStringHelper::sanitize(urldecode($url)));
 		
 		$site_id = (int) $site_id;
 		

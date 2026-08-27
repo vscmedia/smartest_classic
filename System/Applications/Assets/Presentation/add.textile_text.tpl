@@ -12,7 +12,7 @@
   <script type="text/javascript">
   {literal}
   var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
-      mode: "textile",
+      mode: "smartest-textile",
       lineWrapping: true
     });
   {/literal}

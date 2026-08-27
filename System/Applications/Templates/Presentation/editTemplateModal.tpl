@@ -79,7 +79,7 @@
     
     myCodeMirror = CodeMirror.fromTextArea($(selectorName), {
       lineNumbers: true,
-      mode: "htmlmixed",
+      mode: "smartest-htmlmixed",
       lineWrapping: false
     });
   

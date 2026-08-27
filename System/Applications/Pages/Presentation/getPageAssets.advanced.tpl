@@ -14,17 +14,17 @@
 
 <ul class="tree-parent-node-open" id="tree-root">
   <li class="page-element"><a class="option"><i class="flaticon solid document-3"></i></a> Current Page: {$page.title}</li>
-  {defun name="menurecursion" list=$elements_tree}
+	  {defun name="menurecursion" list=$elements_tree parent_id=0}
+
+	    {capture name="foreach_name" assign="foreach_name"}list_{$parent_id}{/capture}
+	    {capture name="foreach_id" assign="foreach_id"}{$parent_id}{/capture}
+
+    {foreach from=$list item="assetclass"}
     
-    {capture name="foreach_name" assign="foreach_name"}list_{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
-    {capture name="foreach_id" assign="foreach_id"}{if $assetclass.info.assetclass_id}{$assetclass.info.assetclass_id}{else}0{/if}{/capture}
-    
-    {foreach from=$list item="assetclass" name=$foreach_name}
-    
-    <li {if $smarty.foreach.$foreach_name.last}class="last"{elseif $smarty.foreach.$foreach_name.first}class="first"{else}class="middle"{/if}>
-    {if ($assetclass.info.defined == "PUBLISHED" || $assetclass.info.defined == "DRAFT") && in_array($assetclass.info.assetclass_type, array("SM_ASSETTYPE_JAVASCRIPT", "SM_ASSETTYPE_STYLESHEET", "SM_ASSETTYPE_RICH_TEXT", "SM_ASSETTYPE_PLAIN_TEXT", "SM_ASSETTYPE_SL_TEXT")) && $version == "draft"}<a href="{$domain}assets/editAsset?asset_id={$assetclass.info.asset_id}&amp;from=pageAssets" style="float:right;display:block;margin-right:5px;">Edit This File</a>{/if}
+    <li {if $assetclass@last}class="last"{elseif $assetclass@first}class="first"{else}class="middle"{/if}>
+    {if ($assetclass.info.defined == "PUBLISHED" || $assetclass.info.defined == "DRAFT") && isset($assetclass.info.assetclass_type) && in_array($assetclass.info.assetclass_type, array("SM_ASSETTYPE_JAVASCRIPT", "SM_ASSETTYPE_STYLESHEET", "SM_ASSETTYPE_RICH_TEXT", "SM_ASSETTYPE_PLAIN_TEXT", "SM_ASSETTYPE_SL_TEXT")) && $version == "draft"}<a href="{$domain}assets/editAsset?asset_id={$assetclass.info.asset_id}&amp;from=pageAssets" style="float:right;display:block;margin-right:5px;">Edit This File</a>{/if}
       {if !empty($assetclass.children)}
-      <a href="{dud_link}" {if $assetclass.state == 'open'}onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}')"{else}onclick="toggleParentNodeFromClosedState('{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}')"{/if}>{if $assetclass.state == 'open'}<img src="{$domain}Resources/System/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}" />{else}<img src="{$domain}Resources/System/Images/close.gif" alt="" border="0" id="toggle_{$foreach_id}_{$smarty.foreach.$foreach_name.iteration}" />{/if}</a>
+      <a href="{dud_link}" {if $assetclass.state == 'open'}onclick="toggleParentNodeFromOpenState('{$foreach_id}_{$assetclass@iteration}')"{else}onclick="toggleParentNodeFromClosedState('{$foreach_id}_{$assetclass@iteration}')"{/if}>{if $assetclass.state == 'open'}<img src="{$domain}Resources/System/Images/open.gif" alt="" border="0" id="toggle_{$foreach_id}_{$assetclass@iteration}" />{else}<img src="{$domain}Resources/System/Images/close.gif" alt="" border="0" id="toggle_{$foreach_id}_{$assetclass@iteration}" />{/if}</a>
       {else}
       <img src="{$domain}Resources/System/Images/blank.gif" alt="" border="0" />
       {/if}
@@ -66,9 +66,9 @@
 	  <strong>{$assetclass.info.assetclass_name|end|escape:html}</strong>
 	  {/if}
     
-    {if $assetclass.info.instance && $assetclass.info.instance != 'default' && !$assetclass.info.instance_inherited_from_parent} ({$assetclass.info.instance}){/if}
+    {if isset($assetclass.info.instance) && $assetclass.info.instance && $assetclass.info.instance != 'default' && (!isset($assetclass.info.instance_inherited_from_parent) || !$assetclass.info.instance_inherited_from_parent)} ({$assetclass.info.instance}){/if}
 	  
-	  {if $assetclass.info.filename != ""}
+	  {if isset($assetclass.info.filename) && $assetclass.info.filename != ""}
 	    {$assetclass.info.filename}
 	  {else}
 	    
@@ -109,14 +109,15 @@
       </a><!--End clickable option link-->
       
       {if !empty($assetclass.children)}
-      <ul class="tree-parent-node-{$assetclass.state}" id="{$foreach_name}_{$smarty.foreach.$foreach_name.iteration}"{if $assetclass.state == 'closed'} style="display:none"{/if}>
-        {fun name="menurecursion" list=$assetclass.children}
+      <ul class="tree-parent-node-{$assetclass.state}" id="{$foreach_name}_{$assetclass@iteration}"{if $assetclass.state == 'closed'} style="display:none"{/if}>
+	        {fun name="menurecursion" list=$assetclass.children parent_id=$assetclass.info.assetclass_id}
       </ul>
       {/if}
     </li>
     {/foreach}
     
-  {/defun}
-</ul>
+	  {/defun}
+	  {fun name="menurecursion" list=$elements_tree parent_id=0}
+	</ul>
 {/if}
 </div>
