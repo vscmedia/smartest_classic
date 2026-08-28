@@ -1,5 +1,6 @@
 .DS_Store
+Applications/*
 *~
-Sites/
+Sites/*
 Public/Resources/System/Cache/CSS/*.css
 System/Library/vendor/

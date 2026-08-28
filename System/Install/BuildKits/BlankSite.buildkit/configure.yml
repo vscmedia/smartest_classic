@@ -1,0 +1,25 @@
+buildkit:
+  shortname: sm_blank_site
+  label: None
+  title_format: $site | $page
+  minimum_smartest_build: 904
+  required_write_dirs:
+    - Public/Resources/Stylesheets/
+    - Presentation/Masters/
+  responsive_mode:
+    enabled: true
+    mobiles: true
+    tablets: true
+    oldpcs: false
+  content:
+    enabled: true
+    required: true
+  templates:
+    enabled: true
+    required: true
+  data_structure:
+    enabled: false
+    required: false
+  frontend_structure:
+    enabled: true
+    required: true

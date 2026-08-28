@@ -15,5 +15,6 @@ function buildkit_sm_blog_setup_templates($buildkit, $site, $user, $options){
     register_file($blog_post_template, 'blog_post_template');
     
     install_app('BlogInfiniteScroll');
+    replace_file_tokens($is_javascript);
     
 }

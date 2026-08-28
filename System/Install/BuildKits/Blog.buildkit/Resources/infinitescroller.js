@@ -20,7 +20,7 @@ var InfiniteScroller = Class.create({
             InfiniteScrollerRetrieving = true;
             var mostRecentPostId = this.getMostRecentPostId();
             
-            new Ajax.Updater('blog-posts', '/ajax:ws/getNextBlogPostsForInfiniteScroll', {
+            new Ajax.Updater('blog-posts', '%%QUINCE_BASE_DIR%%ajax:%%QUINCE_MODULE_SHORTNAME%%/getNextBlogPostsForInfiniteScroll', {
                 
                 insertion: 'bottom',
                 evalScripts: true,

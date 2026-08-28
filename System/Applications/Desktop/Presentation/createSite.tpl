@@ -43,7 +43,7 @@ document.observe('dom:loaded', function(){
         }
     });
 
-    $('new-site-form').observe('submit', function(e){
+	    $('new-site-form').observe('submit', function(e){
 
         if(($('new-site-name').getValue() == SiteNameFieldDefaultValue) || $('new-site-name').getValue() == ''){
             $('new-site-name').addClassName('error');
@@ -55,12 +55,17 @@ document.observe('dom:loaded', function(){
             e.stop();
         }
 
-        if($('site-admin-email').getValue() == ''){
-            $('site-admin-email').addClassName('error');
-            e.stop();
-        }
+	        if($('site-admin-email').getValue() == ''){
+	            $('site-admin-email').addClassName('error');
+	            e.stop();
+	        }
 
-    });
+	        if($('buildkit-selector') && $F('buildkit-selector') != '_NONE' && $('buildkit-has-unwritable-locations') && $F('buildkit-has-unwritable-locations') == '1'){
+	            alert('The selected Build Kit needs additional writable locations before it can run.');
+	            e.stop();
+	        }
+
+	    });
 
     if($('buildkit-selector')){
         $('buildkit-selector').observe('change', function(){

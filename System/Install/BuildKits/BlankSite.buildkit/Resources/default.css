@@ -1,0 +1,84 @@
+/** CSS file created automatically by Smartest at: %TIME% **/
+
+@font-face {
+  font-family: "Quicksand-Regular";
+  src: url("../System/Fonts/Quicksand-Regular.eot");
+  src: url("../System/Fonts/Quicksand-Regular.eot?#iefix") format("embedded-opentype"),
+    url("../System/Fonts/Quicksand-Regular.woff") format("woff"),
+    url("../System/Fonts/Quicksand-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body{
+    margin:0;
+}
+
+div.breaker{
+    clear:both;
+    height:1px;
+}
+
+#container{
+    max-width:900px;
+    margin:0 auto;
+}
+
+#header{
+    max-width:900px;
+    margin:0 auto;
+}
+
+#header h1{
+    padding-top:70px;
+    font-family:'Quicksand-Regular', sans-serif;
+    font-size:3em;
+    margin:10px 0;
+}
+
+#navstripe{
+    %COLOUR%
+}
+
+#nav{
+    margin:10px auto;
+    max-width:900px;
+    transform:translate(-10px, 0);
+}
+
+#nav ul{
+    list-style-type:none;
+    margin:0;
+    padding:0;
+}
+
+#nav ul li{
+    display:inline-block;
+    font-family:'Quicksand-Regular', sans-serif;
+    font-size:1em;
+}
+
+#nav ul li a{
+    display:block;
+    padding:8px 10px;
+    text-decoration:none;
+    transition:background-color 0.25s;
+    color:#fff;
+}
+
+#nav ul li a:hover{
+    background-color:rgba(255,255,255,0.3);
+}
+
+.text p,
+.text li,
+p.text{
+    font-family:Georgia, sans-serif;
+    line-height:1.5em;
+}
+
+#footer{
+    font-size:0.8em;
+    font-family:'Quicksand-Regular', sans-serif;
+    padding:10px 0;
+}

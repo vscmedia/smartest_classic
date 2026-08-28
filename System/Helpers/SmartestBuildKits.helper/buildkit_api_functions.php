@@ -10,6 +10,10 @@ function register_file($file, $registration_name){
     SmartestBuildKitsHelper::registerObject(SmartestStringHelper::toVarName($registration_name), $file);    
 }
 
+function register_value($value, $registration_name){
+    SmartestBuildKitsHelper::registerValue($registration_name, $value);
+}
+
 function get_registered_file_if_exists($registration_name){
     if(SmartestBuildKitsHelper::registeredObjectExists(SmartestStringHelper::toVarName($registration_name))){
         return SmartestBuildKitsHelper::getRegisteredObject($registration_name);
@@ -44,6 +48,18 @@ function get_registered_file_group_if_exists($registration_name){
 
 function add_file_to_group($file, $group){
     return SmartestBuildKitsHelper::addFileToGroup($file, $group);
+}
+
+function replace_file_tokens($file, $replacements=array()){
+    return SmartestBuildKitsHelper::replaceTokensInFile($file, $replacements);
+}
+
+function define_text_attachment($text_asset, $attachment_name, $attached_asset, $metadata=array()){
+    return SmartestBuildKitsHelper::defineTextAttachment($text_asset, $attachment_name, $attached_asset, $metadata);
+}
+
+function buildkit_option($options, $name, $default=null){
+    return SmartestBuildKitsHelper::getBuildKitOption($options, $name, $default);
 }
 
 /*** Templates stuff ***/
@@ -179,6 +195,10 @@ function create_field($name, $type, $site_wide=false, $foreign_key_filter=null){
 
 function create_itemspace($name, $dataset_id, $template_id=null){
     return SmartestBuildKitsHelper::createItemSpace($name, $dataset_id, $template_id);
+}
+
+function set_standard_pages_template($template){
+    return SmartestBuildKitsHelper::setStandardPagesTemplate($template);
 }
 
 function define_placeholder($placeholder, $file, $page, $item_id=null){

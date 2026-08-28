@@ -1,18 +1,20 @@
 # Smartest Classic
 
-Smartest Classic is a PHP publishing platform and content management system that began in 2006. Motivated by the creative possibilities of the Hypertext medium, it was first built in the PHP 4 era, using Smarty 2, and it predates Composer, Symfony, namespaces, modern autoloading, and many of the conventions that later became normal in PHP applications.
+Smartest Classic is a PHP publishing platform and content management system that began in 2006 as a collaboration between Marcus Gilroy-Ware and Eddie Tejeda. Motivated by the creative possibilities of the Hypertext medium, it was first built in the PHP 4 era, using Smarty 2, and it predates Composer, Symfony, namespaces, modern autoloading, and many of the conventions that later became normal in PHP applications.
 
-Even so, Smartest was built around strict code organisation from the start. In addition to its co-evolution with the Quince controller package, its structure was influenced by operating-system design: a public web root, a separated system layer, a controller and presentation layer, application modules, reusable helpers, cached output, and self-contained modules that can be moved in or out without breaking the rest of the application.
+Even so, Smartest was built around strict code organisation from the start. In addition to its co-evolution with the Quince controller package, its structure was influenced by modern operating-system design: everything object-oriented, ultra-specific class names, unified libraries and toolkits with no code repetition, anticipate and cushion user errors, a separated system layer, a controller and presentation layer, application modules, reusable helpers, cached output, and - thanks to Quince - self-contained modules that can be moved in or out without breaking the rest of the application.
 
 Smartest was actively maintained and developed until around 2020, when its lead developers became too busy to continue the work. In 2026, the project was rescued with the help of generative AI and Codex, upgraded for modern PHP, Composer-managed dependencies, Smarty 5, PDO-style database access (work in progress), and a cleaner path toward long-term maintenance.
 
 This repository is now offered to the world once again by its sponsor, [VSC Media International](https://www.vscmedia.com/) - not only for posterity, but because some of the problems Smartest was designed to solve are still real. Its flexible content architecture, full metadata engine, multiple sites in one install, page elements, templates, Build Kits automation, and strict separation between system code, project code, public files, and presentation files still offer a different set of trade-offs from WordPress, Drupal, Squarespace, and newer hosted builders.
 
+Unlike the plugins model of Wordpress, Smartest is designed for clients and developers who know what they want, and won't force you to edit other people's code. You can start with very basic elements and easily incorporate flat HTML/CSS designs and javascript functionalities of your own creation. However, for users that find that freedom daunting, Smartest now includes a completed implementation of a long-planned feature: Build Kits, which are scripts that will rapidly build out a site for you, including all templates, media, CSS, Javascript, and data structures. You can read more about these below.
+
 ## System Requirements
 
 Smartest Classic expects a conventional PHP web-server environment:
 
-- PHP 8.4 or later.
+- PHP 8.3 or later.
 - Composer 2.
 - MySQL or MariaDB.
 - Apache with `mod_rewrite`, or another web server with equivalent URL rewriting.
@@ -51,7 +53,7 @@ An example local Apache vhost is provided in `Support/php8-local-apache-vhost.co
 Clone the repository and install Composer dependencies:
 
 ```bash
-git clone https://github.com/vscmedia/smartest_classic.git
+git clone --branch smartest-php8-2026 https://github.com/vscmedia/smartest_classic.git
 cd smartest_classic
 composer install
 ```

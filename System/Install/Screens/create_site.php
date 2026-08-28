@@ -10,7 +10,8 @@
 
 <?php
 
-$master_tpls = SmartestFileSystemHelper::getDirectoryContents(SM_ROOT_DIR.'Presentation/Masters/');
+$buildkits = $stage->hasParameter('buildkits') ? $stage->getParameter('buildkits') : array();
+$default_buildkit = class_exists('SmartestBuildKitUtilities') ? SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName() : 'sm_blank_site';
 
 ?>
 
@@ -31,22 +32,22 @@ $master_tpls = SmartestFileSystemHelper::getDirectoryContents(SM_ROOT_DIR.'Prese
         <input type="text" name="site_host" value="<?php echo $_SERVER['HTTP_HOST']; ?>" style="width:240px" />
     </div>
     
+    <?php if(count($buildkits)): ?>
     <div class="form-row">
-        <div class="form-row-label">Master template to start with:</div>
-    <?php if(count($master_tpls)): ?>
-    
-        <select name="site_initial_tpl">
-        <?php foreach($master_tpls as $tpl): ?>
-            <option value="<?php echo $tpl; ?>"><?php echo $tpl; ?></option>
-        <?php endforeach;?>
-            <option value="_DEFAULT">Create a new one for me</option>
+        <div class="form-row-label">Build Kit</div>
+        <select name="use_buildkit">
+            <?php if(isset($buildkits[$default_buildkit])): ?>
+            <option value="<?php echo htmlspecialchars($buildkits[$default_buildkit]->getShortName(), ENT_QUOTES, 'UTF-8'); ?>">None</option>
+            <?php endif; ?>
+            <?php foreach($buildkits as $buildkit): if($buildkit->getShortName() == $default_buildkit){ continue; } ?>
+            <option value="<?php echo htmlspecialchars($buildkit->getShortName(), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($buildkit->getLabel(), ENT_QUOTES, 'UTF-8'); ?></option>
+            <?php endforeach; ?>
         </select>
-    
-    <?php else: ?>
-    Create a new one<input type="hidden" name="site_initial_tpl" value="_DEFAULT" />
-    <?php endif; ?>
-    
+        <div class="hint">A Build Kit can create starter files, models, templates, pages and sample content for this site. Choose None for a blank Smartest site.</div>
     </div>
+    <?php else: ?>
+    <input type="hidden" name="use_buildkit" value="<?php echo htmlspecialchars($default_buildkit, ENT_QUOTES, 'UTF-8'); ?>" />
+    <?php endif; ?>
     
     <div class="button normal-button"><a href="javascript:document.getElementById('installerForm').submit();">Finish &amp; Log In</a></div>
 

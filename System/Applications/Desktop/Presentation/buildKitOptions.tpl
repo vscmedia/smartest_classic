@@ -1,4 +1,5 @@
 {if $has_unwritable_locations}
+<input type="hidden" id="buildkit-has-unwritable-locations" value="1" />
 <div class="warning">
   <p>This Build Kit needs to write files to locations that are not currently writable:</p>
   <ul class="location-list">
@@ -7,6 +8,8 @@
     {/foreach}
   </ul>
 </div>
+{else}
+<input type="hidden" id="buildkit-has-unwritable-locations" value="0" />
 {/if}
 
 {if $has_general_configuration_options}<div class="form-section-label-full">General options</div>{/if}

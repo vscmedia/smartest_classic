@@ -191,19 +191,6 @@ class Desktop extends SmartestSystemApplication{
 	        $errors['email'] = "The administrator email address you entered was not valid.";
 	    }
 
-	    $this->send($errors, 'errors');
-
-	    if(count($errors)){
-	        $this->forward('desktop', 'createSite');
-	    }
-
-	    $p = new SmartestParameterHolder('New site parameters');
-	    $p->setParameter('site_name', $this->getRequestParameter('site_name'));
-	    $p->setParameter('site_internal_label', $this->getRequestParameter('site_name'));
-	    $p->setParameter('site_domain', $this->getRequestParameter('site_domain'));
-		    $p->setParameter('site_admin', $this->getRequestParameter('site_admin_email'));
-		    $p->setParameter('site_master_template', $this->getRequestParameter('site_master_template'));
-
 		    $build_kit_name = $this->getRequestParameter('use_buildkit');
 		    $prepared_buildkit_params = array();
 
@@ -211,11 +198,29 @@ class Desktop extends SmartestSystemApplication{
 		        $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($build_kit_name);
 
 		        if($buildkit instanceof SmartestBuildKit){
-		            $prepared_buildkit_params = SmartestBuildKitsHelper::prepareRequestParamsForBuildKit($this->getRequestParameters(), $buildkit);
+		            $unwritable_locations = $buildkit->getUnwritableRequiredWriteLocations();
+
+		            if(count($unwritable_locations)){
+		                $errors['buildkit_permissions'] = "The selected Build Kit needs these locations to be writable before it can run: ".implode(', ', $unwritable_locations).'.';
+		            }else{
+		                $prepared_buildkit_params = SmartestBuildKitsHelper::prepareRequestParamsForBuildKit($this->getRequestParameters(), $buildkit);
+		            }
 		        }else{
 		            throw new SmartestException("The requested Build Kit '".$build_kit_name."' was not found.");
 		        }
 		    }
+
+		    if(count($errors)){
+		        $this->send($errors, 'errors');
+		        return $this->forward('desktop', 'createSite');
+		    }
+
+	    $p = new SmartestParameterHolder('New site parameters');
+	    $p->setParameter('site_name', $this->getRequestParameter('site_name'));
+	    $p->setParameter('site_internal_label', $this->getRequestParameter('site_name'));
+	    $p->setParameter('site_domain', $this->getRequestParameter('site_domain'));
+		    $p->setParameter('site_admin', $this->getRequestParameter('site_admin_email'));
+		    $p->setParameter('site_master_template', $this->getRequestParameter('site_master_template'));
 
 		    $sch = new SmartestSiteCreationHelper;
 

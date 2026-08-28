@@ -10,13 +10,13 @@
 {if $sm_user_agent.is_supported_browser}
 {foreach from=$sites item="site" key="key"}
 {if isset($site.name) }
-  <li><a href="{$domain}smartest/site/open/{$site.id}" class="icon"{if $site.logo_image_asset_id != '0'} style="background-image:url({$site.logo.image.260x260.web_path});background-size:130px 130px"{/if}>&nbsp;</a><br /><a class="label" href="{$domain}smartest/site/open/{$site.id}">{$site.internal_label}</a></li>
+	  <li><a href="{$domain}smartest/site/open/{$site.id}" class="icon" style="background-image:url({if $site.logo_image_asset_id && $site.logo_image_asset_id != '0'}{$site.logo.image.260x260.web_path}{else}{$domain}Resources/System/Images/site-default-icon.png{/if});background-size:130px 130px">&nbsp;</a><br /><a class="label" href="{$domain}smartest/site/open/{$site.id}">{$site.internal_label}</a></li>
 {/if}
 {/foreach}
 {else}
 {foreach from=$sites item="site" key="key"}
 {if isset($site.name) }
-  <li><a href="{$domain}smartest/site/open/{$site.id}" class="icon"{if $site.logo_image_asset_id != '0'} style="background-image:url({$site.logo.image.130x130.web_path})"{/if}>&nbsp;</a><br /><a class="label" href="{$domain}smartest/site/open/{$site.id}">{$site.internal_label}</a></li>
+	  <li><a href="{$domain}smartest/site/open/{$site.id}" class="icon" style="background-image:url({if $site.logo_image_asset_id && $site.logo_image_asset_id != '0'}{$site.logo.image.130x130.web_path}{else}{$domain}Resources/System/Images/site-default-icon.png{/if})">&nbsp;</a><br /><a class="label" href="{$domain}smartest/site/open/{$site.id}">{$site.internal_label}</a></li>
 {/if}
 {/foreach}
 {/if}

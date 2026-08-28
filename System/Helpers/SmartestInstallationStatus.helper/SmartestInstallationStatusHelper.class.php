@@ -3,11 +3,16 @@
 require SM_ROOT_DIR.'System/Base/Exceptions/SmartestNotInstalledException.class.php';
 
 class SmartestInstallationStatusHelper{
+
+    const INSTALLATION_RECEIPT_FILE = 'System/Core/Info/.installation.log';
     
     public static function checkStatus($purge=false){
         
-        // Add this in a few installlations time SmartestSystemSettingsHelper::load('successful_install') === true
-        // if(SmartestCache::load('installation_status', true) === SM_INSTALLSTATUS_COMPLETE && !$purge && (is_file(SM_ROOT_DIR.'Public/.htaccess') && is_file(SM_ROOT_DIR.'Configuration/database.ini'))){
+        if(!$purge && self::installationLooksComplete()){
+            self::markInstallationComplete();
+            return;
+        }
+
         if(!$purge && (is_file(SM_ROOT_DIR.'Public/.htaccess') && (is_file(SM_ROOT_DIR.'Configuration/database.ini') || is_file(SM_ROOT_DIR.'Configuration/database.yml')))){
             $cached_status = SmartestCache::load('installation_status', true);
         }
@@ -21,7 +26,7 @@ class SmartestInstallationStatusHelper{
             
             // session_start();
             $system_data = SmartestYamlHelper::toParameterHolder($SYSTEM_INFO_FILE, false);
-            $writable_files = array_merge($system_data->g('system')->g('writable_locations')->g('always')->toArray(), $system_data->g('system')->g('writable_locations')->g('installation')->toArray());
+            $writable_files = self::getInstallationWritableLocations($system_data);
             
             $errors = array();
             
@@ -95,7 +100,7 @@ class SmartestInstallationStatusHelper{
                         }else{
                             $controller_domain = '';
                         }
-                        
+
                         SmartestCache::save('controller_domain_temp', $controller_domain, -1, true);
 
                         // $installer->createQuinceControllerFile($controller_domain);
@@ -189,109 +194,57 @@ class SmartestInstallationStatusHelper{
                         SmartestLog::getInstance('installer')->log('The site name given to the installer at stage 4 was shorter than the required 3 characters ('.strlen($_POST['site_name']).' chars).', SM_LOG_WARNING);
                     }
                     
-                    if(strlen($_POST['site_host']) < 5){
-                        // problem with username
-                        $fve->setParameter('host', "The hostname you entered is too short. It must have a minimum of five characters.");
-                        SmartestLog::getInstance('installer')->log('The hostname given to the installer at stage 4 was shorter than the possible 5 characters ('.strlen($_POST['site_host']).' chars).', SM_LOG_WARNING);
-                    }
-                    
-                    if($fve->hasData()){
-                        $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
-                        $nie->setValidationErrors($fve);
+	                    if(strlen($_POST['site_host']) < 5){
+	                        // problem with username
+	                        $fve->setParameter('host', "The hostname you entered is too short. It must have a minimum of five characters.");
+	                        SmartestLog::getInstance('installer')->log('The hostname given to the installer at stage 4 was shorter than the possible 5 characters ('.strlen($_POST['site_host']).' chars).', SM_LOG_WARNING);
+	                    }
+
+                        if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
+                            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
+                        }
+
+                        if(!class_exists('SmartestBuildKit') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php')){
+                            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php';
+                        }
+
+                        if(!class_exists('SmartestBuildKitsHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitsHelper.class.php')){
+                            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitsHelper.class.php';
+                        }
+
+                        if(!class_exists('SmartestSiteCreationHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php')){
+                            require_once SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php';
+                        }
+
+                        $build_kit_name = isset($_POST['use_buildkit']) ? $_POST['use_buildkit'] : SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+                        if($build_kit_name == '_NONE'){
+                            $build_kit_name = SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+                        }
+
+                        $buildkit = null;
+                        $prepared_buildkit_params = array();
+
+                        if(strlen((string) $build_kit_name)){
+                            $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($build_kit_name);
+
+                            if($buildkit instanceof SmartestBuildKit){
+                                $unwritable_locations = $buildkit->getUnwritableRequiredWriteLocations();
+
+                                if(count($unwritable_locations)){
+                                    $fve->setParameter('buildkit_permissions', "The selected Build Kit needs these locations to be writable before it can run: ".implode(', ', $unwritable_locations).'.');
+                                }else{
+                                    $prepared_buildkit_params = SmartestBuildKitsHelper::prepareRequestParamsForBuildKit($_POST, $buildkit);
+                                }
+                            }else{
+                                $fve->setParameter('buildkit', "The Build Kit you selected could not be found.");
+                            }
+                        }
+
+	                    if($fve->hasData()){
+	                        $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+	                        $nie->setValidationErrors($fve);
                         throw $nie;
                     }else{
-                        
-                        $db = SmartestDatabase::getInstance('SMARTEST');
-                        
-                        $uq = $db->queryToArray('SELECT user_email FROM Users WHERE user_id=1');
-                        $email = $uq[0]['user_email'];
-                        $sitename = SmartestStringHelper::sanitize($_POST['site_name']);
-                        $sitename = str_replace("'", "\'", $sitename);
-                        $hostname = SmartestStringHelper::sanitize($_POST['site_host']);
-                        $template = ($_POST['site_initial_tpl'] == '_DEFAULT') ? SmartestStringHelper::toVarName($_POST['site_name'], true).'.tpl' : SmartestStringHelper::sanitize($_POST['site_initial_tpl']);
-                        
-                        // Site creation SQL
-                        // Todo: This should be replaced with a call to SmartestSiteCreationHelper
-                        $sql = file_get_contents(SM_ROOT_DIR.'System/Install/SqlScripts/create_site.sql.txt');
-                        $sql = str_replace('%NOW%', time(), $sql);
-                        $sql = str_replace('%TEMPLATE%', $template, $sql);
-                        $sql = str_replace('%EMAIL%', $email, $sql);
-                        $sql = str_replace('%SITENAME%', $sitename, $sql);
-                        $sql = str_replace('%DIRECTORYNAME%', substr(SmartestStringHelper::toCamelCase($sitename), 0, 64), $sql);
-                        $sql = str_replace('%HOSTNAME%', $hostname, $sql);
-                        $sql = str_replace('%HOMEPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
-                        $sql = str_replace('%ERRORPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
-                        $sql = str_replace('%SEARCHPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
-                        $sql = str_replace('%TAGPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
-                        $sql = str_replace('%USERPAGEWEBID%', SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC), $sql);
-                        
-                        // Attempt to create site dir
-                        $site_dir = SM_ROOT_DIR.'Sites/'.substr(SmartestStringHelper::toCamelCase($sitename), 0, 64).'/';
-
-                	    if(!is_dir($site_dir)){mkdir($site_dir);}
-                	    if(!is_dir($site_dir.'Presentation')){mkdir($site_dir.'Presentation');}
-                        if(!is_dir($site_dir.'Presentation/Layouts')){mkdir($site_dir.'Presentation/Layouts');}
-                        if(!is_dir($site_dir.'Presentation/Special')){mkdir($site_dir.'Presentation/Special');}
-                	    if(!is_dir($site_dir.'Configuration')){mkdir($site_dir.'Configuration');}
-                	    if(!is_file($site_dir.'Configuration/site.yml')){file_put_contents($site_dir.'Configuration/site.yml', '');}
-                	    if(!is_dir($site_dir.'Library')){mkdir($site_dir.'Library');}
-                	    if(!is_dir($site_dir.'Library/Actions')){mkdir($site_dir.'Library/Actions');}
-                        if(!is_dir($site_dir.'Library/ObjectModel')){mkdir($site_dir.'Library/ObjectModel');}
-                	    $actions_class_name = SmartestStringHelper::toCamelCase($sitename).'Actions';
-                	    $class_file_contents = file_get_contents(SM_ROOT_DIR.'System/Base/ClassTemplates/SiteActions.class.php.txt');
-                        $class_file_contents = str_replace('__TIMESTAMP__', date('Y-m-d h:i:s'), $class_file_contents);
-                	    if(!is_file($site_dir.'Library/Actions/SiteActions.class.php')){file_put_contents($site_dir.'Library/Actions/SiteActions.class.php', $class_file_contents);}
-                	    chmod($site_dir.'Library/Actions/SiteActions.class.php', 0666);
-                        
-                        // Lastly, execute database queries     
-                        $queries = explode(';', $sql);
-                        $siteCreationErrors = false;
-
-                        foreach($queries as $query){
-                            if(strlen(trim($query))){
-                                try{
-                                    $db->rawQuery(trim($query).';');
-                                }catch (SmartestDatabaseException $user_error) {
-                                    SmartestLog::getInstance('installer')->log('There was an error creating site data on query: '.$query.'.', SM_LOG_ERROR);
-                                    $siteCreationErrors = true;
-                                    continue;
-                                }
-                            }
-                        }
-                        
-                        if($_POST['site_initial_tpl'] == '_DEFAULT' && !$siteCreationErrors){
-                            if(is_writable(SM_ROOT_DIR.'Presentation/Masters/')){
-                                $master_template_contents = str_replace('%DEFAULTTEMPLATENAME%.tpl', $template, file_get_contents(SM_ROOT_DIR.'System/Install/Samples/default.tpl'));
-                                $stylesheet_name = SmartestStringHelper::toVarName($_POST['site_name'], true).'.css';
-                                $stylesheet_path = SM_ROOT_DIR.'Public/Resources/Stylesheets/'.$stylesheet_name;
-                                $css_success = false;
-
-                                if(is_writable(SM_ROOT_DIR.'Public/Resources/Stylesheets/')){
-                                    $css = file_get_contents(SM_ROOT_DIR.'System/Install/Samples/default.css');
-                                    $css = str_replace('%TIME%', date('r'), $css);
-                                    $css = str_replace('%COLOUR%', 'background:#333;', $css);
-                                    $css_success = (bool) file_put_contents($stylesheet_path, $css);
-                                }
-
-                                if($css_success){
-                                    $master_template_contents = str_replace('%CSSLINK%', '<?sm:stylesheet file="'.$stylesheet_name.'":?>'."\n", $master_template_contents);
-                                }else{
-                                    $master_template_contents = str_replace('%CSSLINK%', '', $master_template_contents);
-                                }
-
-                                file_put_contents(SM_ROOT_DIR.'Presentation/Masters/'.$template, $master_template_contents);
-                            }else{
-                                SmartestLog::getInstance('installer')->log('Could not move default template into position because Presentation/Masters/ is not writable.', SM_LOG_ERROR);
-                            }
-                        }
-                        
-                            if($siteCreationErrors){
-                                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
-                                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_SITE_DATA_INVALID, -1, true);
-                                }
-
-                                throw new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
-                            }
 
 	                        $controller_domain_cache = SmartestCache::load('controller_domain_temp', -1, true);
                         
@@ -304,12 +257,50 @@ class SmartestInstallationStatusHelper{
                             $controller_domain = '';
                         }
                         
-                        $installer = new SmartestInstaller;
-                        $installer->createHtAccessFile('/'.$controller_domain);
-                        $installer->moveEssentialFilesIntoPlace();
-                        
-                        // $cd = SmartestSystemSettingHelper::load('htaccess_rewrite_base');
-                        $cd = '/'.$controller_domain;
+	                        $installer = new SmartestInstaller;
+	                        $installer->createHtAccessFile('/'.$controller_domain);
+	                        $installer->moveEssentialFilesIntoPlace();
+
+                            $db = SmartestDatabase::getInstance('SMARTEST');
+                            $uq = $db->preparedQuery('SELECT user_email FROM Users WHERE user_id=:user_id LIMIT 1', array('user_id' => 1));
+                            $email = isset($uq[0]['user_email']) ? $uq[0]['user_email'] : '';
+                            $sitename = SmartestStringHelper::sanitize($_POST['site_name']);
+                            $hostname = SmartestStringHelper::sanitize($_POST['site_host']);
+                            $user = new SmartestSystemUser;
+
+                            if(!$user->find(1)){
+                                $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+                                $errors = new SmartestParameterHolder("Site creation form validator errors");
+                                $errors->setParameter('user', "The first user account could not be loaded, so the first site could not be created.");
+                                $nie->setValidationErrors($errors);
+                                throw $nie;
+                            }
+
+                            $site_params = new SmartestParameterHolder('First site creation parameters');
+                            $site_params->setParameter('site_name', $sitename);
+                            $site_params->setParameter('site_internal_label', $sitename);
+                            $site_params->setParameter('site_domain', $hostname);
+                            $site_params->setParameter('site_admin', $email);
+                            $site_params->setParameter('site_master_template', '_DEFAULT');
+
+                            $sch = new SmartestSiteCreationHelper;
+
+                            try{
+                                $site = $sch->createNewSiteFromBuildKit($site_params, $user, $buildkit, $prepared_buildkit_params);
+                                SmartestLog::getInstance('installer')->log("Created first site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."'.", SM_LOG_DEBUG);
+                            }catch(Exception $buildkit_error){
+                                SmartestLog::getInstance('installer')->log("First site creation with Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
+                                $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+                                $errors = new SmartestParameterHolder("Site creation form validator errors");
+                                $errors->setParameter('buildkit', "The first site could not be created: ".$buildkit_error->getMessage());
+                                $nie->setValidationErrors($errors);
+                                throw $nie;
+                            }
+
+                            self::markInstallationComplete();
+
+	                        // $cd = SmartestSystemSettingHelper::load('htaccess_rewrite_base');
+	                        $cd = '/'.$controller_domain;
                         
                         if(strlen($cd) && $cd != '/'){
                             $location = $cd.'smartest/login#welcome';
@@ -446,13 +437,14 @@ class SmartestInstallationStatusHelper{
 	                }
 
 	                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
-	                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
+		                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
                     if(!SmartestSystemSettingHelper::hasData('_system_installed_timestamp')){
                         SmartestSystemSettingHelper::save('_system_installed_timestamp', time());
                     }
                 }
-                
-            }else{
+                self::markInstallationComplete();
+
+	            }else{
                 
                 // Config files haven't been created yet
                 if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
@@ -463,5 +455,82 @@ class SmartestInstallationStatusHelper{
                 
                 throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_CONFIG);
             }
+	    }
+
+    public static function markInstallationComplete(){
+
+        if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+            SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
+        }
+
+        $file = SM_ROOT_DIR.self::INSTALLATION_RECEIPT_FILE;
+        $dir = dirname($file);
+
+        if(!is_dir($dir) || (!is_writable($dir) && !is_file($file))){
+            return false;
+        }
+
+        if(is_file($file)){
+            return true;
+        }
+
+        $contents = array(
+            'Smartest installation completed',
+            'Completed: '.date('c'),
+            'Root: '.SM_ROOT_DIR,
+            'Host: '.(isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''),
+        );
+
+        return file_put_contents($file, implode("\n", $contents)."\n") !== false;
+    }
+
+    protected static function installationLooksComplete(){
+
+        if(!is_file(SM_ROOT_DIR.'Public/.htaccess') || !(is_file(SM_ROOT_DIR.'Configuration/database.ini') || is_file(SM_ROOT_DIR.'Configuration/database.yml'))){
+            return false;
+        }
+
+        try{
+            $db = SmartestDatabase::getInstance('SMARTEST', true);
+            $tables = $db->getTables(true);
+        }catch(Exception $e){
+            return false;
+        }
+
+        if(!in_array('Users', $tables) || !in_array('Sites', $tables)){
+            return false;
+        }
+
+        try{
+            return count($db->queryToArray("SELECT user_id FROM Users LIMIT 2")) > 1
+                && count($db->queryToArray("SELECT site_id FROM Sites LIMIT 1")) > 0;
+        }catch(Exception $e){
+            return false;
+        }
+    }
+
+    protected static function getInstallationWritableLocations(SmartestParameterHolder $system_data){
+
+        $writable_files = array_merge($system_data->g('system')->g('writable_locations')->g('always')->toArray(), $system_data->g('system')->g('writable_locations')->g('installation')->toArray());
+
+        if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
+        }
+
+        if(!class_exists('SmartestBuildKit') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php';
+        }
+
+        if(class_exists('SmartestBuildKitUtilities')){
+            foreach(SmartestBuildKitUtilities::getAvailableBuildKits() as $buildkit){
+                foreach($buildkit->getRequiredWriteLocations() as $location){
+                    if(!in_array($location, $writable_files, true)){
+                        $writable_files[] = $location;
+                    }
+                }
+            }
+        }
+
+        return $writable_files;
     }
 }

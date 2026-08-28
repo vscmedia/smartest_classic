@@ -2,7 +2,7 @@
 
 class SmartestUserApplicationHelper{
     
-    public static function createApplication($shortname, $classname='', $class_file_contents='', $config_file_contents='', $dir_name='', $create_presentation=true){
+    public static function createApplication($shortname, $classname='', $class_file_contents='', $config_file_contents='', $dir_name='', $create_presentation=true, $identifier=''){
         
         if(!is_dir(SM_ROOT_DIR.'Applications/')){
             if(!@mkdir(SM_ROOT_DIR.'Applications/', 0777, true)){
@@ -22,7 +22,10 @@ class SmartestUserApplicationHelper{
                 return false;
             }else{
                 if(strlen($classname)){
-                    $classname = SmartestStringHelper::toCamelCase($classname);
+                    $classname = preg_replace('/[^A-Za-z0-9_]/', '', $classname);
+                    if(!strlen($classname)){
+                        $classname = SmartestStringHelper::toCamelCase($shortname);
+                    }
                 }else{
                     $classname = SmartestStringHelper::toCamelCase($shortname);
                 }
@@ -73,7 +76,9 @@ class SmartestUserApplicationHelper{
                     $raw_config_file_content = SmartestFileSystemHelper::load(SM_ROOT_DIR.'System/Install/Samples/Application/quince.yml.txt');
                 }
                 
-                $identifier = 'org.yourname.'.$classname.SmartestStringHelper::random(8);
+                if(!strlen((string) $identifier)){
+                    $identifier = 'org.yourname.'.$classname.SmartestStringHelper::random(8);
+                }
                 
                 $config_file_content = str_replace('%CLASSNAME%', $classname, $raw_config_file_content);
                 $config_file_content = str_replace('%SHORTNAME%', $shortname, $config_file_content);

@@ -73,6 +73,10 @@ class SmartestBuildKitsHelper{
         self::getRegistry()->clearParameter(SmartestStringHelper::toVarName($name));
     }
 
+    public static function registerValue($name, $value){
+        self::registerObject($name, $value);
+    }
+
     public static function registeredObjectExists($name){
         return self::getRegistry()->hasParameter(SmartestStringHelper::toVarName($name));
     }
@@ -252,6 +256,122 @@ class SmartestBuildKitsHelper{
         }
 
         return false;
+    }
+
+    public static function replaceTokensInFile($file, $replacements=array()){
+
+        $asset = self::resolveAsset($file);
+
+        if(!$asset instanceof SmartestAsset){
+            return false;
+        }
+
+        $replacements = is_array($replacements) ? $replacements : array();
+        $replacements = array_merge(self::getRegisteredObjectTokenReplacements(), $replacements);
+
+        if(!count($replacements)){
+            return true;
+        }
+
+        if($asset->usesTextFragment()){
+            $content = $asset->getTextFragment()->getContent();
+            $asset->getTextFragment()->setContent(str_replace(array_keys($replacements), array_values($replacements), $content));
+            $asset->connectTextFragmentOnSave();
+            $asset->save();
+            return true;
+        }
+
+        if($asset->usesLocalFile() && is_file($asset->getFullPathOnDisk()) && is_writable($asset->getFullPathOnDisk())){
+            $content = SmartestFileSystemHelper::load($asset->getFullPathOnDisk(), true);
+            return SmartestFileSystemHelper::save($asset->getFullPathOnDisk(), str_replace(array_keys($replacements), array_values($replacements), $content), true);
+        }
+
+        return false;
+    }
+
+    public static function defineTextAttachment($text_asset, $attachment_name, $attached_asset, $metadata=array()){
+
+        $text_asset = self::resolveAsset($text_asset);
+        $attached_asset = self::resolveAsset($attached_asset);
+        $attachment_name = SmartestStringHelper::toVarName($attachment_name);
+        $metadata = is_array($metadata) ? $metadata : array();
+
+        if(!$text_asset instanceof SmartestAsset || !$text_asset->usesTextFragment()){
+            throw new SmartestException("Build Kit could not define attachment '".$attachment_name."' because no valid text asset was supplied.");
+        }
+
+        if(!$attached_asset instanceof SmartestAsset){
+            throw new SmartestException("Build Kit could not define attachment '".$attachment_name."' because no valid attached asset was supplied.");
+        }
+
+        if(!strlen($attachment_name)){
+            throw new SmartestException("Build Kit could not define an attachment with no name.");
+        }
+
+        $textfragment = $text_asset->getTextFragment();
+        $attachment = $textfragment->getAttachmentCurrentDefinition($attachment_name);
+
+        if(!$attachment->getTextFragmentId()){
+            $attachment->setTextFragmentId($textfragment->getId());
+        }
+
+        $attachment->setAttachmentName($attachment_name);
+        $attachment->setAttachedAssetId($attached_asset->getId());
+
+        if(isset($metadata['alignment'])){
+            $attachment->setAlignment(SmartestStringHelper::toVarName($metadata['alignment']));
+        }
+
+        if(isset($metadata['caption'])){
+            $attachment->setCaption(htmlentities($metadata['caption'], ENT_COMPAT, 'UTF-8'));
+        }
+
+        if(isset($metadata['caption_alignment'])){
+            $attachment->setCaptionAlignment(SmartestStringHelper::toVarName($metadata['caption_alignment']));
+        }
+
+        if(isset($metadata['float'])){
+            $attachment->setFloat(SmartestStringHelper::toRealBool($metadata['float']));
+        }
+
+        if(isset($metadata['border'])){
+            $attachment->setBorder(SmartestStringHelper::toRealBool($metadata['border']));
+        }
+
+        if(isset($metadata['resize'])){
+            $attachment->setResizeImageResizeFlag(SmartestStringHelper::toRealBool($metadata['resize']));
+        }else if(isset($metadata['allow_resize'])){
+            $attachment->setResizeImageResizeFlag(SmartestStringHelper::toRealBool($metadata['allow_resize']));
+        }
+
+        if(isset($metadata['zoom'])){
+            $attachment->setZoomFromThumbnail(SmartestStringHelper::toRealBool($metadata['zoom']));
+        }
+
+        if(isset($metadata['thumbnail_relative_size'])){
+            $attachment->setThumbnailRelativeSize((int) $metadata['thumbnail_relative_size']);
+        }
+
+        if(isset($metadata['manual_width'])){
+            $attachment->setManualWidth($metadata['manual_width']);
+        }
+
+        $attachment->save();
+        return $attachment;
+    }
+
+    public static function getBuildKitOption($options, $name, $default=null){
+
+        if(!is_array($options)){
+            return $default;
+        }
+
+        if(isset($options[$name])){
+            return $options[$name];
+        }
+
+        $name = SmartestStringHelper::toVarName($name);
+        return isset($options[$name]) ? $options[$name] : $default;
     }
 
     public static function createDropdownMenu($label, $options=''){
@@ -793,6 +913,35 @@ class SmartestBuildKitsHelper{
         return $item_space;
     }
 
+    public static function setStandardPagesTemplate($template){
+
+        $site = self::getExecutingSite();
+        $template_name = self::resolveTemplateName($template);
+
+        if(!strlen((string) $template_name)){
+            return false;
+        }
+
+        $pages = array(
+            $site->getHomePage(true),
+            $site->getErrorPage(),
+            $site->getSearchPage(),
+            $site->getTagPage(),
+            $site->getUserPage(),
+            $site->getHoldingPage()
+        );
+
+        foreach($pages as $page){
+            if($page instanceof SmartestPage && $page->getId()){
+                $page->setDraftTemplate($template_name);
+                $page->setLiveTemplate($template_name);
+                $page->save();
+            }
+        }
+
+        return true;
+    }
+
     public static function definePlaceholder($placeholder, SmartestAsset $file, $page, $item_id=null, $instance_name='default'){
 
         $site = self::getExecutingSite();
@@ -947,13 +1096,27 @@ class SmartestBuildKitsHelper{
             }
         }
 
-        $class_name = isset($install_info['class_name']) ? $install_info['class_name'] : SmartestStringHelper::toCamelCase($site->getTitle().$folder_name);
-        $short_name = isset($install_info['short_name']) ? SmartestUserApplicationHelper::createShortName($install_info['short_name']) : SmartestUserApplicationHelper::createShortName($site->getTitle().$folder_name);
-        $class_file = is_file($source_dir.$class_name.'.class.php') ? $source_dir.$class_name.'.class.php' : (is_file($source_dir.'class.php') ? $source_dir.'class.php' : '');
+        $base_class_name = isset($install_info['class_name']) ? preg_replace('/[^A-Za-z0-9_]/', '', $install_info['class_name']) : SmartestStringHelper::toCamelCase($site->getTitle().$folder_name);
+        $base_short_name = isset($install_info['short_name']) ? SmartestUserApplicationHelper::createShortName($install_info['short_name']) : SmartestUserApplicationHelper::createShortName($site->getTitle().$folder_name);
+        $site_suffix = self::getSiteModuleSuffix($site);
+        $class_name = $base_class_name;
+        $short_name = $base_short_name;
+
+        if(SmartestUserApplicationHelper::applicationExistsWithShortName($short_name) || class_exists($class_name, false)){
+            $short_name = self::getUniqueModuleShortName($base_short_name, $site_suffix);
+            $class_name = self::getUniqueModuleClassName($base_class_name, SmartestStringHelper::toCamelCase($site_suffix));
+        }
+
+        $class_file = is_file($source_dir.$base_class_name.'.class.php') ? $source_dir.$base_class_name.'.class.php' : (is_file($source_dir.'class.php') ? $source_dir.'class.php' : '');
         $config_file = is_file($source_dir.'Configuration/quince.yml') ? $source_dir.'Configuration/quince.yml' : (is_file($source_dir.'quince.yml') ? $source_dir.'quince.yml' : '');
         $create_presentation = !is_dir($source_dir.'Presentation/');
+        $identifier = isset($install_info['identifier']) ? $install_info['identifier'] : 'com.smartest.buildkit.'.$base_class_name;
 
-        $info = SmartestUserApplicationHelper::createApplication($short_name, $class_name, $class_file, $config_file, $folder_name, $create_presentation);
+        if($short_name != $base_short_name){
+            $identifier .= '.'.$site_suffix;
+        }
+
+        $info = SmartestUserApplicationHelper::createApplication($short_name, $class_name, $class_file, $config_file, $folder_name, $create_presentation, $identifier);
 
         if(!$info instanceof SmartestParameterHolder){
             return false;
@@ -961,11 +1124,15 @@ class SmartestBuildKitsHelper{
 
         $target_dir = $info->getParameter('directory');
 
+        $controller_domain = defined('SM_CONTROLLER_DOMAIN') ? SM_CONTROLLER_DOMAIN : '/';
+
         $replacements = array(
             '%CLASSNAME%' => $class_name,
             '%SHORTNAME%' => $short_name,
             '%APPIDENTIFIER%' => $info->getParameter('auto_identifier'),
-            '%RANDOMURL%' => SmartestStringHelper::random(6)
+            '%RANDOMURL%' => SmartestStringHelper::random(6),
+            '%%QUINCE_MODULE_SHORTNAME%%' => $short_name,
+            '%%QUINCE_BASE_DIR%%' => $controller_domain
         );
 
         foreach(array('Configuration', 'Presentation', 'Library') as $subdir){
@@ -973,6 +1140,10 @@ class SmartestBuildKitsHelper{
                 self::copyDirectoryContents($source_dir.$subdir.'/', $target_dir.$subdir.'/', $replacements);
             }
         }
+
+        self::registerObject('quince_module_shortname', $short_name);
+        self::registerObject('quince_base_dir', $controller_domain);
+        self::registerObject('quince_module_url', $controller_domain.'ajax:'.$short_name.'/');
 
         return $info;
     }
@@ -1058,6 +1229,18 @@ class SmartestBuildKitsHelper{
             return (int) $file;
         }
         return 0;
+    }
+
+    protected static function resolveAsset($file){
+        if($file instanceof SmartestAsset){
+            return $file;
+        }else if(is_numeric($file)){
+            $asset = new SmartestAsset;
+            if($asset->find((int) $file)){
+                return $asset;
+            }
+        }
+        return null;
     }
 
     protected static function resolveItemId($item){
@@ -1364,6 +1547,46 @@ class SmartestBuildKitsHelper{
                 SmartestFileSystemHelper::copy($source, $target);
             }
         }
+    }
+
+    protected static function getSiteModuleSuffix(SmartestSite $site){
+
+        $source = $site->getDomain() ? $site->getDomain() : $site->getName();
+        $suffix = SmartestStringHelper::toVarName(str_replace('.', '_', $source), true);
+
+        if(!strlen($suffix)){
+            $suffix = 'site'.$site->getId();
+        }
+
+        return substr($suffix, 0, 32);
+    }
+
+    protected static function getUniqueModuleShortName($base_short_name, $site_suffix){
+
+        $base = SmartestUserApplicationHelper::createShortName($base_short_name.'_'.$site_suffix);
+        $candidate = $base;
+        $index = 2;
+
+        while(SmartestUserApplicationHelper::applicationExistsWithShortName($candidate)){
+            $candidate = SmartestUserApplicationHelper::createShortName($base.'_'.$index);
+            $index++;
+        }
+
+        return $candidate;
+    }
+
+    protected static function getUniqueModuleClassName($base_class_name, $site_suffix){
+
+        $base = preg_replace('/[^A-Za-z0-9_]/', '', $base_class_name.$site_suffix);
+        $candidate = $base;
+        $index = 2;
+
+        while(class_exists($candidate, false)){
+            $candidate = $base.$index;
+            $index++;
+        }
+
+        return $candidate;
     }
 
     protected static function fileCanReceiveTokenReplacements($path){

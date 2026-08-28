@@ -4,11 +4,9 @@ class SmartestBuildKit implements ArrayAccess{
 
     protected $_dir = '';
     protected $_info = array();
-    private $_database;
 
     public function __construct($dir){
 
-        $this->_database = SmartestDatabase::getInstance('SMARTEST');
         $dir = rtrim($dir, '/').'/';
 
         if(is_file($dir.'configure.yml')){

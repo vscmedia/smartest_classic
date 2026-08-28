@@ -16,7 +16,21 @@ class SmartestSiteCreationHelper{
         $use_buildkit = false;
         $buildkit = null;
 
-        if(strlen((string) $build_kit_name) && $build_kit_name != '_NONE'){
+        if($build_kit_name instanceof SmartestBuildKit){
+            $buildkit = $build_kit_name;
+
+            if($buildkit instanceof SmartestBuildKit && $buildkit->isValid()){
+                if(is_array($prepared_params)){
+                    $use_buildkit = true;
+                }else{
+                    SmartestLog::getInstance('system')->log("Build Kit parameters not supplied for requested Build Kit '".$buildkit->getShortName()."'.", SM_LOG_ERROR);
+                    throw new SmartestException("Build Kit parameters not supplied.");
+                }
+            }else{
+                SmartestLog::getInstance('system')->log("Invalid Build Kit supplied.", SM_LOG_ERROR);
+                throw new SmartestException("Invalid Build Kit supplied.");
+            }
+        }else if(strlen((string) $build_kit_name) && $build_kit_name != '_NONE'){
             $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($build_kit_name);
 
             if($buildkit instanceof SmartestBuildKit && $buildkit->isValid()){
@@ -47,6 +61,7 @@ class SmartestSiteCreationHelper{
         $site->setAutomaticUrls('OFF');
 	    $site->save();
 	    $site->getUniqueId();
+        self::ensureDefaultSystemAssets($u, $site);
 	    SmartestLog::getInstance('system')->log("User {$u->__toString()} created a new site record: '{$site->getName()}/{$site->getDomain()}'", SM_LOG_DEBUG);
 
         $ph->setGlobalPreference('enable_site_responsive_mode', '1', '0', $site->getId());
@@ -271,6 +286,10 @@ class SmartestSiteCreationHelper{
 
 	    }
 
+        public function createNewSiteFromBuildKit(SmartestParameterHolder $p, $initial_user, $buildkit, $prepared_params=array()){
+            return $this->createNewSite($p, $initial_user, $buildkit, $prepared_params);
+        }
+
 	    public static function createStandardPagesLayout(SmartestSite $site, $master_template='', $initial_user=''){
 
 	        if($initial_user instanceof SmartestUser){
@@ -426,6 +445,62 @@ class SmartestSiteCreationHelper{
 
 			$site->save();
 
+    }
+
+    public static function ensureDefaultSystemAssets($initial_user='', $site=null){
+
+        $source_path = SM_ROOT_DIR.'System/Install/Samples/default_user_profile_pic.jpg';
+        $target_path = SM_ROOT_DIR.'Public/Resources/Images/default_user_profile_pic.jpg';
+
+        if(!is_file($target_path) && is_file($source_path) && is_dir(dirname($target_path)) && is_writable(dirname($target_path))){
+            SmartestFileSystemHelper::copy($source_path, $target_path);
+        }
+
+        $asset = new SmartestAsset;
+        $asset_id = 0;
+        $user_id = $initial_user instanceof SmartestUser ? $initial_user->getId() : 0;
+        $site_id = $site instanceof SmartestSite && $site->getId() ? $site->getId() : 1;
+        $ph = new SmartestPreferencesHelper;
+
+        try{
+            $db = SmartestDatabase::getInstance('SMARTEST');
+            $result = $db->preparedQuery(
+                "SELECT asset_id FROM Assets WHERE asset_url=:url AND asset_type='SM_ASSETTYPE_JPEG_IMAGE' AND asset_is_system=1 AND asset_shared=1 AND asset_deleted=0 ORDER BY asset_id ASC LIMIT 1",
+                array('url' => 'default_user_profile_pic.jpg')
+            );
+
+            if(is_array($result) && isset($result[0]['asset_id'])){
+                $asset_id = (int) $result[0]['asset_id'];
+            }
+        }catch(Exception $e){
+            $asset_id = 0;
+        }
+
+        if($asset_id && $asset->find($asset_id)){
+            $ph->setGlobalPreference('default_user_profile_pic_asset_id', $asset->getId(), null, $site_id);
+            return $asset;
+        }
+
+        if(!$asset->findBy('url', 'default_user_profile_pic.jpg')){
+            $asset->setUrl('default_user_profile_pic.jpg');
+            $asset->setWebid(SmartestStringHelper::random(32));
+            $asset->setStringId('default_user_profile_picture');
+            $asset->setLabel('Default User Profile Picture');
+            $asset->setType('SM_ASSETTYPE_JPEG_IMAGE');
+            $asset->setCreated(time());
+        }
+
+        $asset->setUserId($user_id);
+        $asset->setSiteId($site_id);
+        $asset->setShared(1);
+        $asset->setIsSystem(1);
+        $asset->setIsHidden(1);
+        $asset->setIsApproved(1);
+        $asset->save();
+
+        $ph->setGlobalPreference('default_user_profile_pic_asset_id', $asset->getId(), null, $site_id);
+
+        return $asset;
     }
 
 }

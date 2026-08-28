@@ -2,6 +2,12 @@
 
 class SmartestBuildKitUtilities{
 
+    const DEFAULT_INSTALLER_BUILDKIT = 'sm_blank_site';
+
+    public static function getDefaultInstallerBuildKitShortName(){
+        return self::DEFAULT_INSTALLER_BUILDKIT;
+    }
+
     public static function getAvailableBuildKits(){
 
         $all = array_merge(

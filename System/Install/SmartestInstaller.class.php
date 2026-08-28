@@ -18,6 +18,19 @@ class SmartestInstaller{
             date_default_timezone_set('Europe/London');
         }
     }
+
+    protected function getAvailableBuildKitsForInstaller(){
+
+        if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
+        }
+
+        if(!class_exists('SmartestBuildKit') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php';
+        }
+
+        return class_exists('SmartestBuildKitUtilities') ? SmartestBuildKitUtilities::getAvailableBuildKits() : array();
+    }
     
     public function getStage(SmartestNotInstalledException $e){
         
@@ -86,11 +99,13 @@ class SmartestInstaller{
             
             case SM_INSTALLSTATUS_NO_SITES:
             $ph->setParameter('screen', 'create_site.php');
+            $ph->setParameter('buildkits', $this->getAvailableBuildKitsForInstaller());
             break;
             
             case SM_INSTALLSTATUS_SITE_DATA_INVALID:
             $ph->setParameter('screen', 'create_site.php');
             $ph->setParameter('errors', $this->_exception->getValidationErrors());
+            $ph->setParameter('buildkits', $this->getAvailableBuildKitsForInstaller());
             break;
         
         }
@@ -167,6 +182,14 @@ class SmartestInstaller{
         }
         
         $writable_files = array_merge($system_data->g('system')->g('writable_locations')->g('always')->toArray(), $system_data->g('system')->g('writable_locations')->g('installation')->toArray());
+
+        foreach($this->getAvailableBuildKitsForInstaller() as $buildkit){
+            foreach($buildkit->getRequiredWriteLocations() as $location){
+                if(!in_array($location, $writable_files, true)){
+                    $writable_files[] = $location;
+                }
+            }
+        }
         $errors = array();
         
         $ph->setParameter('writable_files', $writable_files);
