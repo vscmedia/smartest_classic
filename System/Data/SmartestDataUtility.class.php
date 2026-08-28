@@ -245,25 +245,27 @@ class SmartestDataUtility{
 	}
 	
 	public function getModelNamesLowercase($site_id=''){
-	    
-        if(is_array(self::$model_names_lowercase)){
-            
-            return self::$model_names_lowercase;
-            
-        }else{
-            
-            $models = $this->getModels(false, $site_id);
-    	    $names = array();
-	    
-    	    foreach($models as $m){
-    	        $names[SmartestStringHelper::toVarName($m->getName())] = $m->getId();
-    	    }
-	        
-            self::$model_names_lowercase = $names;
-    	    return $names;
-            
+
+        $cache_key = is_numeric($site_id) ? (string) (int) $site_id : 'all';
+
+        if(is_array(self::$model_names_lowercase) && isset(self::$model_names_lowercase[$cache_key])){
+            return self::$model_names_lowercase[$cache_key];
         }
-	    
+
+        $models = $this->getModels(false, $site_id);
+	    $names = array();
+
+	    foreach($models as $m){
+	        $names[SmartestStringHelper::toVarName($m->getName())] = $m->getId();
+	    }
+
+        if(!is_array(self::$model_names_lowercase)){
+            self::$model_names_lowercase = array();
+        }
+
+        self::$model_names_lowercase[$cache_key] = $names;
+	    return $names;
+
 	}
 	
 	public function getModelsAsArrays($simple=false, $site_id=''){
@@ -536,9 +538,12 @@ class SmartestDataUtility{
 	}
 	
 	public function flushModelsCache(){
-	    
+
+        self::$model_names_lowercase = array();
+        self::$models_class_names = null;
+
 	    SmartestCache::clear('models_query', true);
-	    
+
 	    foreach($this->getSites() as $s){
 	        $cache_name = 'models_query_site_'.$s->getId();
 	        SmartestCache::clear($cache_name, true);

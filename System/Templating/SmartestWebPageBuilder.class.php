@@ -202,12 +202,23 @@ class SmartestWebPageBuilder extends SmartestBasicRenderer{
                 
                 $this->_tpl_vars['this'] = new SmartestPageRenderingDataRequestHandler($this->page);
                 $this->_tpl_vars['sm_draft_mode'] = $this->getDraftMode();
-                
-                if($instance_name == 'default'){
-                    $this->run($container_def->getTemplateFilePath(), array());
-                }else{
-                    $this->run($container_def->getTemplateFilePath(), array('__parent_container_instance'=>$instance_name));
+
+                $render_process_id = SmartestStringHelper::toVarName('container_'.$container_name.'_'.$instance_name.'_'.substr(md5(microtime(true)), 0, 8));
+                $child = $this->startChildProcess($render_process_id);
+                $child->setSmartestCaching(false);
+                $child->assign('this', $this->_tpl_vars['this']);
+                $child->assign('sm_draft_mode', $this->getDraftMode());
+                $child->assign('sm_draft_mode_obj', new SmartestBoolean($this->getDraftMode()));
+
+                if($instance_name != 'default'){
+                    $child->assign('__parent_container_instance', $instance_name);
                 }
+
+                $content = $child->fetch($container_def->getTemplateFilePath());
+                $this->killChildProcess($child->getProcessId());
+
+                SmartestResponse::debugTrace('SmartestWebPageBuilder::renderContainer '.$container_name.'/'.$instance_name.' template='.$container_def->getTemplateFilePath().' bytes='.strlen((string) $content));
+                echo $content;
                 
                 if($this->getDraftMode()){
                     echo "\n<!--Smartest: End container template ".$container_def->getTemplateFilePathInSmartest()." -->\n";

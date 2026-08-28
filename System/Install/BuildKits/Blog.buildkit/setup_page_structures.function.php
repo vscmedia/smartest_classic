@@ -11,6 +11,11 @@ function buildkit_sm_blog_setup_page_structures($buildkit, $site, $user, $option
         $page_specific_stylesheet = create_placeholder('page_specific_stylesheet', 'SM_ASSETCLASS_STYLESHEET');
         $banner_image = create_placeholder('banner_image', 'SM_ASSETCLASS_STATIC_IMAGE');
         $page_layout = create_container('page_layout', 'Page layout');
+
+        if($page_layout instanceof SmartestContainer && (int) $site->getPrimaryContainerId() != (int) $page_layout->getId()){
+            $site->setPrimaryContainerId($page_layout->getId());
+            $site->save();
+        }
         
         $is_javascript = get_registered_file_if_exists('is_javascript');
         $blog_home_template = get_registered_file_if_exists('blog_home_template');

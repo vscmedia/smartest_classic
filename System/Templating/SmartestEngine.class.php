@@ -183,6 +183,10 @@ class SmartestEngine extends \Smarty\Smarty{
     protected function addTrustedCorePresentationDirectories(){
 
         $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'System/Presentation/');
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'Presentation/');
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'Presentation/Masters/');
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'Presentation/Layouts/');
+        $this->addTrustedTemplateDirectory(SM_ROOT_DIR.'Presentation/SingleItem/');
 
     }
 

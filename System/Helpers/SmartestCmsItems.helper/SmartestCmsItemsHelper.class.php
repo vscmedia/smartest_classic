@@ -26,6 +26,27 @@ class SmartestCmsItemsHelper{
         }
         
     }
+
+    protected function getItemClassNameForModel(SmartestModel $model){
+
+        $class_name = $model->getClassName();
+
+        if(!class_exists($class_name)){
+            try{
+                $model->init();
+            }catch(Throwable $e){
+                SmartestLog::getInstance('system')->log('Could not initialise model class '.$class_name.' for model '.$model->getId().': '.$e->getMessage(), SmartestLog::WARNING);
+            }
+        }
+
+        if(class_exists($class_name)){
+            return $class_name;
+        }
+
+        SmartestLog::getInstance('system')->log('Model class '.$class_name.' for model '.$model->getId().' is unavailable; falling back to SmartestCmsItem.', SmartestLog::WARNING);
+        return 'SmartestCmsItem';
+
+    }
     
     /* public function statusToMode($status){
         
@@ -55,8 +76,11 @@ class SmartestCmsItemsHelper{
             
             if($model = $this->getModelFromId($model_id)){
                 // echo "got model from ID";
-                $class_name = $model->getClassName();
+                $class_name = $this->getItemClassNameForModel($model);
                 $item = new $class_name();
+                if(get_class($item) == 'SmartestCmsItem'){
+                    $item->setModelId($model->getId());
+                }
                 $item->hydrateFromRawDbRecord($result);
                 $item->setDraftMode($draft_mode);
                 $item->assignModel($model);
@@ -96,11 +120,14 @@ class SmartestCmsItemsHelper{
        
        if($model = $this->getModelFromId($model_id)){
 
-           $class_name = $model->getClassName();
+           $class_name = $this->getItemClassNameForModel($model);
 
            foreach($results as $item_id => $result){
 
                $item = new $class_name();
+               if(get_class($item) == 'SmartestCmsItem'){
+                   $item->setModelId($model->getId());
+               }
                $item->hydrateFromRawDbRecord($result);
                $item->setDraftMode($draft_mode);
                $item->assignModel($model);

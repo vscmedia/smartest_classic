@@ -437,11 +437,15 @@ class SmartestBuildKitsHelper{
             throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create a model that conflicts with an existing shared model.");
         }
 
-        $model = new SmartestModel;
-        if($model->findBy('name', $singular_name, $site->getId())){
+        if($model = self::resolveModelByIdentifierForSite($singular_name, $site)){
             return $model;
         }
 
+        if($model = self::resolveModelByIdentifierForSite($plural_name, $site)){
+            return $model;
+        }
+
+        $model = new SmartestModel;
         $model->setType('SM_ITEMCLASS_MODEL');
         $model->setWebId(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
         $model->setName($singular_name);
@@ -453,6 +457,7 @@ class SmartestBuildKitsHelper{
         $model->setLongIdFormat('_STD');
         $model->setCreatedFromBuildkit($buildkit->getShortName());
         $model->save();
+        $du->flushModelsCache();
 
         return $model;
     }
@@ -539,7 +544,11 @@ class SmartestBuildKitsHelper{
         $name = SmartestStringHelper::toVarName($label);
         $set = new SmartestCmsItemSet;
 
-        if($set->findBy('name', $name, $site->getId())){
+        if($set->findBy('name', $name, $site->getId()) && (int) $set->getSiteId() == (int) $site->getId()){
+            if((int) $set->getItemclassId() != (int) $model->getId()){
+                $set->setItemclassId($model->getId());
+                $set->save();
+            }
             return $set;
         }
 
@@ -610,7 +619,19 @@ class SmartestBuildKitsHelper{
             $value = $value->getStorableFormat();
         }
 
+        $db = SmartestPersistentObject::get('db:main');
+        $existing = $db->preparedQuery(
+            "SELECT * FROM SetRules WHERE setrule_set_id=:set_id AND setrule_itemproperty_id=:property_id AND setrule_operator=:operator AND setrule_value=:value LIMIT 1",
+            array('set_id'=>$set->getId(), 'property_id'=>$property_id, 'operator'=>$operator, 'value'=>$value)
+        );
+
         $condition = new SmartestDynamicDataSetCondition;
+
+        if(isset($existing[0]) && is_array($existing[0])){
+            $condition->hydrate($existing[0]);
+            return $condition;
+        }
+
         $condition->setSetId($set->getId());
         $condition->setItempropertyId($property_id);
         $condition->setOperator($operator);
@@ -648,6 +669,11 @@ class SmartestBuildKitsHelper{
 
             if((int) $existing->getId() != (int) $parent->getId() && (int) $existing->getParent() != (int) $parent->getId()){
                 $existing->setParent($parent->getId());
+                $modified = true;
+            }
+
+            if(strlen($template_name) && $existing->getDraftTemplate() != $template_name){
+                $existing->setDraftTemplate($template_name);
                 $modified = true;
             }
 
@@ -722,8 +748,22 @@ class SmartestBuildKitsHelper{
         if($existing instanceof SmartestPage){
             $modified = false;
 
+            if($existing->getType() != 'ITEMCLASS'){
+                throw new SmartestException("Build Kit could not create meta page '".$title."' because the URL '".$url."' is already used by a normal page.");
+            }
+
             if((int) $existing->getId() != (int) $parent->getId() && (int) $existing->getParent() != (int) $parent->getId()){
                 $existing->setParent($parent->getId());
+                $modified = true;
+            }
+
+            if((int) $existing->getDatasetId() != (int) $model->getId()){
+                $existing->setDatasetId($model->getId());
+                $modified = true;
+            }
+
+            if(strlen($template_name) && $existing->getDraftTemplate() != $template_name){
+                $existing->setDraftTemplate($template_name);
                 $modified = true;
             }
 
@@ -1285,20 +1325,46 @@ class SmartestBuildKitsHelper{
         $site = self::getExecutingSite();
 
         if($model instanceof SmartestModel){
-            return $model;
+            return self::modelIsAvailableToSite($model, $site) ? $model : null;
         }else if(is_numeric($model)){
             $m = new SmartestModel;
-            if($m->find((int) $model)){
+            if($m->find((int) $model) && self::modelIsAvailableToSite($m, $site)){
                 return $m;
             }
         }else if(strlen((string) $model)){
-            $m = new SmartestModel;
-            if($m->findBy('name', $model, $site->getId()) || $m->findBy('plural_name', $model, $site->getId()) || $m->findBy('varname', SmartestStringHelper::toVarName($model), $site->getId())){
+            if($m = self::resolveModelByIdentifierForSite($model, $site)){
                 return $m;
             }
         }
 
         return null;
+    }
+
+    protected static function resolveModelByIdentifierForSite($identifier, SmartestSite $site){
+
+        $identifier = trim((string) $identifier);
+
+        if(!strlen($identifier)){
+            return null;
+        }
+
+        $identifier_varname = SmartestStringHelper::toVarName($identifier);
+        $du = new SmartestDataUtility;
+        $models = $du->getModels(false, $site->getId(), true);
+
+        foreach($models as $model){
+            if($model instanceof SmartestModel && self::modelIsAvailableToSite($model, $site)){
+                if(strtolower($model->getName()) == strtolower($identifier) || strtolower($model->getPluralName()) == strtolower($identifier) || SmartestStringHelper::toVarName($model->getVarName()) == $identifier_varname || SmartestStringHelper::toVarName($model->getName()) == $identifier_varname || SmartestStringHelper::toVarName($model->getPluralName()) == $identifier_varname){
+                    return $model;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected static function modelIsAvailableToSite(SmartestModel $model, SmartestSite $site){
+        return (int) $model->getSiteId() == (int) $site->getId() || SmartestStringHelper::toRealBool($model->getShared());
     }
 
     protected static function resolveCmsItemSet($set){
