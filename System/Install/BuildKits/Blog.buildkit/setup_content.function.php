@@ -11,6 +11,8 @@ function buildkit_sm_blog_setup_content($buildkit, $site, $user, $options){
     $elephant = create_file('African_elephant_warning_raised_trunk.jpg', "Elephant with raised trunk", 'SM_ASSETTYPE_JPEG_IMAGE');
     register_file($elephant, 'blog_post_thumbnail');
     
+    define_text_attachment($blog_post_text, 'first_image', $elephant, ['float'=>true, 'alignment'=>'left', 'resize'=>true, 'thumbnail_relative_size'=>10]);
+    
     $group = create_file_group_with_files(array($blog_post_text), 'SM_ASSETTYPE_RICH_TEXT', 'Blog post texts');
     register_file_group($group, 'blog_post_texts_group');
     

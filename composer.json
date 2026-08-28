@@ -6,7 +6,7 @@
   "config": {
     "vendor-dir": "System/Library/vendor",
     "platform": {
-      "php": "8.4.0"
+      "php": "8.3.0"
     },
     "sort-packages": true
   },

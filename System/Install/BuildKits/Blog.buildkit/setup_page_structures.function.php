@@ -48,6 +48,7 @@ function buildkit_sm_blog_setup_page_structures($buildkit, $site, $user, $option
     
     $site_blurb = create_field('site_blurb', 'SM_DATATYPE_SL_TEXT', true);
     $copyright_owner = create_field('copyright_owner', 'SM_DATATYPE_SL_TEXT', true);
+    $highllight_color = create_field('highlight_color', 'SM_DATATYPE_RGB_COLOR', true);
     
     define_field('site_blurb', 'Test value');
     define_field('copyright_owner', 'Copyright owner');

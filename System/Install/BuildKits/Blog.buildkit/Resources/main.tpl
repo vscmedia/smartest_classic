@@ -8,7 +8,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<meta name="keywords" content="<?sm:$this.page.meta_keywords:?>" />
 	<meta name="description" content="<?sm:$this.page.meta_description:?>" />
-	<meta name="viewport" content="width=1000, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
   
   <?sm:stylesheet file="%MAIN_CSS_FILE%":?>
 	
@@ -33,7 +33,7 @@
   
   <div id="footer">
     <div id="footer-inner">
-      © The Sociological Review Publication Ltd. <?sm:$now.Y:?> | Powered by <?sm:link to="http://sma.rte.st" with="Smartest" target="_blank":?> 
+      © <?sm:field name="copyright_owner":?> <?sm:$now.Y:?> | Powered by <?sm:link to="https://smartestproject.org/" with="Smartest" target="_blank":?> 
     </div>
   </div>
   
