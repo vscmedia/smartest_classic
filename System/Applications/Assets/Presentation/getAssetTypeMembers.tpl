@@ -79,7 +79,7 @@
 <li>
     <a href="#select-file" class="option" id="{$sidebartype}_{$asset.id}" onclick="return assets.setSelectedItem('{$asset.id}', '{$sidebartype}');" ondblclick="assets.workWithItem('editAsset');">
 
-{if in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))}
+{if in_array($type_code, $binary_image_type_codes)}
     <img border="0" src="{$asset.image._ui_preview.web_path}" class="grid" />
 {else}
   {if isset($asset.type_info.large_icon) && $asset.type_info.large_icon}
@@ -89,7 +89,7 @@
   {/if}
 {/if}
 
-{if in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))}
+{if in_array($type_code, $binary_image_type_codes)}
     <img border="0" src="{$asset.image.16x16.web_path}" class="list" />
 {else}
   {if $asset.small_icon}
@@ -138,7 +138,7 @@
 <ul class="actions-list" id="non-specific-actions">
   <li><b>{$_l10n_strings.general.general_options_label}</b></li>
 	<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/addAsset?asset_type={$type_code}'" class="right-nav-link"><i class="fa fa-plus-circle"></i> Add a new file of this type</a></li>
-	{if in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/newAssetGroup?is_gallery=true&amp;asset_type={$type_code}&amp;group_label=Unnamed+{$type_label.urlencoded}+gallery'" class="right-nav-link"><i class="fa fa-picture"></i> Add a new {$type_label} gallery</a></li>{/if}
+	{if in_array($type_code, $binary_image_type_codes)}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/newAssetGroup?is_gallery=true&amp;asset_type={$type_code}&amp;group_label=Unnamed+{$type_label.urlencoded}+gallery'" class="right-nav-link"><i class="fa fa-picture"></i> Add a new {$type_label} gallery</a></li>{/if}
 	<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/newAssetGroup?filter_type={$type_code}'" class="right-nav-link"><i class="fa fa-folder"></i> Add a new group from these files</a></li>
 	<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}smartest/assets'" class="right-nav-link"><i class="fa fa-files-o"></i> View all files by type</a></li>
 </ul>

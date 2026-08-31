@@ -46,10 +46,11 @@ class SmartestUnimportedTemplate implements ArrayAccess{
             $type = $this->getProbableAssetType();
         }
         
-        if(!count($this->_sites[$type])){
+        if(!isset($this->_sites[$type]) || !is_array($this->_sites[$type]) || !count($this->_sites[$type])){
         
             $base_name = SmartestFileSystemHelper::baseName($this->_file->getPath());
             $this->_sites[$type] = array();
+            $result = array();
         
             switch($type){
                 case "SM_ASSETTYPE_MASTER_TEMPLATE":
@@ -117,13 +118,13 @@ class SmartestUnimportedTemplate implements ArrayAccess{
     
     public function getMentionedCSSClasses(){
         
-	    $regex1 = '/class="([\w\s_-]+)"/mi';
+	    $regex1 = '/\bclass\s*=\s*(["\'])([\w\s_-]+)\1/mi';
 	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
         
-        if(isset($matches1[1])){
+        if(isset($matches1[2])){
             $classes = array();
-            foreach($matches1[1] as $raw_value){
-                $class_names = explode(' ', $raw_value);
+            foreach($matches1[2] as $raw_value){
+                $class_names = preg_split('/\s+/', trim($raw_value));
                 if(count($class_names) > 1){
                     $classes[] = implode('.', $class_names);
                 }
@@ -140,12 +141,12 @@ class SmartestUnimportedTemplate implements ArrayAccess{
     
     public function getMentionedCSSIds(){
         
-	    $regex1 = '/id="([\w\s_-]+)"/mi';
+	    $regex1 = '/\bid\s*=\s*(["\'])([\w_-]+)\1/mi';
 	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
         
-        if(isset($matches1[1])){
+        if(isset($matches1[2])){
             $ids = array();
-            foreach($matches1[1] as $id){
+            foreach($matches1[2] as $id){
                 $ids[] = $id;
             }
             return $ids;
@@ -170,13 +171,76 @@ class SmartestUnimportedTemplate implements ArrayAccess{
         return $tokens;
         
     }
+
+    public function getReferencedStylesheetFilenames(){
+
+        $files = array();
+        $content = $this->getContent();
+
+        if(preg_match_all('/<link\b[^>]*>/mi', $content, $link_matches)){
+            foreach($link_matches[0] as $tag){
+                if($this->htmlTagAttributeEquals($tag, 'rel', 'stylesheet') && preg_match('/\bhref\s*=\s*(["\'])(.*?)\1/mi', $tag, $href_match)){
+                    if($file = $this->normaliseStylesheetReference($href_match[2])){
+                        $files[] = $file;
+                    }
+                }
+            }
+        }
+
+        if(preg_match_all('/<\?sm:stylesheet\b(.*?)(?:\:)?\?>/mis', $content, $tag_matches)){
+            foreach($tag_matches[1] as $attribute_string){
+                if(preg_match('/\bfile\s*=\s*(["\'])(.*?)\1/mi', $attribute_string, $file_match)){
+                    if($file = $this->normaliseStylesheetReference($file_match[2])){
+                        $files[] = $file;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($files));
+
+    }
+
+    protected function htmlTagAttributeEquals($tag, $attribute, $expected_value){
+
+        if(preg_match('/\b'.preg_quote($attribute, '/').'\s*=\s*(["\'])(.*?)\1/mi', $tag, $match)){
+            return strtolower(trim($match[2])) == strtolower($expected_value);
+        }
+
+        return false;
+
+    }
+
+    protected function normaliseStylesheetReference($reference){
+
+        $reference = html_entity_decode(trim($reference), ENT_QUOTES, 'UTF-8');
+
+        if(!strlen($reference)){
+            return null;
+        }
+
+        if(($query_pos = strpos($reference, '?')) !== false){
+            $reference = substr($reference, 0, $query_pos);
+        }
+
+        if(preg_match('/Resources\/Stylesheets\/(.+)$/i', $reference, $matches)){
+            $reference = $matches[1];
+        }else if(preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $reference)){
+            return null;
+        }else{
+            $reference = ltrim($reference, '/');
+        }
+
+        return $reference;
+
+    }
     
     public function scanStylesheetsForMentions($site_id=null){
         
         $alh = new SmartestAssetsLibraryHelper;
         $tokens = $this->getMentionedCSSTokens();
         
-        $stylesheets = $alh->getAssetsByTypeCode('SM_ASSETTYPE_STYLESHEET', $site_id);
+        $stylesheets = $alh->getAssetsByTypeCode($this->getStylesheetAssetTypeCodes(), $site_id);
         $relevant_stylesheets = array();
         $ids = array();
         
@@ -184,7 +248,7 @@ class SmartestUnimportedTemplate implements ArrayAccess{
             $content = $stylesheet->getContent();
             foreach($tokens as $name=>$type){
                 if($type == 'id'){
-                    if(strpos($content, '#'.$name.'{') !== false){
+                    if($this->stylesheetMentionsToken($content, $name, 'id')){
                         // echo 'found ID \''.$name.'\' in stylesheet '.$stylesheet->getUrl().'<br />';
                         if(!in_array($stylesheet->getId(), $ids)){
                             $relevant_stylesheets[] = $stylesheet;
@@ -192,7 +256,7 @@ class SmartestUnimportedTemplate implements ArrayAccess{
                         }
                     }
                 }elseif($type == 'class'){
-                    if(strpos($content, '.'.$name.'{') !== false){
+                    if($this->stylesheetMentionsToken($content, $name, 'class')){
                         // echo 'found class \''.$name.'\' in stylesheet '.$stylesheet->getUrl().'<br />';
                         if(!in_array($stylesheet->getId(), $ids)){
                             $relevant_stylesheets[] = $stylesheet;
@@ -205,6 +269,19 @@ class SmartestUnimportedTemplate implements ArrayAccess{
         
         return $relevant_stylesheets;
         
+    }
+
+    protected function getStylesheetAssetTypeCodes(){
+        return array('SM_ASSETTYPE_STYLESHEET', 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET');
+    }
+
+    protected function stylesheetMentionsToken($content, $name, $type){
+
+        $prefix = $type == 'id' ? '#' : '.';
+        $selector = preg_quote($prefix.$name, '/');
+
+        return preg_match('/(^|[^a-zA-Z0-9_-])'.$selector.'(\s*[,>{:+~.#\[]|\s*\{)/m', $content) === 1;
+
     }
     
     public function getContent(){

@@ -52,16 +52,20 @@
 <li>
     <a href="#select-file" class="option" id="{$selected_action_type}_{$asset.id}" onclick="return assets.setSelectedItem('{$asset.id}', '{$selected_action_type}');" ondblclick="assets.workWithItem('editAsset');">
 
-{if $asset.is_binary_image && isset($asset.image._ui_preview.web_path)}
+{if $asset.is_binary_image}
     <img border="0" src="{$asset.image._ui_preview.web_path}" class="grid" />
+{elseif $asset.type == "SM_ASSETTYPE_SVG_IMAGE" && $asset.web_path}
+    <img border="0" src="{$asset.web_path}" class="grid" />
 {elseif isset($asset.type_info.large_icon) && $asset.type_info.large_icon}
     <img border="0" src="{$domain}Resources/System/Images/{$asset.type_info.large_icon}" class="grid" />
 {else}
     <img border="0" src="{$domain}Resources/Icons/blank_page.png" class="grid" />
 {/if}
 
-{if $asset.is_binary_image && isset($asset.image.16x16.web_path)}
+{if $asset.is_binary_image}
     <img border="0" src="{$asset.image.16x16.web_path}" class="list" />
+{elseif $asset.type == "SM_ASSETTYPE_SVG_IMAGE" && $asset.web_path}
+    <img border="0" src="{$asset.web_path}" class="list" />
 {elseif $asset.small_icon}
     <img border="0" src="{$asset.small_icon}" class="list" />
 {else}

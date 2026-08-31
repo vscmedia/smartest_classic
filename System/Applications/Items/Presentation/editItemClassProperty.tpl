@@ -62,19 +62,53 @@
     <div class="form-section-label">Hint text</div>
     <input type="text" name="itemproperty_hint" value="{$property.hint.html_escape}" />
   </div>
+
+{if $property.datatype == 'SM_DATATYPE_ML_TEXT'}
+
+  <div class="edit-form-row">
+    <div class="form-section-label">Text format</div>
+    <select name="itemproperty_ml_text_format">
+{foreach from=$property.ml_text_format_options item="format"}
+      <option value="{$format.id}"{if $format.id == $property.ml_text_format} selected="selected"{/if}>{$format.label}</option>
+{/foreach}
+    </select>
+    <div class="form-hint">Plain text preserves the existing multi-line text behaviour. Markdown and Textile are parsed when this property is rendered.</div>
+  </div>
+
+{/if}
   
 {if $property._type_info.valuetype != 'manytomany' && $property._type_info.valuetype != 'auto'}
 
+  <script type="text/javascript">
+  {literal}
+  function toggleDefaultValueField(useDefault){
+    if($('itemproperty-default-value-row')){
+      if(useDefault){
+        $('itemproperty-default-value-row').show();
+      }else{
+        $('itemproperty-default-value-row').hide();
+      }
+    }
+  }
+  {/literal}
+  </script>
+
   <div class="edit-form-row">
+    <div class="form-section-label">Use default value</div>
+    {boolean name="itemproperty_use_default_value" id="itemproperty-use-default-value" value=$property.use_default_value changehook="toggleDefaultValueField"}
+    <div class="form-hint">When enabled, this value is pre-filled on new item forms. Turning it off keeps the saved default here without applying it automatically.</div>
+  </div>
+
+  <div class="edit-form-row" id="itemproperty-default-value-row" style="display:{if $property.use_default_value}block{else}none{/if}">
     <div class="form-section-label">Default value</div>
-    {item_field property=$property value=$property.default_value name="itemproperty_default_value"}
+    {item_field property=$property value=$property.stored_default_value name="itemproperty_default_value"}
   </div>
   
 {/if}
     
     <div class="edit-form-row">
         <div class="form-section-label">Required</div>
-        <input type="checkbox" name="itemproperty_required" id="is-required" value="TRUE"  {if $property.required == "TRUE"} checked="checked"{/if}/><label for="is-required"> Check if required</label>
+        {boolean name="itemproperty_required" id="is-required" value=$property.required}
         <div class="form-hint">Making a property required means the item cannot be published unless a value has been entered</div>
     </div>
     

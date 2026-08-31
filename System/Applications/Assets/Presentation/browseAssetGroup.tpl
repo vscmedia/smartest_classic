@@ -63,7 +63,7 @@
 <li id="file_{$asset.id}">
     <a href="#select-file" class="option" id="editableasset_{$asset.id}" onclick="return assets.setSelectedItem('{$asset.id}', 'editableasset');" ondblclick="assets.workWithItem('editAsset')" >
 
-{if in_array($asset.type, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))}
+{if in_array($asset.type, $binary_image_type_codes)}
     <img border="0" src="{$asset.image._ui_preview.web_path}" class="grid" />
 {else}
     <img border="0" src="{$domain}Resources/Icons/blank_page.png" class="grid" />

@@ -5,7 +5,7 @@ function buildkit_sm_blank_site_setup_page_structures($buildkit, $site, $user, $
     $page_specific_javascript = create_placeholder('page_specific_javascript', 'SM_ASSETCLASS_JAVASCRIPT');
     $page_specific_stylesheet = create_placeholder('page_specific_stylesheet', 'SM_ASSETCLASS_STYLESHEET');
     $page_layout = create_container('page_layout', 'Page layout');
-    $main_nav = create_page_group('Main nav');
+    $main_nav = create_navigation_group('Main navigation', 'main_nav');
     $home_page = $site->getHomePage(true);
 
     if($page_layout instanceof SmartestContainer){

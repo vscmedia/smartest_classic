@@ -8,9 +8,9 @@ function buildkit_sm_blank_site_setup_templates($buildkit, $site, $user, $option
     $css_link = $main_css instanceof SmartestAsset ? '<?sm:stylesheet file="'.$main_css->getUrl().'":?>'."\n" : '';
 
     replace_file_tokens($master_template, array(
-        '%CSSLINK%' => $css_link,
-        '%DEFAULTTEMPLATENAME%.tpl' => $master_template->getUrl(),
-        '%DEFAULTTEMPLATENAME%' => SmartestFileSystemHelper::removeDotSuffix($master_template->getUrl())
+        '%%CSSLINK%%' => $css_link,
+        '%%DEFAULTTEMPLATENAME%%.tpl' => $master_template->getUrl(),
+        '%%DEFAULTTEMPLATENAME%%' => SmartestFileSystemHelper::removeDotSuffix($master_template->getUrl())
     ));
 
     register_file($master_template, 'master_template');

@@ -54,7 +54,9 @@
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/getAssetTypeMembers?asset_type={$asset_type.id}'"><i class="fa fa-folder-open-o"></i> View all {$asset_type.label} files</a></li>
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}smartest/assets'" class="right-nav-link"><i class="fa fa-files-o"></i> View all files by type</a></li>
   </ul>
-  
+
+  {load_interface file="related_template_usage.tpl"}
+
   <ul class="actions-list" id="non-specific-actions">
     <li><span style="color:#999">Recent {$asset.type_info.label|strtolower} files</span></li>
     {foreach from=$recent_assets item="recent_asset"}

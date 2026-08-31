@@ -60,30 +60,30 @@ document.observe('dom:loaded', function(){
 	            e.stop();
 	        }
 
-	        if($('buildkit-selector') && $F('buildkit-selector') != '_NONE' && $('buildkit-has-unwritable-locations') && $F('buildkit-has-unwritable-locations') == '1'){
+	        if($('buildkit-selector') && $('buildkit-has-unwritable-locations') && $F('buildkit-has-unwritable-locations') == '1'){
 	            alert('The selected Build Kit needs additional writable locations before it can run.');
 	            e.stop();
 	        }
 
 	    });
 
+    function loadSelectedBuildKitOptions(){
+        if($('buildkit-selector')){
+            new Ajax.Updater('buildkit-options', sm_domain+'ajax:desktop/buildKitOptions', {
+                parameters: {buildkit_id: $F('buildkit-selector')},
+                onSuccess: function(){
+                    new Effect.BlindDown('buildkit-options', {duration: 0.4});
+                },
+                evalScripts: true
+            });
+        }
+    }
+
     if($('buildkit-selector')){
         $('buildkit-selector').observe('change', function(){
-            if($F('buildkit-selector') == '_NONE'){
-                $('buildkit-options').hide();
-                $('buildkit-options').update('');
-                new Effect.BlindDown('no-buildkit-options', {duration: 0.4});
-            }else{
-                new Effect.BlindUp('no-buildkit-options', {duration: 0.3});
-                new Ajax.Updater('buildkit-options', sm_domain+'ajax:desktop/buildKitOptions', {
-                    parameters: {buildkit_id: $F('buildkit-selector')},
-                    onSuccess: function(){
-                        new Effect.BlindDown('buildkit-options', {duration: 0.4});
-                    },
-                    evalScripts: true
-                });
-            }
+            loadSelectedBuildKitOptions();
         });
+        loadSelectedBuildKitOptions();
     }
 
 });
@@ -163,31 +163,23 @@ function toggleContentConfiguration(state){
   <input type="text" name="site_admin_email" value="{$user.email}" id="site-admin-email" />
 </div>
 
-<div class="edit-form-row">
-  <div class="form-section-label">Build Kit</div>
-  <select name="use_buildkit" id="buildkit-selector">
-    <option value="_NONE">None</option>
-    {foreach from=$buildkits item="buildkit"}
-    <option value="{$buildkit.shortname}">{$buildkit.label}</option>
-    {/foreach}
-  </select>
-  <div class="form-hint">Optional. Build Kits can create starter files, models, templates, pages and sample content for this site.</div>
-</div>
-
-<div id="buildkit-options" style="display:none"></div>
-
-<div id="no-buildkit-options">
-<div class="edit-form-row">
-  <div class="form-section-label">Master template</div>
-  <select name="site_master_template">
-    <option value="_BLANK"{if !$allow_create_master_tpl} disabled="disabled"{/if}>Create a new, blank template{if !$allow_create_master_tpl} (directory is not writable){/if}</option>
-    <option value="_DEFAULT">None for now, I will create one later</option>
-    {foreach from=$templates item="template"}
-    <option value="{$template.url}">Use {$template.url}</option>
-    {/foreach}
-  </select>
-</div>
-</div>
+	<div class="edit-form-row">
+	  <div class="form-section-label">Build Kit</div>
+	  <select name="use_buildkit" id="buildkit-selector">
+	    {if isset($buildkits[$default_buildkit])}
+	    <option value="{$buildkits[$default_buildkit].shortname}"{if $selected_buildkit == $buildkits[$default_buildkit].shortname} selected="selected"{/if}>None</option>
+	    {/if}
+	    {foreach from=$buildkits item="buildkit"}
+	    {if $buildkit.shortname != $default_buildkit && !$buildkit.hidden}
+	    <option value="{$buildkit.shortname}"{if $selected_buildkit == $buildkit.shortname} selected="selected"{/if}>{$buildkit.label}</option>
+	    {/if}
+	    {/foreach}
+	  </select>
+	  <div class="form-hint">Build Kits can create starter files, models, templates, pages and sample content for this site. Choose None for a blank Smartest site.</div>
+	</div>
+	
+	<div id="buildkit-options" style="display:none"></div>
+	<input type="hidden" name="site_master_template" value="_DEFAULT" />
 
 <div class="buttons-bar">
   <input type="button" value="Cancel" onclick="window.location='{$domain}smartest'" />

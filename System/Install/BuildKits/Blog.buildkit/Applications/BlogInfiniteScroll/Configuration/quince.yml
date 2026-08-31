@@ -1,7 +1,7 @@
 module:
-  class: %CLASSNAME%
-  shortname: %SHORTNAME%
-  identifier: %APPIDENTIFIER%
+  class: %%CLASSNAME%%
+  shortname: %%SHORTNAME%%
+  identifier: %%APPIDENTIFIER%%
   longname: Functionalities to aid the front end of the website
   default_action: startAction
   meta:

@@ -10,7 +10,7 @@
 	<meta name="description" content="<?sm:$this.page.meta_description:?>" />
 	<meta name="viewport" content="width=device-width, initial-scale=1">
   
-  <?sm:stylesheet file="%MAIN_CSS_FILE%":?>
+  <?sm:stylesheet file="%%MAIN_CSS_FILE%%":?>
 	
   <script type="text/javascript" src="/Resources/System/Javascript/scriptaculous/lib/prototype.js"></script>
 	<script type="text/javascript" src="/Resources/System/Javascript/scriptaculous/src/effects.js"></script>
@@ -26,6 +26,21 @@
 </head>
 
 <body>
+
+  <header id="site-header">
+    <div id="site-header-inner">
+      <p id="site-kicker"><?sm:field name="site_blurb":?></p>
+      <h1><?sm:$this.site.name:?></h1>
+    </div>
+  </header>
+
+  <nav id="main-nav" aria-label="Main navigation">
+    <ul>
+      <?sm:repeat from="pagegroup:main_nav" item="top_level_nav_page" assignhighlight="currentpage":?>
+      <li><?sm:link to=$top_level_nav_page highlightpage=$currentpage highlightclass="current":?></li>
+      <?sm:/repeat:?>
+    </ul>
+  </nav>
 
   <div id="fixed-width">
     <?sm:container name="page_layout":?>

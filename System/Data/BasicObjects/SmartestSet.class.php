@@ -41,7 +41,11 @@ class SmartestSet extends SmartestBaseSet{
 	    
 	    $field = SmartestStringHelper::toVarName($field);
 	    // URL Encoding is being used to work around a bug in PHP's serialize/unserialize. No actual URLS are necessarily in use here:
-	    if(is_object($this->_set_settings)){
+	    if(!is_object($this->_set_settings)){
+            $this->_set_settings = new SmartestParameterHolder("Settings for Set '".$this->getLabel()."'");
+        }
+
+        if(is_object($this->_set_settings)){
             $this->_set_settings->setParameter($field, rawurlencode(utf8_decode($new_data)));
 	        $this->_modified_properties['info'] = SmartestStringHelper::sanitize(serialize($this->_set_settings->getArray()));
         }

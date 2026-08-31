@@ -15,6 +15,9 @@ class SmartestSiteCreationHelper{
 
         $use_buildkit = false;
         $buildkit = null;
+        if($build_kit_name === '_NONE'){
+            $build_kit_name = SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+        }
 
         if($build_kit_name instanceof SmartestBuildKit){
             $buildkit = $build_kit_name;
@@ -30,7 +33,7 @@ class SmartestSiteCreationHelper{
                 SmartestLog::getInstance('system')->log("Invalid Build Kit supplied.", SM_LOG_ERROR);
                 throw new SmartestException("Invalid Build Kit supplied.");
             }
-        }else if(strlen((string) $build_kit_name) && $build_kit_name != '_NONE'){
+        }else if(strlen((string) $build_kit_name)){
             $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($build_kit_name);
 
             if($buildkit instanceof SmartestBuildKit && $buildkit->isValid()){

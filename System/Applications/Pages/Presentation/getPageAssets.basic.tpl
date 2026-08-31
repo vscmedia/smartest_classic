@@ -11,7 +11,7 @@
   		    {if $assetclass.info.type == 'attachment'}
   		    <img src="{$domain}Resources/Icons/attach.png" alt="" />
   		    {elseif $assetclass.info.type == 'asset'}
-  		      {if $assetclass.info.asset_type == "SM_ASSETTYPE_JPEG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_PNG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_GIF_IMAGE"}
+            {if $assetclass.info.asset_type == "SM_ASSETTYPE_JPEG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_PNG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_GIF_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_WEBP_IMAGE"}
   	          <img src="{$domain}Resources/Icons/picture.png" alt="" />
   	        {elseif $assetclass.info.asset_type == "SM_ASSETTYPE_PLAIN_TEXT"}
   	          <img src="{$domain}Resources/Icons/page_white_text.png" alt="" />

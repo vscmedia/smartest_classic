@@ -322,12 +322,13 @@ type:
   SM_DATATYPE_ML_TEXT:
     id: SM_DATATYPE_ML_TEXT
     valuetype: string
-    label: Multi-line plain text
+    label: Multi-line text
     description: >
-      Longer piece of text (255 chars or more)
-      in which no formatting is needed.
+      A short or medium piece of multi-line
+      text, optionally rendered from Markdown
+      or Textile.
     usage: itemproperty
-    class: SmartestString
+    class: SmartestRenderableString
     searchable: 'true'
     long: 'true'
     render:

@@ -995,7 +995,8 @@ class SmartestModel extends SmartestBaseModel{
     
     public function getAvailableThumbnailProperties(){
         
-        $sql = "SELECT * FROM ItemProperties WHERE itemproperty_datatype='SM_DATATYPE_ASSET' AND itemproperty_foreign_key_filter IN ('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETCLASS_STATIC_IMAGE') AND itemproperty_itemclass_id='".$this->getId()."'";
+        $image_types = array_merge(SmartestDataUtility::getBinaryImageAssetTypeCodes(), array('SM_ASSETCLASS_STATIC_IMAGE'));
+        $sql = "SELECT * FROM ItemProperties WHERE itemproperty_datatype='SM_DATATYPE_ASSET' AND itemproperty_foreign_key_filter IN ('".implode("', '", $image_types)."') AND itemproperty_itemclass_id='".$this->getId()."'";
         $result = $this->database->queryToArray($sql);
         $properties = array();
         

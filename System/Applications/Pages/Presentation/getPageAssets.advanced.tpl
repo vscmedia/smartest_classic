@@ -36,7 +36,7 @@
 		  {if $assetclass.info.type == 'attachment'}
       <i class="fa fa-paperclip"></i>
 		  {elseif $assetclass.info.type == 'asset'}
-		    {if $assetclass.info.asset_type == "SM_ASSETTYPE_JPEG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_PNG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_GIF_IMAGE"}
+		    {if $assetclass.info.asset_type == "SM_ASSETTYPE_JPEG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_PNG_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_GIF_IMAGE" || $assetclass.info.asset_type == "SM_ASSETTYPE_WEBP_IMAGE"}
 	        <i class="fa fa-file-image-o"></i>
 	      {elseif $assetclass.info.asset_type == "SM_ASSETTYPE_PLAIN_TEXT"}
 	        <img src="{$domain}Resources/Icons/page_white_text.png" style="border:0px" />

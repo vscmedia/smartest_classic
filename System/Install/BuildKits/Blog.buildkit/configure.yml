@@ -1,6 +1,17 @@
 buildkit:
   shortname: sm_blog
   label: Basic blog
+  description: Creates a simple blog site with starter templates, blog post data structure, sample content, image/text assets, navigation, and an infinite-scroll helper module.
+  developer: Smartest Project
+  version: 1.0
+  creates:
+    - Homepage and blog listing page
+    - Blog post meta-page
+    - Blog post model and starter property definitions
+    - Sample blog post content and media
+    - Main navigation page group
+    - Infinite scroll Quince module
+    - Master, container, Javascript, and CSS assets
   title_format: $page | $site
   minimum_smartest_build: 744
   eu_cookie_mode:

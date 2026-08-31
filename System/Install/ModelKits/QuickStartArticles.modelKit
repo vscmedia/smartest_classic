@@ -1,7 +1,7 @@
 # Bundled with Smartest for quick setup
 ---
 modelkit: 
-  label: Lightweight articles
+  label: Lightweight articles model
   description: "A basic article model that provides date published, thumbnail image, synopsis and of course text"
   name: Article
   plural: Articles

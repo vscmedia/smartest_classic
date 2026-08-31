@@ -1,6 +1,10 @@
 <?php
 
 class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject, SmartestStorableValue, SmartestSubmittableValue, SmartestDualModedObject{
+
+    const RELATED_ASSETS_MTM_TYPE = 'SM_MTMLOOKUP_RELATED_ASSETS';
+    const ASSET_RELATION_REFERENCES_STYLESHEET = 'references_stylesheet';
+    const ASSET_RELATION_MATCHES_STYLESHEET_SELECTORS = 'matches_stylesheet_selectors';
     
     protected $_allowed_types = array();
     protected $_draft_mode = false;
@@ -900,11 +904,13 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
 	}
 	
 	public function isImage(){
-	    return in_array($this->getType(), array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_SVG_IMAGE', 'SM_ASSETTYPE_INSTAGRAM_IMAGE'));
+	    $binary_image_types = SmartestDataUtility::getBinaryImageAssetTypeCodes(true);
+	    $binary_image_types[] = 'SM_ASSETTYPE_INSTAGRAM_IMAGE';
+	    return in_array($this->getType(), $binary_image_types);
 	}
     
 	public function isBinaryImage(){
-	    return in_array($this->getType(), array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'));
+	    return in_array($this->getType(), SmartestDataUtility::getBinaryImageAssetTypeCodes());
 	}
 	
 	public function isHtmlFriendly(){
@@ -1669,6 +1675,265 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
         
         return $result;
         
+    }
+
+    public function addRelatedAssetById($asset_id, $relation='related', $context_data=array()){
+
+        $source_id = (int) $this->getId();
+        $target_id = (int) $asset_id;
+
+        if(!$source_id || !$target_id || $source_id == $target_id){
+            return false;
+        }
+
+        $relation = $this->normaliseRelatedAssetRelationName($relation);
+        $context_data = is_array($context_data) ? $context_data : array('value' => $context_data);
+        $context_data['source_asset_id'] = $source_id;
+        $context_data['target_asset_id'] = $target_id;
+        $context_data['relation'] = $relation;
+        $context_data['updated_at'] = time();
+
+        $serialized_context = serialize($context_data);
+        $lookup_id = $this->getRelatedAssetLookupId($target_id, $relation);
+
+        if($lookup_id){
+
+            $sql = "UPDATE ManyToManyLookups SET mtmlookup_context_data=:context_data, mtmlookup_status_flag='SM_MTMLOOKUPSTATUS_LIVE' WHERE mtmlookup_id=:lookup_id LIMIT 1";
+
+            $this->database->preparedQuery($sql, array(
+                'context_data' => $serialized_context,
+                'lookup_id' => $lookup_id,
+            ));
+
+            return $lookup_id;
+
+        }else{
+
+            $sql = "INSERT INTO ManyToManyLookups (mtmlookup_type, mtmlookup_instance_name, mtmlookup_context_data, mtmlookup_status_flag, mtmlookup_entity_1_foreignkey, mtmlookup_entity_2_foreignkey) VALUES (:type, :relation, :context_data, 'SM_MTMLOOKUPSTATUS_LIVE', :source_id, :target_id)";
+
+            return $this->database->preparedQuery($sql, array(
+                'type' => self::RELATED_ASSETS_MTM_TYPE,
+                'relation' => $relation,
+                'context_data' => $serialized_context,
+                'source_id' => $source_id,
+                'target_id' => $target_id,
+            ));
+
+        }
+
+    }
+
+    public function syncRelatedAssetsByIds($asset_ids, $relation='related', $context_data=array()){
+
+        if(!is_array($asset_ids)){
+            $asset_ids = array($asset_ids);
+        }
+
+        $relation = $this->normaliseRelatedAssetRelationName($relation);
+        $asset_ids = array_values(array_unique(array_filter(array_map('intval', $asset_ids))));
+        $existing_lookup_ids_by_asset_id = array();
+
+        foreach($this->getRelatedAssetLookups($relation, true) as $lookup){
+            $related_id = $this->getRelatedAssetIdFromLookup($lookup);
+            if($related_id){
+                if(isset($existing_lookup_ids_by_asset_id[$related_id])){
+                    $this->database->preparedQuery(
+                        'DELETE FROM ManyToManyLookups WHERE mtmlookup_id=:lookup_id LIMIT 1',
+                        array('lookup_id' => $lookup->getId())
+                    );
+                    continue;
+                }
+                $existing_lookup_ids_by_asset_id[$related_id] = $lookup->getId();
+            }
+        }
+
+        foreach($existing_lookup_ids_by_asset_id as $related_id => $lookup_id){
+            if(!in_array($related_id, $asset_ids)){
+                $this->database->preparedQuery(
+                    'DELETE FROM ManyToManyLookups WHERE mtmlookup_id=:lookup_id LIMIT 1',
+                    array('lookup_id' => $lookup_id)
+                );
+            }
+        }
+
+        foreach($asset_ids as $asset_id){
+            $this->addRelatedAssetById($asset_id, $relation, $context_data);
+        }
+
+        return true;
+
+    }
+
+    public function removeRelatedAssetById($asset_id, $relation=''){
+
+        $source_id = (int) $this->getId();
+        $target_id = (int) $asset_id;
+
+        if(!$source_id || !$target_id){
+            return false;
+        }
+
+        $params = array(
+            'type' => self::RELATED_ASSETS_MTM_TYPE,
+            'source_id_1' => $source_id,
+            'target_id_1' => $target_id,
+            'target_id_2' => $target_id,
+            'source_id_2' => $source_id,
+        );
+
+        $sql = "DELETE FROM ManyToManyLookups WHERE mtmlookup_type=:type AND ((mtmlookup_entity_1_foreignkey=:source_id_1 AND mtmlookup_entity_2_foreignkey=:target_id_1) OR (mtmlookup_entity_1_foreignkey=:target_id_2 AND mtmlookup_entity_2_foreignkey=:source_id_2))";
+
+        if(strlen($relation)){
+            $sql .= ' AND mtmlookup_instance_name=:relation';
+            $params['relation'] = $this->normaliseRelatedAssetRelationName($relation);
+        }
+
+        return $this->database->preparedQuery($sql, $params);
+
+    }
+
+    public function getRelatedAssets($relation='', $site_id='', $refresh=false){
+
+        $lookups = $this->getRelatedAssetLookups($relation, $refresh);
+        $asset_ids = array();
+
+        foreach($lookups as $lookup){
+            if($related_id = $this->getRelatedAssetIdFromLookup($lookup)){
+                $asset_ids[] = $related_id;
+            }
+        }
+
+        $asset_ids = array_values(array_unique($asset_ids));
+
+        if(!count($asset_ids)){
+            return array();
+        }
+
+        $params = array();
+        $placeholders = array();
+
+        foreach($asset_ids as $key => $asset_id){
+            $placeholder = 'asset_id_'.$key;
+            $placeholders[] = ':'.$placeholder;
+            $params[$placeholder] = $asset_id;
+        }
+
+        $sql = 'SELECT * FROM Assets WHERE asset_id IN ('.implode(', ', $placeholders).') AND asset_deleted != 1 AND asset_is_hidden != 1';
+
+        if(is_numeric($site_id)){
+            $sql .= ' AND (asset_site_id=:site_id OR asset_shared=1)';
+            $params['site_id'] = (int) $site_id;
+        }
+
+        $sql .= ' ORDER BY asset_label, asset_stringid ASC';
+
+        $result = $this->database->preparedQuery($sql, $params);
+        $assets = array();
+
+        foreach((array) $result as $r){
+            $asset = new SmartestAsset;
+            $asset->hydrate($r);
+            $assets[$asset->getId()] = $asset;
+        }
+
+        return $assets;
+
+    }
+
+    public function getRelatedAssetLookups($relation='', $refresh=false){
+
+        $asset_id = (int) $this->getId();
+
+        if(!$asset_id){
+            return array();
+        }
+
+        $params = array(
+            'type' => self::RELATED_ASSETS_MTM_TYPE,
+            'asset_id_1' => $asset_id,
+            'asset_id_2' => $asset_id,
+        );
+
+        $sql = 'SELECT * FROM ManyToManyLookups WHERE mtmlookup_type=:type AND (mtmlookup_entity_1_foreignkey=:asset_id_1 OR mtmlookup_entity_2_foreignkey=:asset_id_2)';
+
+        if(strlen($relation)){
+            $sql .= ' AND mtmlookup_instance_name=:relation';
+            $params['relation'] = $this->normaliseRelatedAssetRelationName($relation);
+        }
+
+        $sql .= ' ORDER BY mtmlookup_instance_name ASC, mtmlookup_order_index ASC, mtmlookup_id ASC';
+
+        $result = $this->database->preparedQuery($sql, $params);
+        $lookups = array();
+
+        foreach((array) $result as $r){
+            $lookup = new SmartestManyToManyLookup;
+            $lookup->hydrate($r);
+            $lookups[$lookup->getId()] = $lookup;
+        }
+
+        return $lookups;
+
+    }
+
+    public function getRelatedAssetIds($relation='', $refresh=false){
+
+        $ids = array();
+
+        foreach($this->getRelatedAssetLookups($relation, $refresh) as $lookup){
+            if($id = $this->getRelatedAssetIdFromLookup($lookup)){
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+
+    }
+
+    protected function getRelatedAssetLookupId($asset_id, $relation){
+
+        $result = $this->database->preparedQuery(
+            'SELECT mtmlookup_id FROM ManyToManyLookups WHERE mtmlookup_type=:type AND mtmlookup_instance_name=:relation AND ((mtmlookup_entity_1_foreignkey=:source_id_1 AND mtmlookup_entity_2_foreignkey=:target_id_1) OR (mtmlookup_entity_1_foreignkey=:target_id_2 AND mtmlookup_entity_2_foreignkey=:source_id_2)) ORDER BY mtmlookup_id ASC LIMIT 1',
+            array(
+                'type' => self::RELATED_ASSETS_MTM_TYPE,
+                'relation' => $this->normaliseRelatedAssetRelationName($relation),
+                'source_id_1' => (int) $this->getId(),
+                'target_id_1' => (int) $asset_id,
+                'target_id_2' => (int) $asset_id,
+                'source_id_2' => (int) $this->getId(),
+            )
+        );
+
+        return isset($result[0]['mtmlookup_id']) ? (int) $result[0]['mtmlookup_id'] : 0;
+
+    }
+
+    protected function getRelatedAssetIdFromLookup(SmartestManyToManyLookup $lookup){
+
+        $asset_id = (int) $this->getId();
+        $entity_1 = (int) $lookup->getEntityForeignKeyValue(1);
+        $entity_2 = (int) $lookup->getEntityForeignKeyValue(2);
+
+        if($entity_1 == $asset_id){
+            return $entity_2;
+        }else if($entity_2 == $asset_id){
+            return $entity_1;
+        }
+
+        return 0;
+
+    }
+
+    protected function normaliseRelatedAssetRelationName($relation){
+
+        $relation = SmartestStringHelper::toVarName($relation);
+
+        if(!strlen($relation)){
+            $relation = 'related';
+        }
+
+        return substr($relation, 0, 64);
+
     }
     
     public function getGroupIds(){

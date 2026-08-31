@@ -27,6 +27,19 @@ class SmartestBuildKitUtilities{
         return $final;
     }
 
+    public static function getVisibleBuildKits(){
+
+        $buildkits = self::getAvailableBuildKits();
+
+        foreach($buildkits as $key=>$buildkit){
+            if($buildkit->isHidden()){
+                unset($buildkits[$key]);
+            }
+        }
+
+        return $buildkits;
+    }
+
     public static function getAvailableBuildKitsInDirectory($dir){
 
         if(!is_dir($dir)){

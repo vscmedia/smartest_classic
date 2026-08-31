@@ -7,7 +7,7 @@ function buildkit_sm_infosite_setup_page_structures($buildkit, $site, $user, $op
     $page_layout = create_container('page_layout', 'Page layout');
     $master_template = null;
     $page_template = null;
-    $main_nav = create_page_group('Main nav');
+    $main_nav = create_navigation_group('Main navigation', 'main_nav');
 
     $home_page = $site->getHomePage();
     add_page_to_group($home_page, $main_nav);

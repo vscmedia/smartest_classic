@@ -225,7 +225,9 @@ class SmartestItemPropertyValue extends SmartestBaseItemPropertyValue{
                     $obj = new $class;
                     $obj->hydrateFromStorableFormat($raw_data);
                 }
-            
+
+                $obj = $this->configureValueObject($obj);
+
                 $this->_value_object = $obj;
             
             }else{
@@ -241,11 +243,17 @@ class SmartestItemPropertyValue extends SmartestBaseItemPropertyValue{
     }
     
     protected function assignNewValueToValueObject($raw_data){
-        
-        
-        
+
     }
     
+    protected function configureValueObject($obj){
+        if($obj instanceof SmartestRenderableString){
+            $obj->setRenderFormat($this->getProperty()->getMultilineTextFormat());
+        }
+
+        return $obj;
+    }
+
     // function that processes data for output/GET functions
     // Now no longer used
     protected function processContent($draft=false){
@@ -416,11 +424,14 @@ class SmartestItemPropertyValue extends SmartestBaseItemPropertyValue{
     public function setContent($raw_data, $save=true, $force_live=false, $from_form=false){
         
         if(is_object($raw_data) && ($raw_data instanceof SmartestStorableValue)){
+            $raw_data = $this->configureValueObject($raw_data);
             $filtered_data = $raw_data->getStorableFormat();
             $this->_value_object = $raw_data;
         }else{
             
             if($value_obj = SmartestDataUtility::objectizeFromNewRawDataGivenToItemPropertyValue($raw_data, $this->getProperty()->getDatatype(), $this->getProperty()->getForeignKeyFilter())){
+                $value_obj = $this->configureValueObject($value_obj);
+
                 if($this->getProperty()->isManyToMany()){
                     
                 }else{

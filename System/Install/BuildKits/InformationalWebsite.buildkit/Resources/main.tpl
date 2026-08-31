@@ -9,7 +9,7 @@
   <meta name="description" content="<?sm:$this.page.meta_description:?>" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <?sm:site_favicon:?>
-  <?sm:stylesheet file="%MAIN_CSS_FILE%":?>
+  <?sm:stylesheet file="%%MAIN_CSS_FILE%%":?>
   <?sm:placeholder name="page_specific_javascript" editbutton="false":?>
   <?sm:placeholder name="page_specific_stylesheet":?>
 </head>

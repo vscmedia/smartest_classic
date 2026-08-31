@@ -10,20 +10,23 @@
     <meta name="description" content="<?sm:$this.page.meta_description:?>" />
     <meta name="og:description" content="<?sm:$this.page.meta_description:?>" />
     <?sm:site_favicon:?>
-    %CSSLINK%<?sm:placeholder name="page_specific_javascript" editbutton="false":?>
+	  %%CSSLINK%%
+    <?sm:placeholder name="page_specific_javascript" editbutton="false":?>
     <?sm:placeholder name="page_specific_stylesheet":?>
     <?sm:if $this.user_agent.is_mobile:?><meta name="viewport" content="width=device-width; initial-scale=1.0; minimum-scale = 0.8, maximum-scale = 2.0"/><?sm:/if:?>
   </head>
 
   <body>
 
-    <div id="header-outer">
+    <header id="site-header">
       <div id="header">
+        <img src="<?sm:$domain:?>Resources/System/Images/logo-blacktext.png" alt="Smartest" id="smartest-welcome-logo" />
+        <p class="site-kicker">Smartest Classic</p>
         <h1><?sm:$this.site.name:?></h1>
       </div>
-    </div>
+    </header>
 
-    <div id="navstripe">
+    <nav id="navstripe" aria-label="Main navigation">
       <div id="nav">
         <ul>
           <?sm:repeat from="pagegroup:main_nav" item="top_level_nav_page" assignhighlight="currentpage":?>
@@ -31,9 +34,9 @@
           <?sm:/repeat:?>
         </ul>
       </div>
-    </div>
+    </nav>
 
-    <div id="container">
+    <main id="container">
 
       <?sm:if $this.user_agent.is_tablet:?>
       <!--You are viewing this page on a tablet.-->
@@ -43,17 +46,20 @@
       <!--You are viewing this page on a desktop computer.-->
       <?sm:/if:?>
 
-      <div class="breaker"></div>
-      <p class="text">You have successfully created a new website in Smartest. You can update the design of this web page by updating the file:</p>
-      <p style="text-align:center;font-size:1.2em"><code>Presentation/Masters/%DEFAULTTEMPLATENAME%.tpl</code></p>
+      <section id="welcome-panel">
+        <p class="eyebrow">Your site is ready</p>
+        <h2>It worked. Now make it yours.</h2>
+        <p class="text">This is the first page of your new Smartest site. Use the dashboard to add pages, files and content, or start by editing the template and stylesheet below.</p>
+        <p class="template-path"><code>Presentation/Masters/%%DEFAULTTEMPLATENAME%%.tpl</code></p>
+      </section>
       <?sm:container name="page_layout":?>
       <div class="breaker"></div>
 
-      <div id="footer">
+      <footer id="footer">
         All content &copy; <?sm:$this.site.organization_name:?> <?sm:$now.Y:?>, All rights reserved, except where noted.
-      </div>
+      </footer>
 
-    </div>
+    </main>
 
   </body>
 

@@ -275,7 +275,7 @@ class SmartestBuildKitsHelper{
 
         if($asset->usesTextFragment()){
             $content = $asset->getTextFragment()->getContent();
-            $asset->getTextFragment()->setContent(str_replace(array_keys($replacements), array_values($replacements), $content));
+            $asset->getTextFragment()->setContent(self::applyTokenReplacements($content, $replacements));
             $asset->connectTextFragmentOnSave();
             $asset->save();
             return true;
@@ -283,7 +283,7 @@ class SmartestBuildKitsHelper{
 
         if($asset->usesLocalFile() && is_file($asset->getFullPathOnDisk()) && is_writable($asset->getFullPathOnDisk())){
             $content = SmartestFileSystemHelper::load($asset->getFullPathOnDisk(), true);
-            return SmartestFileSystemHelper::save($asset->getFullPathOnDisk(), str_replace(array_keys($replacements), array_values($replacements), $content), true);
+            return SmartestFileSystemHelper::save($asset->getFullPathOnDisk(), self::applyTokenReplacements($content, $replacements), true);
         }
 
         return false;
@@ -808,23 +808,42 @@ class SmartestBuildKitsHelper{
         return $page;
     }
 
-    public static function createPageGroup($label){
+    public static function createPageGroup($label, $name='', $settings=array()){
 
         $site = self::getExecutingSite();
-        $name = SmartestStringHelper::toVarName($label);
+        $name = strlen((string) $name) ? SmartestStringHelper::toVarName($name) : SmartestStringHelper::toVarName($label);
         $group = new SmartestPageGroup;
 
-        if($group->findBy('name', $name, $site->getId())){
-            return $group;
+        if(!$group->findBy('name', $name, $site->getId())){
+            $group->setName($name);
+            $group->setVarname($name);
+            $group->setLabel($label);
+            $group->setSiteId($site->getId());
         }
 
-        $group->setName($name);
-        $group->setVarname($name);
-        $group->setLabel($label);
-        $group->setSiteId($site->getId());
-        $group->save();
+        if(is_array($settings)){
+            foreach($settings as $setting_name => $setting_value){
+                $group->setSettingValue($setting_name, $setting_value);
+            }
+        }
+
+        if($group->getModifiedProperties()){
+            $group->save();
+        }else if(!$group->getId()){
+            $group->save();
+        }
 
         return $group;
+    }
+
+    public static function createNavigationGroup($label, $name=''){
+
+        $settings = array(
+            'purpose' => 'navigation',
+            'navigation_role' => strlen((string) $name) ? SmartestStringHelper::toVarName($name) : SmartestStringHelper::toVarName($label)
+        );
+
+        return self::createPageGroup($label, $name, $settings);
     }
 
     public static function addPageToGroup($page, SmartestPageGroup $group){
@@ -832,7 +851,7 @@ class SmartestBuildKitsHelper{
         $page = self::resolvePage($page, $site);
 
         if($page instanceof SmartestPage && $page->getId()){
-            $group->addPageById($page->getId(), false);
+            $group->addPageById($page->getId());
             return true;
         }
 
@@ -1167,10 +1186,10 @@ class SmartestBuildKitsHelper{
         $controller_domain = defined('SM_CONTROLLER_DOMAIN') ? SM_CONTROLLER_DOMAIN : '/';
 
         $replacements = array(
-            '%CLASSNAME%' => $class_name,
-            '%SHORTNAME%' => $short_name,
-            '%APPIDENTIFIER%' => $info->getParameter('auto_identifier'),
-            '%RANDOMURL%' => SmartestStringHelper::random(6),
+            '%%CLASSNAME%%' => $class_name,
+            '%%SHORTNAME%%' => $short_name,
+            '%%APPIDENTIFIER%%' => $info->getParameter('auto_identifier'),
+            '%%RANDOMURL%%' => SmartestStringHelper::random(6),
             '%%QUINCE_MODULE_SHORTNAME%%' => $short_name,
             '%%QUINCE_BASE_DIR%%' => $controller_domain
         );
@@ -1608,7 +1627,7 @@ class SmartestBuildKitsHelper{
             if(is_dir($source)){
                 self::copyDirectoryContents($source.'/', $target.'/', $replacements);
             }else if(count($replacements) && self::fileCanReceiveTokenReplacements($source)){
-                SmartestFileSystemHelper::save($target, str_replace(array_keys($replacements), array_values($replacements), SmartestFileSystemHelper::load($source)));
+                SmartestFileSystemHelper::save($target, self::applyTokenReplacements(SmartestFileSystemHelper::load($source), $replacements));
             }else{
                 SmartestFileSystemHelper::copy($source, $target);
             }
@@ -1680,10 +1699,23 @@ class SmartestBuildKitsHelper{
         $replacements = self::getRegisteredObjectTokenReplacements();
 
         if(count($replacements)){
-            return str_replace(array_keys($replacements), array_values($replacements), $contents);
+            return self::applyTokenReplacements($contents, $replacements);
         }
 
         return $contents;
+    }
+
+    protected static function applyTokenReplacements($contents, $replacements){
+
+        if(!is_array($replacements) || !count($replacements)){
+            return $contents;
+        }
+
+        uksort($replacements, function($a, $b){
+            return strlen($b) - strlen($a);
+        });
+
+        return str_replace(array_keys($replacements), array_values($replacements), $contents);
     }
 
     protected static function getRegisteredObjectTokenReplacements(){
@@ -1698,8 +1730,8 @@ class SmartestBuildKitsHelper{
             }
 
             $tokens = array(
-                '%'.strtoupper($name).'%',
-                '%'.strtoupper(str_replace('_', '', $name)).'%'
+                '%%'.strtoupper($name).'%%',
+                '%%'.strtoupper(str_replace('_', '', $name)).'%%'
             );
 
             foreach($tokens as $token){

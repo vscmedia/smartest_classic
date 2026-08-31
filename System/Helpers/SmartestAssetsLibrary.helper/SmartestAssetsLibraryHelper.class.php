@@ -736,9 +736,10 @@ class SmartestAssetsLibraryHelper{
 	    
 	    $processed_xml_data = SmartestDataUtility::getAssetTypes();
 	    $codes = array();
+        $binary_image_types = $this->getBinaryImageAssetTypeCodes();
 	    
 	    foreach($processed_xml_data as $code=>$type){
-	        if(isset($type['attachable']) && SmartestStringHelper::toRealBool($type['attachable']) && !in_array($code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE'))){
+	        if(isset($type['attachable']) && SmartestStringHelper::toRealBool($type['attachable']) && !in_array($code, $binary_image_types)){
 	            $codes[] = $code;
 	        }
 	    }
@@ -926,9 +927,54 @@ class SmartestAssetsLibraryHelper{
 	}
 	
 	public function assetTypeCodeIsBinaryImage($type_code){
-	    return in_array($type_code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE'));
+	    return in_array($type_code, $this->getBinaryImageAssetTypeCodes());
 	}
-	
+
+    public function getBinaryImageAssetTypeCodes(){
+        return SmartestDataUtility::getBinaryImageAssetTypeCodes();
+    }
+
+    public function getBinaryImageFileSuffixes(){
+
+        $suffixes = array();
+
+        foreach($this->getBinaryImageAssetTypeCodes() as $type_code){
+            foreach($this->getAllSuffixesForType($type_code) as $suffix){
+                $suffix = strtolower((string) $suffix);
+                if(!in_array($suffix, $suffixes)){
+                    $suffixes[] = $suffix;
+                }
+            }
+        }
+
+        return $suffixes;
+
+    }
+
+    public function getBinaryImageFileSuffixLabel(){
+
+        $suffixes = array();
+
+        foreach($this->getBinaryImageFileSuffixes() as $suffix){
+            $suffixes[] = strtoupper($suffix);
+        }
+
+        return implode(', ', $suffixes);
+
+    }
+
+    public function getBinaryImageFileInputAcceptAttribute(){
+
+        $values = array();
+
+        foreach($this->getBinaryImageFileSuffixes() as $suffix){
+            $values[] = '.'.ltrim($suffix, '.');
+        }
+
+        return implode(',', $values);
+
+    }
+
 	public function getAssetsByModelId($model_id=0, $site_id='', $mode=1, $avoid_ids='', $code=''){
 		
 		$sql = "SELECT * FROM Assets WHERE asset_model_id='".$model_id."' AND asset_deleted != 1";

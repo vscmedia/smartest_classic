@@ -10,7 +10,7 @@ class SmartestPageGroup extends SmartestSet{
     
     public function getMembers($draft_mode=false, $refresh=false){
         
-        if(!isset($this->_members) || !count($this->_members)){
+        if($refresh || !isset($this->_members) || !count($this->_members)){
         
             $memberships = $this->getMemberships($draft_mode, $refresh);
 	        
@@ -47,11 +47,11 @@ class SmartestPageGroup extends SmartestSet{
         
     }
     
-    public function getMemberIds($draft_mode=false){
+    public function getMemberIds($draft_mode=false, $refresh=false){
         
         $ids = array();
         
-        foreach($this->getMembers($draft_mode) as $p){
+        foreach($this->getMembers($draft_mode, $refresh) as $p){
             $ids[] = $p->getId();
         }
         
@@ -97,16 +97,28 @@ class SmartestPageGroup extends SmartestSet{
     }
     
     public function addPageById($id, $strict_checking=true){
+
+        $id = (int) $id;
+
+        if(!$id){
+            return false;
+        }
         
-        if(!$strict_checking || !in_array($id, $this->getMemberIds())){
+        if(!$strict_checking || !in_array($id, $this->getMemberIds(true, true))){
             
             $m = new SmartestPageGroupMembership;
             $m->setPageId($id);
             $m->setGroupId($this->getId());
             $m->setOrderIndex($this->getNextMemberOrderIndex());
             $m->save();
+
+            unset($this->_members);
+
+            return $m;
             
         }
+
+        return false;
         
     }
     

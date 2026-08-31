@@ -29,6 +29,8 @@ function smarty_function_textarea_input($params, &$smartest_engine){
         $input->setParameter('word_count', isset($params['word_count']) ? SmartestStringHelper::toRealBool($params['word_count']) : false);
         $input->setParameter('limit', isset($params['limit']) ? (int) $params['limit'] : false);
         $input->setParameter('style', isset($params['style']) ? $params['style'] : '');
+        $input->setParameter('class', isset($params['class']) ? $params['class'] : '');
+        $input->setParameter('data_format', isset($params['data_format']) ? SmartestRenderableString::normalizeRenderFormat($params['data_format']) : '');
         
         if(isset($params['limit'])){
             if(strlen($input->getParameter('value')) > floor(((int) $params['limit'])*0.8) && strlen($input->getParameter('value')) < (int) $params['limit']){

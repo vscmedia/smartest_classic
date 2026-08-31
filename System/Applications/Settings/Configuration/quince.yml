@@ -24,6 +24,9 @@ module:
     build_kits:
       action: listBuildKits
       url: /smartest/buildkits
+    build_kit_info:
+      action: buildKitInfo
+      url: /smartest/buildkit/:buildkit_id
   meta:
     system: true
   namespaces:

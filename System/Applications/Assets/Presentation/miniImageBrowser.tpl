@@ -1,7 +1,7 @@
 <div id="modal-work-area">
   
   <div class="instruction">Select or upload an image</div>
-  <div class="warning" id="no-filereader-warning" style="display:none">To upload images here, you'll need an up-to-date browser that supports the FileReader and FormData APIs.</div>
+  <div class="warning" id="no-filereader-warning" style="display:none">To upload images here, you'll need an up-to-date browser that supports drag-and-drop uploads and the FormData API.</div>
   
   <ul class="file-thumbnails" id="image-list">
     {if $sm_user_agent.is_supported_browser}
@@ -34,8 +34,20 @@
         <input type="text" name="asset_credit" value="" id="asset-credit" />
       </div>
       <div class="edit-form-row" id="choose-file-row">
-        <div class="form-section-label">Choose an image file (JPEG, PNG or GIF)</div>
-        <input type="file" name="asset_file" id="asset-file" />
+        <div class="form-section-label">Image file ({$image_file_suffix_label})</div>
+        <div class="image-upload-picker">
+          <label for="asset-file" class="image-upload-choose-button">Choose image file</label>
+          <span id="asset-file-name" class="image-upload-file-name">No file selected</span>
+          <input type="file" name="asset_file" id="asset-file" accept="{$image_file_accept_attribute}" class="image-upload-native-input" />
+        </div>
+        <div class="image-upload-or">or</div>
+        <div id="asset-drop-zone" class="image-upload-drop-zone">
+          <img src="" alt="" id="asset-drop-zone-preview" class="image-upload-preview" style="display:none" />
+          <i class="fa fa-check-circle" id="asset-drop-zone-ready-icon" style="display:none"></i>
+          <strong id="asset-drop-zone-title">Drag image file here</strong>
+          <span id="asset-drop-zone-file">Drop one supported image file to upload it</span>
+        </div>
+        <div class="form-hint" style="color:#c30;display:none" id="asset-type-warning">The file you have selected is not a supported image type.</div>
       </div>
       <div class="v-spacer"> </div>
       <div class="progress-bar-outer" id="upload-progress-outer" style="display:none">
@@ -49,11 +61,13 @@
   </div>
   
   <script type="text/javascript">// <![CDATA[
-  
+
   var currentAssetId = {if $current_asset_id}{$current_asset_id}{else}null{/if};
   var purpose = '{$for}';
   inputId = '{$input_id}';
-  
+  var suffixRegex = {if $file_suffix_regex}{$file_suffix_regex}{else}null{/if};
+  var selectedUploadFile = null;
+
   {literal}
   $$('ul.file-thumbnails li a.thumbnail').each(function(clickedThumbnail){
     clickedThumbnail.observe('click', function(e){
@@ -82,7 +96,7 @@
     });
   });
   {/literal}
-  
+
   {if $sm_user_agent.is_supported_browser}
   {literal}
   if($('add-image-button')){
@@ -96,22 +110,117 @@
   }
   {/literal}
   {/if}
-  
+
   {literal}
-  
+  var uploadFileNameIsSupported = function(fileName){
+    return !fileName.length || !suffixRegex || fileName.match(suffixRegex);
+  };
+
+  var getSelectedUploadFileName = function(){
+    if(selectedUploadFile){
+      return selectedUploadFile.name;
+    }
+
+    return $F('asset-file');
+  };
+
+  var setSelectedUploadFile = function(file){
+    selectedUploadFile = file;
+
+    if(file){
+      $('asset-file-name').update(file.name);
+      $('asset-drop-zone-file').update(file.name);
+      $('asset-drop-zone').removeClassName('drag-over');
+      $('asset-drop-zone').addClassName('has-file');
+      $('asset-drop-zone-title').update('Ready to upload');
+      $('asset-drop-zone-ready-icon').show();
+
+      if($('asset-drop-zone-preview') && window.FileReader && uploadFileNameIsSupported(file.name)){
+        var reader = new FileReader();
+        reader.onload = function(evt){
+          if(selectedUploadFile == file){
+            $('asset-drop-zone-preview').src = evt.target.result;
+            $('asset-drop-zone-preview').show();
+            MODALS.updateScroller();
+          }
+        };
+        reader.readAsDataURL(file);
+      }else if($('asset-drop-zone-preview')){
+        $('asset-drop-zone-preview').hide();
+        $('asset-drop-zone-preview').src = '';
+      }
+
+      if(!$F('asset-label').length){
+        $('asset-label').value = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+      }
+    }else{
+      $('asset-file-name').update('No file selected');
+      $('asset-drop-zone-file').update('Drop one supported image file to upload it');
+      $('asset-drop-zone').removeClassName('has-file');
+      $('asset-drop-zone-title').update('Drag image file here');
+      $('asset-drop-zone-ready-icon').hide();
+
+      if($('asset-drop-zone-preview')){
+        $('asset-drop-zone-preview').hide();
+        $('asset-drop-zone-preview').src = '';
+      }
+    }
+  };
+
+  var updateUploadFileTypeWarning = function(){
+    if(uploadFileNameIsSupported(getSelectedUploadFileName())){
+      $('asset-type-warning').hide();
+    }else{
+      $('asset-type-warning').show();
+    }
+  };
+
+  $('asset-file').observe('change', function(){
+    setSelectedUploadFile($('asset-file').files && $('asset-file').files.length ? $('asset-file').files[0] : null);
+    updateUploadFileTypeWarning();
+  });
+
+  if($('asset-drop-zone')){
+    ['dragenter', 'dragover'].each(function(eventName){
+      $('asset-drop-zone').observe(eventName, function(e){
+        e.stop();
+        $('asset-drop-zone').addClassName('drag-over');
+      });
+    });
+
+    ['dragleave', 'dragend'].each(function(eventName){
+      $('asset-drop-zone').observe(eventName, function(e){
+        e.stop();
+        $('asset-drop-zone').removeClassName('drag-over');
+      });
+    });
+
+    $('asset-drop-zone').observe('drop', function(e){
+      e.stop();
+      $('asset-drop-zone').removeClassName('drag-over');
+
+      var dataTransfer = e.dataTransfer || (e.event && e.event.dataTransfer);
+
+      if(dataTransfer && dataTransfer.files && dataTransfer.files.length){
+        setSelectedUploadFile(dataTransfer.files[0]);
+        updateUploadFileTypeWarning();
+      }
+    });
+  }
+
   var startUpload = function(e){
     // e is an Event object
-    e.stop();
-    
-    if($F('asset-label').length && $F('asset-file').length){
-      
-      var reader = new FileReader();
+    if(e && e.stop){
+      e.stop();
+    }
+
+    var uploadFileName = getSelectedUploadFileName();
+    var file = selectedUploadFile || ($('asset-file').files && $('asset-file').files.length ? $('asset-file').files[0] : null);
+
+    if($F('asset-label').length && uploadFileName.length && uploadFileNameIsSupported(uploadFileName) && file){
+
       var formdata = new FormData();
-      var file = $('asset-file').files[0];
-      var dataUrl;
-    
-      reader.readAsDataURL(file);
-    
+
       formdata.append("asset_file", file);
       formdata.append("asset_label", $F('asset-label'));
       formdata.append("asset_credit", $F('asset-credit'));
@@ -203,23 +312,27 @@
       xhr.send(formdata);
       
     }else{
-      
+
       if(!$F('asset-label').length){
-        
+
         $('asset-label').addClassName('error');
-        
+
         $('asset-label').observe('keyup', function(){
           if($F('asset-label').length){
             $('asset-label').removeClassName('error');
           }
         });
-        
+
       }
-      
+
+      if(uploadFileName.length && !uploadFileNameIsSupported(uploadFileName)){
+        $('asset-type-warning').show();
+      }
+
     }
-    
+
   }
-  
+
   $('new-image-upload-cancel-button').observe('click', function(e){
     e.stop();
     $('image-list').show();

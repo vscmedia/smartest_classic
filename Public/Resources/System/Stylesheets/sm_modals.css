@@ -476,6 +476,142 @@ ul.file-thumbnails li.add a:hover i{
     background-color:#68849E;
 }
 
+div.image-upload-picker,
+div.file-upload-picker{
+    box-sizing:border-box;
+    padding-left:155px;
+}
+
+label.image-upload-choose-button,
+label.file-upload-choose-button{
+    color:#fff!important;
+    background-color:#68849E;
+    border:1px solid #68849E;
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:15px;
+    transition:all 0.2s;
+    font-size:12px;
+    cursor:pointer;
+    font-style:normal;
+}
+
+label.image-upload-choose-button:hover,
+label.file-upload-choose-button:hover{
+    background-color:#fff;
+    color:#68849E!important;
+}
+
+span.image-upload-file-name,
+span.file-upload-file-name{
+    display:inline-block;
+    margin-left:8px;
+    color:#777;
+}
+
+input.image-upload-native-input,
+input.file-upload-native-input{
+    position:absolute;
+    left:-9999px;
+    width:1px;
+    height:1px;
+    opacity:0;
+}
+
+div.image-upload-or,
+div.file-upload-or{
+    box-sizing:border-box;
+    padding:7px 0 0 155px;
+    color:#888;
+    font-style:italic;
+}
+
+div.image-upload-drop-zone,
+div.file-upload-drop-zone{
+    box-sizing:border-box;
+    margin-left:155px;
+    width:calc(100% - 155px);
+    min-height:72px;
+    margin-top:8px;
+    padding:16px;
+    border:2px dashed #b8c4ce;
+    border-radius:5px;
+    background-color:#f6f8fa;
+    color:#555;
+    text-align:center;
+    transition:background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+div.image-upload-drop-zone.has-file,
+div.file-upload-drop-zone.has-file{
+    border-style:solid;
+    border-color:#68849E;
+    background-color:#eef6fb;
+    box-shadow:inset 0 0 0 1px rgba(104, 132, 158, 0.2);
+}
+
+div.file-upload-drop-zone.invalid-file{
+    border-color:#b65d5d;
+    background-color:#fff5f5;
+    box-shadow:inset 0 0 0 1px rgba(182, 93, 93, 0.16);
+}
+
+div.image-upload-drop-zone i.image-upload-ready-icon,
+div.image-upload-drop-zone #asset-drop-zone-ready-icon,
+div.file-upload-drop-zone i.file-upload-ready-icon,
+div.file-upload-drop-zone #asset-drop-zone-ready-icon{
+    display:block;
+    margin-bottom:5px;
+    color:#4d7f52;
+    font-size:20px;
+}
+
+img.image-upload-preview,
+img.file-upload-preview{
+    display:block;
+    width:58px;
+    height:58px;
+    margin:0 auto 8px auto;
+    object-fit:cover;
+    border:1px solid #cdd7df;
+    background-color:#fff;
+}
+
+div.image-upload-drop-zone strong,
+div.file-upload-drop-zone strong{
+    display:block;
+    color:#333;
+}
+
+div.image-upload-drop-zone.has-file strong,
+div.file-upload-drop-zone.has-file strong{
+    color:#304a62;
+}
+
+div.file-upload-drop-zone.invalid-file strong{
+    color:#8f3333;
+}
+
+div.image-upload-drop-zone span,
+div.file-upload-drop-zone span{
+    display:block;
+    margin-top:4px;
+    color:#777;
+}
+
+div.image-upload-drop-zone.has-file span,
+div.file-upload-drop-zone.has-file span{
+    color:#444;
+    font-weight:bold;
+}
+
+div.image-upload-drop-zone.drag-over,
+div.file-upload-drop-zone.drag-over{
+    border-color:#68849E;
+    background-color:#eaf0f5;
+    color:#304a62;
+}
+
 /*** Retina display stuff ***/
 
 @media

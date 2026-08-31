@@ -6,6 +6,7 @@ class SmartestDataUtility{
 	
 	public static $data_types;
 	public static $asset_types;
+	public static $unsupported_asset_types = array();
 	public static $assetclass_types;
     public static $model_names_lowercase;
 	
@@ -803,17 +804,19 @@ class SmartestDataUtility{
         
     }
 	
-	public static function getAssetTypes(){
+	public static function getAssetTypes($include_unsupported=false){
 	    
 	    if(self::$asset_types){
 	        
-	        return self::$asset_types;
+	        return $include_unsupported ? array_merge(self::$asset_types, self::$unsupported_asset_types) : self::$asset_types;
 	        
 	    }else{
 	    
     	    $data = SmartestYamlHelper::fastLoad(SM_ROOT_DIR.'System/Core/Types/assettypes.yml');
 	    
     	    $types = $data['type'];
+            $supported_types = array();
+            $unsupported_types = array();
 	    
     	    foreach($types as $id=>$raw_type){
 
@@ -834,14 +837,97 @@ class SmartestDataUtility{
                 }else{
                     $types[$id]['param'] = array();
                 }
-    	    }
-    	    
-    	    self::$asset_types = $types;
+
+                $types[$id]['supported'] = self::assetTypeDependencyIsSatisfied($types[$id]);
+
+                if($types[$id]['supported']){
+                    $supported_types[$id] = $types[$id];
+                }else{
+                    $types[$id]['unsupported_reason'] = self::getAssetTypeDependencyMessage($types[$id]);
+                    $unsupported_types[$id] = $types[$id];
+                }
+            }
+
+            self::$asset_types = $supported_types;
+            self::$unsupported_asset_types = $unsupported_types;
+
+            SmartestPersistentObject::set('system:asset_types', self::$asset_types);
+            SmartestPersistentObject::set('system:unsupported_asset_types', self::$unsupported_asset_types);
     	    
         }
 	    
-	    return $types;
+	    return $include_unsupported ? array_merge(self::$asset_types, self::$unsupported_asset_types) : self::$asset_types;
 	}
+
+    public static function getUnsupportedAssetTypes(){
+
+        if(!is_array(self::$unsupported_asset_types)){
+            self::getAssetTypes();
+        }
+
+        return self::$unsupported_asset_types;
+
+    }
+
+    public static function getBinaryImageAssetTypeCodes($include_svg=false){
+
+        $codes = array();
+        $types = self::getAssetTypes();
+
+        foreach($types as $code=>$type){
+            if(isset($type['binary_image']) && SmartestStringHelper::toRealBool($type['binary_image'])){
+                $codes[] = $code;
+            }
+        }
+
+        if($include_svg && isset($types['SM_ASSETTYPE_SVG_IMAGE'])){
+            $codes[] = 'SM_ASSETTYPE_SVG_IMAGE';
+        }
+
+        return $codes;
+
+    }
+
+    protected static function assetTypeDependencyIsSatisfied($type){
+
+        if(!isset($type['dependent_function']) || (is_array($type['dependent_function']) && !count($type['dependent_function'])) || (!is_array($type['dependent_function']) && !strlen((string) $type['dependent_function']))){
+            return true;
+        }
+
+        $functions = is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function']);
+
+        foreach($functions as $function_name){
+            if(!function_exists((string) $function_name)){
+                return false;
+            }
+        }
+
+        return true;
+
+    }
+
+    protected static function getAssetTypeDependencyMessage($type){
+
+        if(!isset($type['dependent_function'])){
+            return '';
+        }
+
+        $missing = array();
+        $functions = is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function']);
+
+        foreach($functions as $function_name){
+            if(!function_exists((string) $function_name)){
+                $missing[] = $function_name;
+            }
+        }
+
+        if(count($missing)){
+            return 'Missing PHP function'.(count($missing) == 1 ? '' : 's').': '.implode(', ', $missing);
+        }
+
+        return '';
+
+    }
 	
     public static function getAssetTypeCodes(){
         

@@ -1,6 +1,16 @@
 buildkit:
   shortname: sm_blank_site
   label: None
+  description: Creates a clean starter Smartest site with one homepage, essential special pages, a master template, a stylesheet, and a small branded welcome screen.
+  developer: Smartest Project
+  version: 1.0
+  system: true
+  hidden: true
+  creates:
+    - Homepage and standard special pages
+    - Master page template
+    - Starter stylesheet
+    - Main navigation page group
   title_format: $site | $page
   minimum_smartest_build: 904
   required_write_dirs:

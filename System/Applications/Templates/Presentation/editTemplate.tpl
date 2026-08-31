@@ -42,7 +42,7 @@
   </div>
   {else}
   
-  {if $suggested_models._count}
+  {if !empty($suggested_models) && !empty($suggested_models._count)}
     {if $suggested_models._count > 1}
   <div class="special-box"><p>It looks like you're using data in this template that is specific to one or more of your models. Would you like to associate it with one of those models?</p>
   <ul class="actions-list" id="non-specific-actions">
@@ -94,7 +94,7 @@ var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
     <li><strong>Options</strong></li>
     {if $is_convertable}<li class="permanent-action"><a href="javascript:nothing()" onclick="window.location='{$domain}{$section}/convertTemplateType?template_id={$template.id}'" class="right-nav-link"><img src="{$domain}Resources/Icons/wrench_orange.png" border="0" alt="" /> Convert to another type</a></li>{/if}
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/listByType?type={$template.type}'"><i class="fa fa-files-o"></i> See {$type_info.label|lower}s</a></li>
-    {if $model.id}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}smartest/templates/models?model_id={$model.id}'"><i class="fa fa-files-o"></i> See {$model.name|lower} templates</a></li>{/if}
+    {if !empty($model) && !empty($model.id)}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}smartest/templates/models?model_id={$model.id}'"><i class="fa fa-files-o"></i> See {$model.name|lower} templates</a></li>{/if}
   </ul>
   
 
@@ -104,13 +104,13 @@ var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
 {foreach from=$stylesheets item="stylesheet"}
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}assets/editAsset?asset_id={$stylesheet.id}'"><i class="fa fa-file-o"></i> {$stylesheet.label}</a></li>
 {/foreach}
-{elseif count($tokens)}
+{elseif !empty($tokens)}
     <li><strong>Stylesheets for this template</strong></li>
     <li><img src="{$domain}Resources/System/Images/ajax-loader.gif" alt="" /> Scanning template...</li>
 {/if}
   </ul>
 
-{if $template.type != 'SM_ASSETTYPE_MASTER_TEMPLATE' && count($tokens)}
+{if $template.type != 'SM_ASSETTYPE_MASTER_TEMPLATE' && !empty($tokens)}
 <script type="text/javascript">
   {literal}(function(id, type){
     new Ajax.Updater('stylesheet-actions', sm_domain+'ajax:templates/relevantTemplates?asset_type='+type+'&template='+id, {
@@ -122,7 +122,7 @@ var myCodeMirror = CodeMirror.fromTextArea($('tpl_textArea'), {
     });
   })({/literal}{if $template.status == "imported"}{$template.id}{else}'{$template.url}'{/if}, '{$template.type}');
 </script>
-{elseif $template.status == 'unimported' && $template.type == 'SM_ASSETTYPE_MASTER_TEMPLATE' && count($tokens)}
+{elseif $template.status == 'unimported' && $template.type == 'SM_ASSETTYPE_MASTER_TEMPLATE' && !empty($tokens)}
 <script type="text/javascript">
   {literal}(function(id, type){
     new Ajax.Updater('stylesheet-actions', sm_domain+'ajax:templates/relevantTemplates?asset_type='+type+'&template='+id, {

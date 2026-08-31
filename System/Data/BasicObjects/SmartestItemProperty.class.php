@@ -147,7 +147,10 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	
 	//// URL Encoding is being used to work around a bug in PHP's serialize/unserialize. No actual URLS are necessarily in use here
 	public function setInfoField($field, $new_data){
-	    
+	    if(!$this->_property_info instanceof SmartestParameterHolder){
+	        $this->_property_info = new SmartestParameterHolder("Settings for model property '".$this->getName()."'");
+	    }
+
 	    $field = SmartestStringHelper::toVarName($field);
 	    $this->_property_info->setParameter($field, rawurlencode(utf8_decode($new_data)));
 	    $this->_modified_properties['info'] = SmartestStringHelper::sanitize(serialize($this->_property_info->getArray()));
@@ -155,9 +158,12 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	}
 	
 	public function getInfoField($field){
-	    
+	    if(!$this->_property_info instanceof SmartestParameterHolder){
+	        $this->_property_info = new SmartestParameterHolder("Settings for model property '".$this->getName()."'");
+	    }
+
 	    $field = SmartestStringHelper::toVarName($field);
-	    
+
 	    if($this->_property_info->hasParameter($field)){
 	        return utf8_encode(stripslashes(rawurldecode($this->_property_info->getParameter($field))));
 	    }else{
@@ -165,6 +171,43 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	    }
 	}
 	
+	public static function getMultilineTextFormatOptions(){
+	    return SmartestRenderableString::getRenderFormatOptions();
+	}
+
+	public function getMultilineTextFormat(){
+	    return SmartestRenderableString::normalizeRenderFormat($this->getInfoField('ml_text_format'));
+	}
+
+	public function setMultilineTextFormat($format){
+	    return $this->setInfoField('ml_text_format', SmartestRenderableString::normalizeRenderFormat($format));
+	}
+
+	public function getMultilineTextFormatLabel(){
+	    $options = self::getMultilineTextFormatOptions();
+	    $format = $this->getMultilineTextFormat();
+	    return isset($options[$format]) ? $options[$format]['label'] : $options[SmartestRenderableString::FORMAT_PLAIN]['label'];
+	}
+
+	public function setUseDefaultValue($value){
+	    return $this->setInfoField('use_default_value', SmartestStringHelper::toRealBool($value) ? 'TRUE' : 'FALSE');
+	}
+
+	public function getUseDefaultValue(){
+	    $setting = $this->getInfoField('use_default_value');
+
+	    if($setting === null || $setting === ''){
+	        return $this->hasStoredDefaultValue();
+	    }
+
+	    return SmartestStringHelper::toRealBool($setting);
+	}
+
+	public function hasStoredDefaultValue(){
+	    $default_value = $this->_properties['defaultvalue'];
+	    return $default_value !== null && strlen((string) $default_value);
+	}
+
 	public function isForeignKey(){
 	    $info = $this->getTypeInfo();
 	    return $info['valuetype'] == 'foreignkey';
@@ -177,7 +220,7 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
     
     public function isImageProperty(){
         if($this->getDatatype() == "SM_DATATYPE_ASSET"){
-            if(in_array($this->getForeignKeyFilter(), array('SM_ASSETCLASS_STATIC_IMAGE', 'SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE'))){
+            if(in_array($this->getForeignKeyFilter(), array_merge(array('SM_ASSETCLASS_STATIC_IMAGE'), SmartestDataUtility::getBinaryImageAssetTypeCodes()))){
                 return true;
             }else{
                 return false;
@@ -629,8 +672,8 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	    
 	}
 	
-	public function getDefaultValue(){
-	    if($this->_properties['defaultvalue']){
+	public function getStoredDefaultValue(){
+	    if($this->hasStoredDefaultValue()){
 	        try{
 	            $v = SmartestDataUtility::objectize($this->_properties['defaultvalue'], $this->_properties['datatype']);
 	            return $v;
@@ -640,6 +683,14 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
         }else{
             return false;
         }
+	}
+
+	public function getDefaultValue(){
+	    if($this->getUseDefaultValue()){
+	        return $this->getStoredDefaultValue();
+	    }
+
+	    return false;
 	}
 	
 	public function getForeignKeySelectSql($info, $filter, $site_id=null){
@@ -794,6 +845,30 @@ class SmartestItemProperty extends SmartestBaseItemProperty implements SmartestT
 	        case "hint":
 	        return new SmartestString($this->getHint());
 	        
+	        case "ml_text_format":
+	        return $this->getMultilineTextFormat();
+
+	        case "ml_text_format_label":
+	        return $this->getMultilineTextFormatLabel();
+
+	        case "ml_text_format_options":
+	        return self::getMultilineTextFormatOptions();
+
+	        case "is_formatted_ml_text":
+	        return $this->getDataType() == 'SM_DATATYPE_ML_TEXT' && $this->getMultilineTextFormat() != SmartestRenderableString::FORMAT_PLAIN;
+
+	        case "use_default_value":
+	        return $this->getUseDefaultValue();
+
+	        case "has_stored_default_value":
+	        return $this->hasStoredDefaultValue();
+
+	        case "stored_default_value":
+	        return $this->getStoredDefaultValue();
+
+	        case "raw_default_value":
+	        return $this->_properties['defaultvalue'];
+
 	        case "default_value":
 	        return $this->getDefaultValue();
 	        

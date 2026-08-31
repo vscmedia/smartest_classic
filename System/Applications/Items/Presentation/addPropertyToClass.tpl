@@ -135,8 +135,21 @@ function setVarName(){
     
     <div class="edit-form-row">
       <div class="form-section-label">Requirement</div>
-      <input type="checkbox" name="itemproperty_required" id="is-required" value="TRUE" /> <label for="is-required">Check here if values for this property will be required</label>
+      {boolean name="itemproperty_required" id="is-required" value="FALSE"}
+      <div class="form-hint">Making a property required means the item cannot be published unless a value has been entered.</div>
     </div>
+
+{if $property.datatype == 'SM_DATATYPE_ML_TEXT'}
+    <div class="edit-form-row">
+      <div class="form-section-label">Text format</div>
+      <select name="itemproperty_ml_text_format">
+{foreach from=$property.ml_text_format_options item="format"}
+        <option value="{$format.id}"{if $format.id == $property.ml_text_format} selected="selected"{/if}>{$format.label}</option>
+{/foreach}
+      </select>
+      <div class="form-hint">Plain text preserves the existing multi-line text behaviour. Markdown and Textile are parsed when this property is rendered.</div>
+    </div>
+{/if}
     
     <div class="edit-form-row">
       <div class="buttons-bar">

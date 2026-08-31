@@ -323,7 +323,8 @@ class SmartestTag extends SmartestBaseTag implements SmartestStorableValue, Smar
     
     public function getImages($site_id=null){
         
-        $sql = "SELECT Assets.* FROM TagsObjectsLookup, Assets WHERE taglookup_tag_id='".$this->getId()."' AND taglookup_object_id=asset_id AND taglookup_type='SM_ASSET_TAG_LINK' AND asset_deleted=0 AND asset_type IN('SM_ASSETTYPE_JPEG_IMAGE','SM_ASSETTYPE_PNG_IMAGE','SM_ASSETTYPE_GIF_IMAGE')";
+        $image_types = SmartestDataUtility::getBinaryImageAssetTypeCodes();
+        $sql = "SELECT Assets.* FROM TagsObjectsLookup, Assets WHERE taglookup_tag_id='".$this->getId()."' AND taglookup_object_id=asset_id AND taglookup_type='SM_ASSET_TAG_LINK' AND asset_deleted=0 AND asset_type IN('".implode("','", $image_types)."')";
         
         if(is_numeric($site_id)){
             $sql .= " AND (asset_site_id='".$site_id."' OR asset_shared=1)";

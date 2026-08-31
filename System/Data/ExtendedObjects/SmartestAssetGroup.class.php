@@ -365,7 +365,7 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
                 // If it were possible to attach asset groups to sets via a foreign key
             // }else{
                 $alh = new SmartestAssetsLibraryHelper;
-                return $alh->getAssetsByTypeCode(array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'), $this->getSiteId(), 1);
+                return $alh->getAssetsByTypeCode($alh->getBinaryImageAssetTypeCodes(), $this->getSiteId(), 1);
             // }
         }else{
             return array();
@@ -475,7 +475,8 @@ class SmartestAssetGroup extends SmartestSet implements SmartestSetApi, Smartest
     }
     
     public function isBinaryImagesOnly(){
-        return ($this->getFilterType() == 'SM_SET_FILTERTYPE_ASSETCLASS' && $this->getFilterValue() == 'SM_ASSETCLASS_STATIC_IMAGE') || ($this->getFilterType() == 'SM_SET_FILTERTYPE_ASSETTYPE' && in_array($this->getFilterValue(), array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE')));
+        $alh = new SmartestAssetsLibraryHelper;
+        return ($this->getFilterType() == 'SM_SET_FILTERTYPE_ASSETCLASS' && $this->getFilterValue() == 'SM_ASSETCLASS_STATIC_IMAGE') || ($this->getFilterType() == 'SM_SET_FILTERTYPE_ASSETTYPE' && $alh->assetTypeCodeIsBinaryImage($this->getFilterValue()));
     }
     
     public function getPlaceholdersWhereUsed(){

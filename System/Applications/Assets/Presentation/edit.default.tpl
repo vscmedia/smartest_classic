@@ -35,8 +35,8 @@
       <input type="text" name="params[{$parameter_name}]" value="{$parameter.value}" />
       {/if}
       {/if}
-      {if $parameter.hint}
-      <div class="form-hint">{$parameter.hint}{if $parameter.use_slider && $parameter.datatype == 'SM_DATATYPE_NUMERIC'} (min {$parameter.min}, max  {$parameter.max}){/if}</div>
+      {if isset($parameter.hint) && $parameter.hint}
+      <div class="form-hint">{$parameter.hint}{if isset($parameter.use_slider) && $parameter.use_slider && $parameter.datatype == 'SM_DATATYPE_NUMERIC'} (min {$parameter.min}, max  {$parameter.max}){/if}</div>
       {/if}
     </div>
     {/foreach}

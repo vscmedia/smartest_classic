@@ -710,49 +710,102 @@ class SmartestTemplateAsset extends SmartestAsset{
 	
 	public function getImportedStylesheets(){
 	    
-	    $regex1 = '/<link rel="stylesheet" href="([^"]+(Resources\/Stylesheets\/([^"]+)))"/mi';
-	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
-	    
-	    $regex2 = '/<\?sm:stylesheet file="([^"]+)"/mi';
-	    $result = preg_match_all($regex2, $this->getContent(), $matches2);
-	    
 	    $stylesheets = array();
+        $ids = array();
 	    
-	    foreach($matches1[3] as $m){
+	    foreach($this->getReferencedStylesheetFilenames() as $m){
             $a = new SmartestAsset;
-	        if(is_file(SM_ROOT_DIR.'Public/Resources/Stylesheets/'.$m)){
-	            if($a->findBy('url', $m)){
+	        if(is_file(SM_ROOT_DIR.'Public/Resources/Stylesheets/'.$m) || SmartestStringHelper::getDotSuffix($m) == 'scss'){
+	            if($a->findBy('url', $m) && !in_array($a->getId(), $ids)){
 	                $stylesheets[] = $a;
+                    $ids[] = $a->getId();
 	            }
-	        }elseif(SmartestStringHelper::getDotSuffix($m) == 'scss' && $a->findBy('url', $m)){
-	            $stylesheets[] = $a;
 	        }
 	    }
-	    
-	    foreach($matches2[1] as $m){
-            $a = new SmartestAsset;
-	        if(is_file(SM_ROOT_DIR.'Public/Resources/Stylesheets/'.$m)){
-	            if($a->findBy('url', $m)){
-	                $stylesheets[] = $a;
-	            }
-	        }elseif(SmartestStringHelper::getDotSuffix($m) == 'scss' && $a->findBy('url', $m)){
-	            $stylesheets[] = $a;
-	        }
-	    }
+
+        if($this->getId()){
+            $this->syncRelatedAssetsByIds($ids, self::ASSET_RELATION_REFERENCES_STYLESHEET, array(
+                'source' => 'template_stylesheet_scan',
+                'detection' => 'explicit_template_reference',
+            ));
+        }
 	    
 	    return $stylesheets;
 	    
 	}
+
+    public function getReferencedStylesheetFilenames(){
+
+        $files = array();
+        $content = $this->getContent();
+
+        if(preg_match_all('/<link\b[^>]*>/mi', $content, $link_matches)){
+            foreach($link_matches[0] as $tag){
+                if($this->htmlTagAttributeEquals($tag, 'rel', 'stylesheet') && preg_match('/\bhref\s*=\s*(["\'])(.*?)\1/mi', $tag, $href_match)){
+                    if($file = $this->normaliseStylesheetReference($href_match[2])){
+                        $files[] = $file;
+                    }
+                }
+            }
+        }
+
+        if(preg_match_all('/<\?sm:stylesheet\b(.*?)(?:\:)?\?>/mis', $content, $tag_matches)){
+            foreach($tag_matches[1] as $attribute_string){
+                if(preg_match('/\bfile\s*=\s*(["\'])(.*?)\1/mi', $attribute_string, $file_match)){
+                    if($file = $this->normaliseStylesheetReference($file_match[2])){
+                        $files[] = $file;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($files));
+
+    }
+
+    protected function htmlTagAttributeEquals($tag, $attribute, $expected_value){
+
+        if(preg_match('/\b'.preg_quote($attribute, '/').'\s*=\s*(["\'])(.*?)\1/mi', $tag, $match)){
+            return strtolower(trim($match[2])) == strtolower($expected_value);
+        }
+
+        return false;
+
+    }
+
+    protected function normaliseStylesheetReference($reference){
+
+        $reference = html_entity_decode(trim($reference), ENT_QUOTES, 'UTF-8');
+
+        if(!strlen($reference)){
+            return null;
+        }
+
+        if(($query_pos = strpos($reference, '?')) !== false){
+            $reference = substr($reference, 0, $query_pos);
+        }
+
+        if(preg_match('/Resources\/Stylesheets\/(.+)$/i', $reference, $matches)){
+            $reference = $matches[1];
+        }else if(preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $reference)){
+            return null;
+        }else{
+            $reference = ltrim($reference, '/');
+        }
+
+        return $reference;
+
+    }
     
     public function getMentionedCSSClasses(){
         
-	    $regex1 = '/class="([\w\s_-]+)"/mi';
+	    $regex1 = '/\bclass\s*=\s*(["\'])([\w\s_-]+)\1/mi';
 	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
         
-        if(isset($matches1[1])){
+        if(isset($matches1[2])){
             $classes = array();
-            foreach($matches1[1] as $raw_value){
-                $class_names = explode(' ', $raw_value);
+            foreach($matches1[2] as $raw_value){
+                $class_names = preg_split('/\s+/', trim($raw_value));
                 if(count($class_names) > 1){
                     $classes[] = implode('.', $class_names);
                 }
@@ -769,12 +822,12 @@ class SmartestTemplateAsset extends SmartestAsset{
     
     public function getMentionedCSSIds(){
         
-	    $regex1 = '/id="([\w\s_-]+)"/mi';
+	    $regex1 = '/\bid\s*=\s*(["\'])([\w_-]+)\1/mi';
 	    $result = preg_match_all($regex1, $this->getContent(), $matches1);
         
-        if(isset($matches1[1])){
+        if(isset($matches1[2])){
             $ids = array();
-            foreach($matches1[1] as $id){
+            foreach($matches1[2] as $id){
                 $ids[] = $id;
             }
             return $ids;
@@ -805,7 +858,7 @@ class SmartestTemplateAsset extends SmartestAsset{
         $alh = new SmartestAssetsLibraryHelper;
         $tokens = $this->getMentionedCSSTokens();
         
-        $stylesheets = $alh->getAssetsByTypeCode('SM_ASSETTYPE_STYLESHEET', $site_id);
+        $stylesheets = $alh->getAssetsByTypeCode($this->getStylesheetAssetTypeCodes(), $site_id);
         $relevant_stylesheets = array();
         $ids = array();
         
@@ -813,7 +866,7 @@ class SmartestTemplateAsset extends SmartestAsset{
             $content = $stylesheet->getContent();
             foreach($tokens as $name=>$type){
                 if($type == 'id'){
-                    if(strpos($content, '#'.$name.'{') !== false){
+                    if($this->stylesheetMentionsToken($content, $name, 'id')){
                         // echo 'found ID \''.$name.'\' in stylesheet '.$stylesheet->getUrl().'<br />';
                         if(!in_array($stylesheet->getId(), $ids)){
                             $relevant_stylesheets[] = $stylesheet;
@@ -821,7 +874,7 @@ class SmartestTemplateAsset extends SmartestAsset{
                         }
                     }
                 }elseif($type == 'class'){
-                    if(strpos($content, '.'.$name.'{') !== false){
+                    if($this->stylesheetMentionsToken($content, $name, 'class')){
                         // echo 'found class \''.$name.'\' in stylesheet '.$stylesheet->getUrl().'<br />';
                         if(!in_array($stylesheet->getId(), $ids)){
                             $relevant_stylesheets[] = $stylesheet;
@@ -831,9 +884,29 @@ class SmartestTemplateAsset extends SmartestAsset{
                 }
             }
         }
+
+        if($this->getId()){
+            $this->syncRelatedAssetsByIds($ids, self::ASSET_RELATION_MATCHES_STYLESHEET_SELECTORS, array(
+                'source' => 'template_stylesheet_scan',
+                'detection' => 'css_selector_match',
+            ));
+        }
         
         return $relevant_stylesheets;
         
+    }
+
+    protected function getStylesheetAssetTypeCodes(){
+        return array('SM_ASSETTYPE_STYLESHEET', 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET');
+    }
+
+    protected function stylesheetMentionsToken($content, $name, $type){
+
+        $prefix = $type == 'id' ? '#' : '.';
+        $selector = preg_quote($prefix.$name, '/');
+
+        return preg_match('/(^|[^a-zA-Z0-9_-])'.$selector.'(\s*[,>{:+~.#\[]|\s*\{)/m', $content) === 1;
+
     }
 	
 	public function clearRecentlyEditedInstances($site_id, $user_id=''){

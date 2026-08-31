@@ -923,7 +923,8 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	
 	public function getAvailableIconImageFilenames(){
 	    
-	    $sql = "SELECT * FROM Assets WHERE asset_type IN ('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE') AND (asset_site_id='".$this->_properties['site_id']."' OR asset_shared=1) AND asset_deleted!=1 ORDER BY asset_url";
+        $image_types = SmartestDataUtility::getBinaryImageAssetTypeCodes();
+	    $sql = "SELECT * FROM Assets WHERE asset_type IN ('".implode("', '", $image_types)."') AND (asset_site_id='".$this->_properties['site_id']."' OR asset_shared=1) AND asset_deleted!=1 ORDER BY asset_url";
 	    $result = $this->database->queryToArray($sql);
 	    
 	    $filenames = array();
@@ -938,7 +939,7 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
     public function getAvailableThumbnailImages(){
         
         $alh = new SmartestAssetsLibraryHelper;
-        return $alh->getAssetsByTypeCode(array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'), $this->getSite()->getId(), 1);
+        return $alh->getAssetsByTypeCode($alh->getBinaryImageAssetTypeCodes(), $this->getSite()->getId(), 1);
         
     }
     

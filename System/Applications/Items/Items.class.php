@@ -3107,10 +3107,13 @@ class Items extends SmartestSystemApplication{
             		$property->setName($this->getRequestParameter('itemproperty_name'));
             		$property->setVarname(SmartestStringHelper::toVarName($property->getName()));
             		$property->setDatatype($this->getRequestParameter('itemproperty_datatype'));
-            		$property->setRequired($this->getRequestParameter('itemproperty_required') ? 'TRUE' : 'FALSE');
+                    $property->setRequired(SmartestStringHelper::toRealBool($this->getRequestParameter('itemproperty_required')) ? 'TRUE' : 'FALSE');
             		$property->setItemClassId($model->getId());
             		$property->setWebid(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
             		$property->setOrderIndex($model->getNextPropertyOrderIndex());
+                    if($property->getDatatype() == 'SM_DATATYPE_ML_TEXT'){
+                        $property->setMultilineTextFormat($this->getRequestParameter('itemproperty_ml_text_format'));
+                    }
 
             		if($this->getRequestParameter('foreign_key_filter')){
             		    $property->setForeignKeyFilter($this->getRequestParameter('foreign_key_filter'));
@@ -3352,8 +3355,18 @@ class Items extends SmartestSystemApplication{
 
     		if($property->find($itemproperty_id)){
 
-    		    $property->setRequired($this->getRequestParameter('itemproperty_required') ? 'TRUE' : 'FALSE');
+                $property->setRequired(SmartestStringHelper::toRealBool($this->getRequestParameter('itemproperty_required')) ? 'TRUE' : 'FALSE');
     		    $property->setHint($this->getRequestParameter('itemproperty_hint'));
+                if($property->getDataType() == 'SM_DATATYPE_ML_TEXT'){
+                    $property->setMultilineTextFormat($this->getRequestParameter('itemproperty_ml_text_format'));
+                }
+
+                $type_info = $property->getTypeInfo();
+                $value_type = isset($type_info['valuetype']) ? $type_info['valuetype'] : null;
+
+                if($value_type != 'manytomany' && $value_type != 'auto'){
+                    $property->setUseDefaultValue($this->getRequestParameter('itemproperty_use_default_value'));
+                }
 
     		    if($this->requestParameterIsSet('itemproperty_default_value')){
     		        try{

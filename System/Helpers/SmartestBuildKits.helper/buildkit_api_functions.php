@@ -173,8 +173,12 @@ function create_meta_page($title, $url, $model, $parent_page='home', $template_n
     return SmartestBuildKitsHelper::createMetaPage($title, $url, $model, $parent_page, $template_name);
 }
 
-function create_page_group($label){
-    return SmartestBuildKitsHelper::createPageGroup($label);
+function create_page_group($label, $name='', $settings=array()){
+    return SmartestBuildKitsHelper::createPageGroup($label, $name, $settings);
+}
+
+function create_navigation_group($label, $name=''){
+    return SmartestBuildKitsHelper::createNavigationGroup($label, $name);
 }
 
 function add_page_to_group($page, $group){

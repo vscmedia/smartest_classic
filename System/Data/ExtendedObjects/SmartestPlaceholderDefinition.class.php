@@ -64,7 +64,7 @@ class SmartestPlaceholderDefinition extends SmartestAssetIdentifier{
                     $asset = new SmartestRenderableAsset;
                     $asset->find($asset_id);
                     
-                    if(in_array($placeholder->getType(), array('SM_ASSETTYPE_IMAGE', 'SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_SL_TEXT'))){
+                    if(in_array($placeholder->getType(), array_merge(array('SM_ASSETTYPE_IMAGE', 'SM_ASSETTYPE_SL_TEXT'), SmartestDataUtility::getBinaryImageAssetTypeCodes()))){
                         $this->_is_linkable = true;
                     }else{
                         $this->_is_linkable = false;

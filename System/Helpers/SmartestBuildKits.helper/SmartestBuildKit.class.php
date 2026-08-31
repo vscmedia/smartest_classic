@@ -28,6 +28,38 @@ class SmartestBuildKit implements ArrayAccess{
         return isset($this->_info['label']) ? $this->_info['label'] : $this->getShortName();
     }
 
+    public function getDescription(){
+        return isset($this->_info['description']) ? $this->_info['description'] : '';
+    }
+
+    public function getDeveloper(){
+        return isset($this->_info['developer']) ? $this->_info['developer'] : '';
+    }
+
+    public function getVersion(){
+        return isset($this->_info['version']) ? $this->_info['version'] : '';
+    }
+
+    public function getMinimumSmartestBuild(){
+        return isset($this->_info['minimum_smartest_build']) ? $this->_info['minimum_smartest_build'] : '';
+    }
+
+    public function getSystem(){
+        return isset($this->_info['system']) ? SmartestStringHelper::toRealBool($this->_info['system']) : false;
+    }
+
+    public function getHidden(){
+        return isset($this->_info['hidden']) ? SmartestStringHelper::toRealBool($this->_info['hidden']) : false;
+    }
+
+    public function isSystem(){
+        return $this->getSystem();
+    }
+
+    public function isHidden(){
+        return $this->getHidden();
+    }
+
     public function getDirectory(){
         return $this->_dir;
     }
@@ -68,6 +100,21 @@ class SmartestBuildKit implements ArrayAccess{
         return $unwritable_locations;
     }
 
+    public function getRequiredWriteLocationStatuses(){
+
+        $statuses = array();
+        $unwritable_locations = $this->getUnwritableRequiredWriteLocations();
+
+        foreach($this->getRequiredWriteLocations() as $location){
+            $statuses[] = array(
+                'path' => $location,
+                'writable' => !in_array($location, $unwritable_locations)
+            );
+        }
+
+        return $statuses;
+    }
+
     public function getTitleFormat(){
         return isset($this->_info['title_format']) ? $this->_info['title_format'] : null;
     }
@@ -92,6 +139,45 @@ class SmartestBuildKit implements ArrayAccess{
         $options['oldpcs'] = isset($options['oldpcs']) ? SmartestStringHelper::toRealBool($options['oldpcs']) : false;
 
         return $options;
+    }
+
+    public function getThirdPartyLicenses(){
+        return isset($this->_info['third_party_licenses']) && is_array($this->_info['third_party_licenses']) ? $this->_info['third_party_licenses'] : array();
+    }
+
+    public function getCreationSummary(){
+        return isset($this->_info['creates']) && is_array($this->_info['creates']) ? $this->_info['creates'] : array();
+    }
+
+    public function getFeatureSummary(){
+
+        $features = array();
+
+        if($this->getContentIsEnabled()){
+            $features[] = array('label' => 'Content and styling', 'required' => $this->getContentIsRequired());
+        }
+
+        if($this->getTemplatesAreEnabled()){
+            $features[] = array('label' => 'Templates, Javascript and essential CSS', 'required' => $this->getTemplatesAreRequired());
+        }
+
+        if($this->getDataStructureIsEnabled()){
+            $features[] = array('label' => 'Data structures', 'required' => $this->getDataStructureIsRequired());
+        }
+
+        if($this->getPageStructureIsEnabled()){
+            $features[] = array('label' => 'Page structures', 'required' => $this->getPageStructureIsRequired());
+        }
+
+        if($this->getResponsiveModeEnabled()){
+            $features[] = array('label' => 'Responsive settings', 'required' => false);
+        }
+
+        if($this->getEUCookieModeEnabled()){
+            $features[] = array('label' => 'EU cookie notice', 'required' => false);
+        }
+
+        return $features;
     }
 
     public function getMainConfigurationOptions(){
@@ -241,7 +327,7 @@ class SmartestBuildKit implements ArrayAccess{
     }
 
     public function offsetExists(mixed $offset): bool{
-        return in_array($offset, array('shortname', 'id', 'label', 'dir', 'directory', 'required_write_locations', 'unwritable_required_write_locations'));
+        return in_array($offset, array('shortname', 'id', 'label', 'description', 'developer', 'version', 'minimum_smartest_build', 'system', 'hidden', 'dir', 'directory', 'required_write_locations', 'required_write_location_statuses', 'unwritable_required_write_locations', 'third_party_licenses', 'creates', 'features'));
     }
 
     public function offsetSet(mixed $offset, mixed $value): void{}
@@ -258,6 +344,24 @@ class SmartestBuildKit implements ArrayAccess{
             case 'label':
             return $this->getLabel();
 
+            case 'description':
+            return $this->getDescription();
+
+            case 'developer':
+            return $this->getDeveloper();
+
+            case 'version':
+            return $this->getVersion();
+
+            case 'minimum_smartest_build':
+            return $this->getMinimumSmartestBuild();
+
+            case 'system':
+            return $this->getSystem();
+
+            case 'hidden':
+            return $this->getHidden();
+
             case 'dir':
             case 'directory':
             return $this->getDirectory();
@@ -265,8 +369,20 @@ class SmartestBuildKit implements ArrayAccess{
             case 'required_write_locations':
             return $this->getRequiredWriteLocations();
 
+            case 'required_write_location_statuses':
+            return $this->getRequiredWriteLocationStatuses();
+
             case 'unwritable_required_write_locations':
             return $this->getUnwritableRequiredWriteLocations();
+
+            case 'third_party_licenses':
+            return $this->getThirdPartyLicenses();
+
+            case 'creates':
+            return $this->getCreationSummary();
+
+            case 'features':
+            return $this->getFeatureSummary();
         }
 
         return null;

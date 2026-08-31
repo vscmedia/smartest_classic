@@ -1,6 +1,15 @@
 buildkit:
   shortname: sm_infosite
   label: Informational website
+  description: Creates a small informational site with starter page templates, a basic FAQ data model, reusable page layout structures, navigation, and essential frontend assets.
+  developer: Smartest Project
+  version: 1.0
+  creates:
+    - Homepage and FAQ listing page
+    - FAQ meta-page
+    - FAQ model and starter property definitions
+    - Main navigation page group
+    - Master, page, and CSS assets
   title_format: $page | $site
   minimum_smartest_build: 744
   eu_cookie_mode:

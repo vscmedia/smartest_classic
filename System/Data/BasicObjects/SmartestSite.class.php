@@ -870,7 +870,7 @@ class SmartestSite extends SmartestBaseSite{
     public function getImages($limit=null){
         
         $alh = new SmartestAssetsLibraryHelper;
-        $images = $alh->getAssetsByTypeCode(array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE'), $this->getId());
+        $images = $alh->getAssetsByTypeCode($alh->getBinaryImageAssetTypeCodes(), $this->getId());
         
         if(is_numeric($limit) && $limit > 0){
             return array_slice($images, 0, $limit);

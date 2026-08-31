@@ -156,6 +156,7 @@ type:
     fa_iconname: file-image-o
     attachable: true
     captionable: true
+    binary_image: true
     parsable: false
     supports_exif: true
     maximum_filesize_before_warning: 1048576
@@ -190,6 +191,7 @@ type:
     fa_iconname: file-image-o
     attachable: true
     captionable: true
+    binary_image: true
     parsable: false
     maximum_filesize_before_warning: 1048576
     storage:
@@ -222,6 +224,7 @@ type:
     fa_iconname: file-image-o
     attachable: true
     captionable: true
+    binary_image: true
     parsable: false
     maximum_filesize_before_warning: 1048576
     storage:
@@ -243,6 +246,38 @@ type:
 #      - {name: class, label: "CSS class attribute", type: SM_DATATYPE_SL_TEXT, required: false}
 #      - {name: style, label: "Style attribute", type: SM_DATATYPE_SL_TEXT,  required: false}
 #      - {name: link_href, label: Link destination, type: SM_DATATYPE_URL, required: false}
+
+  SM_ASSETTYPE_WEBP_IMAGE:
+    id: SM_ASSETTYPE_WEBP_IMAGE
+    category: image
+    label: WebP image
+    description: An image in WebP format.
+    class: SmartestImageAsset
+    icon: picture.png
+    fa_iconname: file-image-o
+    attachable: true
+    captionable: true
+    binary_image: true
+    parsable: false
+    dependent_function:
+      - imagecreatefromwebp
+      - imagewebp
+    maximum_filesize_before_warning: 1048576
+    storage:
+      type: file
+      location: Public/Resources/Images/
+      system_location: Public/Resources/System/Images/
+    render:
+      template: System/Presentation/WebPageBuilder/display.image.tpl
+    input_options:
+      - SM_ASSETINPUTTYPE_BROWSER_UPLOAD
+      - SM_ASSETINPUTTYPE_FTP_UPLOAD
+    suffix:
+      - {mime: image/webp, _content: webp}
+    param:
+      - {name: credit, label: "Credit", type: SM_DATATYPE_SL_TEXT, required: false}
+      - {name: source_url, label: "Source URL", type: SM_DATATYPE_URL, required: false}
+      - {name: alt_text, label: "Text alternative", type: SM_DATATYPE_SL_TEXT, required: false}
 
   SM_ASSETTYPE_ICO_FAVICON:
     id: SM_ASSETTYPE_ICO_FAVICON
@@ -289,7 +324,7 @@ type:
     input_options:
       - SM_ASSETINPUTTYPE_URL_INPUT
     url_translation:
-      format: "^https?:\/\/((instagram\.com)|(instagr\.am))\/p\/([\w_-]+).*"
+      format: '^https?:\/\/((instagram\.com)|(instagr\.am))\/p\/([\w_-]+).*'
       id_position: 4
     storage:
       type: external_translated
@@ -589,7 +624,7 @@ type:
     input_options:
       - SM_ASSETINPUTTYPE_URL_INPUT
     url_translation:
-      format: "^https?:\/\/(((www\.)?youtube\.com\/watch\?v=)|(youtu\.be\/))([\w_-]+).*"
+      format: '^https?:\/\/(((www\.)?youtube\.com\/watch\?v=)|(youtu\.be\/))([\w_-]+).*'
       id_position: 5
     storage:
       type: external_translated
@@ -614,7 +649,7 @@ type:
     input_options:
       - SM_ASSETINPUTTYPE_URL_INPUT
     url_translation:
-      format: "https?:\/\/(www\.)?vimeo\.com\/(\d+)"
+      format: 'https?:\/\/(www\.)?vimeo\.com\/(\d+)'
       id_position: 2
     storage:
       type: external_translated
@@ -650,8 +685,8 @@ type:
     param:
       - {name: width, label: "Width", type: SM_DATATYPE_NUMERIC, required: true, default: 480}
       - {name: height, label: "Height", type: SM_DATATYPE_NUMERIC, required: true, default: 360}
-      - {name: auto_start, label: "Auto start", type: SM_DATATYPE_BOOLEAN, default:false, required: false}
-      - {name: show_controller, label: "Show controller", type: SM_DATATYPE_BOOLEAN, default:true, required: false}
+      - {name: auto_start, label: "Auto start", type: SM_DATATYPE_BOOLEAN, default: false, required: false}
+      - {name: show_controller, label: "Show controller", type: SM_DATATYPE_BOOLEAN, default: true, required: false}
 
   SM_ASSETTYPE_QUICKTIME_MOVIE:
     id: SM_ASSETTYPE_QUICKTIME_MOVIE
@@ -677,8 +712,8 @@ type:
     param:
       - {name: width, label: "Width", type: SM_DATATYPE_NUMERIC, required: true, default: 480}
       - {name: height, label: "Height", type: SM_DATATYPE_NUMERIC, required: true, default: 360}
-      - {name: auto_start, label: "Auto start", type: SM_DATATYPE_BOOLEAN, default:false, required: false}
-      - {name: show_controller, label: "Show controller", type: SM_DATATYPE_BOOLEAN, default:true, required: false}
+      - {name: auto_start, label: "Auto start", type: SM_DATATYPE_BOOLEAN, default: false, required: false}
+      - {name: show_controller, label: "Show controller", type: SM_DATATYPE_BOOLEAN, default: true, required: false}
 
     
   SM_ASSETTYPE_FLASH_VIDEO:

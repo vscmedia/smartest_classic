@@ -15,6 +15,7 @@ class SmartestImage extends SmartestFile{
     const JPG = 'jpeg';
     const GIF = 'gif';
     const PNG = 'png';
+    const WEBP = 'webp';
     
     const LANDSCAPE = 'ls';
     const SQUARE = 'sq';
@@ -80,9 +81,13 @@ class SmartestImage extends SmartestFile{
                 case "GIF":
                 $resource = imagecreatefromgif($file_path);
                 break;
+
+                case "WEBP":
+                $resource = function_exists('imagecreatefromwebp') ? imagecreatefromwebp($file_path) : null;
+                break;
             }
 
-            return $resource;
+            return isset($resource) ? $resource : null;
             
         }
         
@@ -107,6 +112,10 @@ class SmartestImage extends SmartestFile{
 
                 case "GIF":
                 $this->_image_type = self::GIF;
+                break;
+
+                case "WEBP":
+                $this->_image_type = self::WEBP;
                 break;
             }
         
@@ -214,6 +223,8 @@ class SmartestImage extends SmartestFile{
             return "SM_ASSETTYPE_PNG_IMAGE";
             case "gif":
             return "SM_ASSETTYPE_GIF_IMAGE";
+            case "webp":
+            return "SM_ASSETTYPE_WEBP_IMAGE";
         }
     }
     
@@ -249,7 +260,7 @@ class SmartestImage extends SmartestFile{
             
             $r = ImageCreateTrueColor($width, $height);
             
-            if($this->getImageType() == self::PNG){
+            if(in_array($this->getImageType(), array(self::PNG, self::WEBP))){
                 imagealphablending($r, false);
                 imagesavealpha($r, true);
             }
@@ -275,17 +286,22 @@ class SmartestImage extends SmartestFile{
 
             case "JPG":
             case "JPEG":
-            if(!$quality){$quality == 85;}
-            $r = imagejpeg($resource, $path, 85);
+            if(!$quality){$quality = 85;}
+            $r = imagejpeg($resource, $path, $quality);
             break;
 
             case "PNG":
-            if(!$quality){$quality == 0;}
-            $r = imagepng($resource, $path, 0);
+            if(!$quality){$quality = 0;}
+            $r = imagepng($resource, $path, $quality);
             break;
 
             case "GIF":
             $r = imagegif($resource, $path);
+            break;
+
+            case "WEBP":
+            if(!$quality){$quality = 85;}
+            $r = function_exists('imagewebp') ? imagewebp($resource, $path, $quality) : false;
             break;
         }
         
@@ -406,7 +422,7 @@ class SmartestImage extends SmartestFile{
             $new_height = (int) ($width/$this->getWidth()*$this->getHeight());
             $r = ImageCreateTrueColor($width, $new_height);
             
-            if($this->getImageType() == self::PNG){
+            if(in_array($this->getImageType(), array(self::PNG, self::WEBP))){
                 imagealphablending($r, false);
                 imagesavealpha($r, true);
             }
@@ -446,7 +462,7 @@ class SmartestImage extends SmartestFile{
             $new_width = (int) ($height/$this->getHeight()*$this->getWidth());
             $r = ImageCreateTrueColor($new_width, $height);
             
-            if($this->getImageType() == self::PNG){
+            if(in_array($this->getImageType(), array(self::PNG, self::WEBP))){
                 imagealphablending($r, false);
                 imagesavealpha($r, true);
             }
@@ -535,7 +551,7 @@ class SmartestImage extends SmartestFile{
             $new_height = ceil($percentage/100*$this->getHeight());
             $thumbnail_resource = ImageCreateTrueColor($new_width, $new_height);
             
-            if($this->getImageType() == self::PNG){
+            if(in_array($this->getImageType(), array(self::PNG, self::WEBP))){
                 imagealphablending($thumbnail_resource, false);
                 imagesavealpha($thumbnail_resource, true);
             }
@@ -590,7 +606,7 @@ class SmartestImage extends SmartestFile{
             $new_height = ceil($percentage/100*$this->getHeight()); */
             $thumbnail_resource = ImageCreateTrueColor($width, $height);
             
-            if($this->getImageType() == self::PNG){
+            if(in_array($this->getImageType(), array(self::PNG, self::WEBP))){
                 imagealphablending($thumbnail_resource, false);
                 imagesavealpha($thumbnail_resource, true);
             }
@@ -870,6 +886,11 @@ class SmartestImage extends SmartestFile{
             case "GIF":
             header("Content-type: image/gif");
             imagegif($this->getResource());
+            break;
+
+            case "WEBP":
+            header("Content-type: image/webp");
+            imagewebp($this->getResource());
             break;
             
         }

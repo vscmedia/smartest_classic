@@ -6,6 +6,9 @@ class DesktopAjax extends SmartestSystemApplication{
 
         $buildkits = SmartestBuildKitUtilities::getAvailableBuildKits();
         $buildkit_id = $this->getRequestParameter('buildkit_id');
+        if($buildkit_id == '_NONE'){
+            $buildkit_id = SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+        }
 
         if(isset($buildkits[$buildkit_id])){
 

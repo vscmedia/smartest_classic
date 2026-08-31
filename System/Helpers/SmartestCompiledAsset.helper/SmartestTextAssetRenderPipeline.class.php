@@ -127,8 +127,16 @@ class SmartestTextAssetRenderPipeline{
     }
 
     protected function renderSmartestLinks($content){
+        return self::renderSmartestLinksInHtml($content, $this->_renderer->getDraftMode(), $this->_renderer);
+    }
+
+    public static function renderSmartestLinksInHtml($content, $draft_mode='SM_CMS_LINK_DRAFT_MODE_AUTO', $renderer=null){
+        if(!class_exists('SmartestLinkParser') || !class_exists('SmartestCmsLink')){
+            return $content;
+        }
+
         $protected_blocks = array();
-        $content = $this->protectLiteralHtmlBlocks($content, $protected_blocks);
+        $content = self::protectLiteralHtmlBlocks($content, $protected_blocks);
         $links = SmartestLinkParser::parseEasyLinks($content);
 
         foreach($links as $l){
@@ -136,9 +144,9 @@ class SmartestTextAssetRenderPipeline{
             $original = $l->getParameter('original');
 
             if($link->hasError()){
-                $replacement = $this->_renderer->raiseError($link->getErrorMessage());
+                $replacement = (is_object($renderer) && method_exists($renderer, 'raiseError')) ? $renderer->raiseError($link->getErrorMessage()) : $original;
             }else{
-                $replacement = $link->render($this->_renderer->getDraftMode());
+                $replacement = $link->render($draft_mode);
             }
 
             $content = str_replace($original, $replacement, $content);
@@ -147,7 +155,7 @@ class SmartestTextAssetRenderPipeline{
         return strtr($content, $protected_blocks);
     }
 
-    protected function protectLiteralHtmlBlocks($content, &$protected_blocks){
+    protected static function protectLiteralHtmlBlocks($content, &$protected_blocks){
         return preg_replace_callback('/<(pre|code|script|style)\b[^>]*>.*?<\/\1>/is', function($matches) use (&$protected_blocks){
             $token = '__SMARTTEST_PROTECTED_HTML_'.count($protected_blocks).'__';
             $protected_blocks[$token] = $matches[0];
@@ -254,6 +262,10 @@ class SmartestTextAssetRenderPipeline{
     }
 
     protected function parseMarkdownMarkup($content){
+        return self::parseMarkdownContent($content);
+    }
+
+    public static function parseMarkdownContent($content){
         if(class_exists('Parsedown')){
             $parser = new Parsedown();
             return $parser->text($content);
@@ -265,13 +277,13 @@ class SmartestTextAssetRenderPipeline{
         }
 
         $attachment_tokens = array();
-        $content = $this->protectAttachmentTokens($content, $attachment_tokens);
+        $content = self::protectAttachmentTokens($content, $attachment_tokens);
         $content = '<p>'.nl2br(htmlspecialchars($content, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'), false).'</p>';
 
         return strtr($content, $attachment_tokens);
     }
 
-    protected function protectAttachmentTokens($content, &$attachment_tokens){
+    protected static function protectAttachmentTokens($content, &$attachment_tokens){
         return preg_replace_callback('/<!--\s*'.self::ATTACHMENT_TOKEN_PREFIX.':([\w_-]+)\s*-->/', function($matches) use (&$attachment_tokens){
             $token = 'SMARTESTPROTECTEDATTACHMENTTOKEN'.count($attachment_tokens);
             $attachment_tokens[$token] = $matches[0];

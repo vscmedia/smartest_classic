@@ -34,6 +34,16 @@ type:
       table: Items
       foreignkey: item_id
       class: SmartestItem
+  SM_MTMLOOKUP_RELATED_ASSETS:
+    id: SM_MTMLOOKUP_RELATED_ASSETS
+    return: class:SmartestAsset
+    method: SM_MTMLOOKUPMETHOD_NETWORK
+    label: Links one file to other semantically related files.
+    network:
+      table: Assets
+      foreignkey: asset_id
+      class: SmartestAsset
+    instances: 'true'
   SM_MTMLOOKUP_PAGES_ITEMS:
     id: SM_MTMLOOKUP_PAGES_ITEMS
     return: meta:targetEntityClass

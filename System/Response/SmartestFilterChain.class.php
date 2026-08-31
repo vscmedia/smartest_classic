@@ -12,7 +12,7 @@ class SmartestFilterChain{
             $this->_name = $chain_name;
             $this->_data = new SmartestParameterHolder("Filter chain data");
         }else{
-            throw new SmartestException("The filter chain $chain name does not exist: System/Response/Filters/".$chain_name.'/ could not be found.');
+            throw new SmartestException("The filter chain ".$chain_name." does not exist: System/Response/Filters/".$chain_name.'/ could not be found.');
         }
         
     }

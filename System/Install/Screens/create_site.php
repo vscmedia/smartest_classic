@@ -39,7 +39,7 @@ $default_buildkit = class_exists('SmartestBuildKitUtilities') ? SmartestBuildKit
             <?php if(isset($buildkits[$default_buildkit])): ?>
             <option value="<?php echo htmlspecialchars($buildkits[$default_buildkit]->getShortName(), ENT_QUOTES, 'UTF-8'); ?>">None</option>
             <?php endif; ?>
-            <?php foreach($buildkits as $buildkit): if($buildkit->getShortName() == $default_buildkit){ continue; } ?>
+            <?php foreach($buildkits as $buildkit): if($buildkit->getShortName() == $default_buildkit || $buildkit->isHidden()){ continue; } ?>
             <option value="<?php echo htmlspecialchars($buildkit->getShortName(), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($buildkit->getLabel(), ENT_QUOTES, 'UTF-8'); ?></option>
             <?php endforeach; ?>
         </select>

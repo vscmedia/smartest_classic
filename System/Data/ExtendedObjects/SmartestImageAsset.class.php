@@ -16,6 +16,7 @@ class SmartestImageAsset extends SmartestAsset{
             case "SM_ASSETTYPE_JPEG_IMAGE":
             case "SM_ASSETTYPE_GIF_IMAGE":
             case "SM_ASSETTYPE_PNG_IMAGE":
+            case "SM_ASSETTYPE_WEBP_IMAGE":
             
             if($this->getImage()){
                 $markup = '<img src="'.$this->_request_data->g('domain').'Resources/Images/'.$this->getImage()->getFileName().'" alt="" />';

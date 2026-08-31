@@ -675,39 +675,50 @@ class Templates extends SmartestSystemApplication{
 	    $non_template_categories = $h->getCategoryShortNames();
 	    $templates_key = array_search('templates', $non_template_categories);
 	    unset($non_template_categories[$templates_key]);
-	    $show_form = true;
+	    $show_form = false;
         
 		$tlh = new SmartestTemplatesLibraryHelper;
 		$template_types = $tlh->getTypes();
         $this->send($template_types, 'template_types');
-        
-        $this->send($show_form, 'show_form');
+
+        $type_code = $this->requestParameterIsSet('asset_type') ? $this->getRequestParameter('asset_type') : $this->getRequestParameter('type');
+        $this->send((bool) $type_code, 'type_specified');
+
+        if($type_code && isset($template_types[$type_code])){
+            $this->send($template_types[$type_code], 'template_type');
+        }
 	    
 	    // $cat = $h->getTypesByCategory($non_template_categories);
 	    // $types = $cat['templates']['types'];
 	    // $this->send($types, 'template_types');
-	    
-	    // $location = $h->getStorageLocationByTypeCode($this->getRequestParameter('asset_type'));
-	    // 
-	    // if($location == SmartestAssetsLibraryHelper::ASSET_TYPE_UNKNOWN){
-	    //     $message = "Template type ".$this->getRequestParameter('asset_type')." was not recognized.";
-	    //     SmartestLog::getInstance('system')->log($message, SmartestLog::WARNING);
-	    //     $this->addUserMessage($message, SmartestUserMessage::WARNING);
-	    //     $show_form = false;
-	    // }else if($location == SmartestAssetsLibraryHelper::MISSING_DATA){
-	    //     $message = "Template type ".$this->getRequestParameter('asset_type')." does not have any storage locations.";
-	    //     SmartestLog::getInstance('system')->log($message, SmartestLog::WARNING);
-	    //     // $this->send($message, 'error_message');
-	    //     $this->addUserMessage($message, SmartestUserMessage::WARNING);
-	    //     $show_form = false;
-	    // }else{
-	    //     $template = new SmartestUnimportedTemplate(SM_ROOT_DIR.$location.$this->getRequestParameter('template'));
-	    //     $force_shared = ($template->isInUseOnMultipleSites($this->getRequestParameter('asset_type')) || (count($template->getSitesWhereUsed()) > 0 && !in_array($this->getSite()->getId(), $template->getSiteIdsWhereUsed())));
-	    //     $this->send($force_shared, 'force_shared');
-	    //     $this->send($template, 'template');
-	    // }
-	    // 
-	    // $this->send($show_form, 'show_form');
+
+	    $location = $tlh->getStorageLocationByTypeCode($type_code);
+
+	    if($location == SmartestAssetsLibraryHelper::ASSET_TYPE_UNKNOWN){
+	        $message = "Template type ".$type_code." was not recognized.";
+	        SmartestLog::getInstance('system')->log($message, SmartestLog::WARNING);
+	        $this->addUserMessage($message, SmartestUserMessage::WARNING);
+	    }else if($location == SmartestAssetsLibraryHelper::MISSING_DATA){
+	        $message = "Template type ".$type_code." does not have any storage locations.";
+	        SmartestLog::getInstance('system')->log($message, SmartestLog::WARNING);
+	        $this->addUserMessage($message, SmartestUserMessage::WARNING);
+	    }else if(!$this->requestParameterIsSet('template') || !strlen($this->getRequestParameter('template'))){
+	        $this->addUserMessage("No template file was selected for import.", SmartestUserMessage::WARNING);
+	    }else{
+	        $template_path = SM_ROOT_DIR.$location.$this->getRequestParameter('template');
+
+	        if(is_file($template_path)){
+	            $template = new SmartestUnimportedTemplate($template_path);
+	            $force_shared = ($template->isInUseOnMultipleSites($type_code) || (count($template->getSitesWhereUsed($type_code)) > 0 && !in_array($this->getSite()->getId(), $template->getSiteIdsWhereUsed($type_code))));
+	            $this->send($force_shared, 'force_shared');
+	            $this->send($template, 'template');
+	            $show_form = true;
+	        }else{
+	            $this->addUserMessage("The selected template file could not be found.", SmartestUserMessage::WARNING);
+	        }
+	    }
+
+        $this->send($show_form, 'show_form');
 	    
 	}
 	
@@ -1823,25 +1834,43 @@ class Templates extends SmartestSystemApplication{
 	}
 	
 	public function templateInfo($get){
-	    
+
 	    $template_id = $this->getRequestParameter('template');
-	    
+
 	    $template = new SmartestTemplateAsset;
 
 		if($template->find($template_id)){
-		    
+
+		    $type_info = $template->getTypeInfo();
+
 		    $this->send($template->getGroups(), 'groups');
 		    $this->send($template->getPossibleGroups(), 'possible_groups');
-		    
+
 		    $this->send($template->getPossibleOwners(), 'potential_owners');
-		    $this->send($template->getTypeInfo(), 'template_type');
+		    $this->send($type_info, 'template_type');
 		    $this->send($template, 'template');
-		    
+		    $this->send($type_info, 'asset_type');
+		    $this->send($template, 'asset');
+
+		    if(isset($type_info['source_editable']) && SmartestStringHelper::toRealBool($type_info['source_editable'])){
+		        $this->send(true, 'allow_source_edit');
+		    }else{
+		        $this->send(false, 'allow_source_edit');
+		    }
+
+		    if(isset($type_info['parsable']) && SmartestStringHelper::toRealBool($type_info['parsable'])){
+		        $this->send(true, 'show_publish');
+		        $this->send(true, 'show_attachments');
+		    }else{
+		        $this->send(false, 'show_publish');
+		        $this->send(false, 'show_attachments');
+		    }
+
 		    $du = new SmartestDataUtility;
 	        $this->send($du->getModels(false, $this->getSite()->getId()), 'models');
-		    
+
 		}
-	    
+
 	}
 
 	public function deleteTemplate($get){

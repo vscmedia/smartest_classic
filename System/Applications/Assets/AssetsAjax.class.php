@@ -469,8 +469,8 @@ class AssetsAjax extends SmartestSystemApplication{
                 $suffix = SmartestUploadHelper::getUnsavedUploadDotSuffix('asset_file');
                 $alh = new SmartestAssetsLibraryHelper();
                 
-                if($asset_type = $alh->getTypeCodeBySuffix($suffix)){
-                    
+                if(($asset_type = $alh->getTypeCodeBySuffix($suffix)) && $alh->assetTypeCodeIsBinaryImage($asset_type)){
+
                     $ach = new SmartestAssetCreationHelper($asset_type);
                 
     	            $upload = new SmartestUploadHelper('asset_file');

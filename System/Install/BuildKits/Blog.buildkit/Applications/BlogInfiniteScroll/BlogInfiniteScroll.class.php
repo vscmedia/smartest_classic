@@ -1,6 +1,6 @@
 <?php
 
-class %CLASSNAME% extends SmartestUserApplication{
+class %%CLASSNAME%% extends SmartestUserApplication{
     
     public function getNextBlogPostsForInfiniteScroll(){
         

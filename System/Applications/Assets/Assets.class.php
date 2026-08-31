@@ -257,10 +257,12 @@ class Assets extends SmartestSystemApplication{
 	public function getAssetTypeMembers($get){
 		
 		$this->requireOpenProject();
+        $h = new SmartestAssetsLibraryHelper;
 		
 		$code = strtoupper($get["asset_type"]);
 		$mode = isset($get["mode"]) ? (int) $get["mode"] : 1;
 		$this->send($this->getApplicationPreference('asset_list_style', 'grid'), 'list_view');
+        $this->send($h->getBinaryImageAssetTypeCodes(), 'binary_image_type_codes');
 		
 		$this->send($mode, 'mode');
 		
@@ -277,7 +279,7 @@ class Assets extends SmartestSystemApplication{
 		    $type = $types_array[$code];
 		    $this->send('editableasset', 'sidebartype');
 		    
-		    if(in_array($code, array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'))){
+		    if(in_array($code, $h->getBinaryImageAssetTypeCodes())){
 	            $this->send(true, 'contact_sheet_view');
 	        }else{
 	            $this->send(false, 'contact_sheet_view');
@@ -428,7 +430,7 @@ class Assets extends SmartestSystemApplication{
 	        $files_array[$i]['suggested_name'] = SmartestStringHelper::toTitleCaseFromFileName(SmartestStringHelper::removeDotSuffix($files_array[$i]['filename']));
 	        $files_array[$i]['current_directory'] = dirname($f).'/';
 	        
-            if(in_array(strtolower(SmartestStringHelper::getDotSuffix($f)), array('jpeg', 'jpg', 'png', 'gif'))){
+            if(in_array(strtolower(SmartestStringHelper::getDotSuffix($f)), $h->getBinaryImageFileSuffixes())){
                 $files_array[$i]['image'] = new SmartestImage;
                 $files_array[$i]['image']->loadFile($f);
                 $files_array[$i]['is_image'] = true;
@@ -1682,12 +1684,14 @@ class Assets extends SmartestSystemApplication{
 	    $group_id = $this->getRequestParameter('group_id');
 	    $mode = $this->getRequestParameter("mode", 1);
 	    $this->send($this->getApplicationPreference('asset_list_style', 'grid'), 'list_view');
+        $alh = new SmartestAssetsLibraryHelper;
+        $this->send($alh->getBinaryImageAssetTypeCodes(), 'binary_image_type_codes');
 	    
 	    $group = new SmartestAssetGroup;
 	    
 	    if($group->find($group_id)){
 	        
-	        if(in_array($group->getFilterValue(), array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE', 'SM_ASSETCLASS_STATIC_IMAGE'))){
+	        if(in_array($group->getFilterValue(), array_merge($alh->getBinaryImageAssetTypeCodes(), array('SM_ASSETCLASS_STATIC_IMAGE')))){
 	            $this->send(true, 'contact_sheet_view');
 	        }else{
 	            $this->send(false, 'contact_sheet_view');
@@ -2119,6 +2123,7 @@ class Assets extends SmartestSystemApplication{
             $this->send($tags, 'asset_tags');
 		    $this->send($data, 'asset'); 
 		    $this->send($asset->getPossibleOwners(), 'potential_owners');
+		    $this->send($this->getTemplateUsageForAsset($asset), 'template_usage');
 		    
 		}
 	    
@@ -2294,6 +2299,7 @@ class Assets extends SmartestSystemApplication{
     		    
         		    $recent = $this->getUser()->getRecentlyEditedAssets($this->getSite()->getId(), $assettype_code);
           	        $this->send($recent, 'recent_assets');
+                    $this->send($this->getTemplateUsageForAsset($asset), 'template_usage');
 
 
     		    }else{
@@ -2382,6 +2388,52 @@ class Assets extends SmartestSystemApplication{
 		}
 	}
     
+    protected function getTemplateUsageForAsset(SmartestAsset $asset){
+
+        $usage = array(
+            'explicit' => array(),
+            'selector_matches' => array(),
+            '_count' => 0,
+        );
+
+        if(!in_array($asset->getType(), array('SM_ASSETTYPE_STYLESHEET', 'SM_ASSETTYPE_SCSS_DYNAMIC_STYLESHEET'))){
+            return $usage;
+        }
+
+        $tlh = new SmartestTemplatesLibraryHelper;
+        $template_type_codes = $tlh->getTypeCodes();
+        $site_id = $this->getSite()->getId();
+
+        $usage['explicit'] = $this->filterRelatedAssetsByType(
+            $asset->getRelatedAssets(SmartestAsset::ASSET_RELATION_REFERENCES_STYLESHEET, $site_id, true),
+            $template_type_codes
+        );
+
+        $usage['selector_matches'] = $this->filterRelatedAssetsByType(
+            $asset->getRelatedAssets(SmartestAsset::ASSET_RELATION_MATCHES_STYLESHEET_SELECTORS, $site_id, true),
+            $template_type_codes
+        );
+
+        $usage['_count'] = count($usage['explicit']) + count($usage['selector_matches']);
+
+        return $usage;
+
+    }
+
+    protected function filterRelatedAssetsByType($assets, $type_codes){
+
+        $filtered = array();
+
+        foreach((array) $assets as $asset){
+            if($asset instanceof SmartestAsset && in_array($asset->getType(), $type_codes)){
+                $filtered[$asset->getId()] = $asset;
+            }
+        }
+
+        return $filtered;
+
+    }
+
         protected function getCodeMirrorModeForAssetType($assettype_code){
             switch($assettype_code){
                 case 'SM_ASSETTYPE_MARKDOWN_TEXT':
@@ -3203,7 +3255,13 @@ class Assets extends SmartestSystemApplication{
     /** Mini image browser **/
     
     public function miniImageBrowser(){
-        
+
+        $alh = new SmartestAssetsLibraryHelper;
+        $image_type_codes = $alh->getBinaryImageAssetTypeCodes();
+        $this->send($alh->getFilenameExtensionTestRegex($image_type_codes), 'file_suffix_regex');
+        $this->send($alh->getBinaryImageFileSuffixLabel(), 'image_file_suffix_label');
+        $this->send($alh->getBinaryImageFileInputAcceptAttribute(), 'image_file_accept_attribute');
+
         if($this->requestParameterIsSet('current_selection_id')){
             $current_asset = new SmartestAsset;
             if($current_asset->find($this->getRequestParameter('current_selection_id'))){
@@ -3294,10 +3352,7 @@ class Assets extends SmartestSystemApplication{
                 $this->send("Logo for ".$this->getSite()->getInternalLabel()." - ".date('M d Y'), 'suggested_label');
 
             }else{
-                
-                $alh = new SmartestAssetsLibraryHelper;
-                $assets =  $alh->getAssetsByTypeCode(array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'), $this->getSite()->getId(), 1);
-                
+                $assets =  $alh->getAssetsByTypeCode($alh->getBinaryImageAssetTypeCodes(), $this->getSite()->getId(), 1);
             }
             
         }else{
@@ -3310,8 +3365,7 @@ class Assets extends SmartestSystemApplication{
                     $assets =  array();
                 }
             }else{
-                $alh = new SmartestAssetsLibraryHelper;
-                $assets =  $alh->getAssetsByTypeCode(array('SM_ASSETTYPE_JPEG_IMAGE', 'SM_ASSETTYPE_GIF_IMAGE', 'SM_ASSETTYPE_PNG_IMAGE'), $this->getSite()->getId(), 1);
+                $assets =  $alh->getAssetsByTypeCode($alh->getBinaryImageAssetTypeCodes(), $this->getSite()->getId(), 1);
             }
             
         }

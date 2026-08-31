@@ -59,9 +59,11 @@ class SmartestUserApplicationHelper{
                     $raw_class_file_content = SmartestFileSystemHelper::load(SM_ROOT_DIR.'System/Install/Samples/Application/App.class.php.txt');
                 }
                 
-                $class_file_content = str_replace('%CLASSNAME%', $classname, $raw_class_file_content);
-                $class_file_content = str_replace('%SHORTNAME%', $shortname, $class_file_content);
-                $class_file_content = str_replace('%APPDIR%', $dir, $class_file_content);
+                $class_file_content = self::applyTokenReplacements($raw_class_file_content, array(
+                    '%%CLASSNAME%%' => $classname,
+                    '%%SHORTNAME%%' => $shortname,
+                    '%%APPDIR%%' => $dir
+                ));
                 
                 if(strlen($config_file_contents)){
                     if(is_file($config_file_contents)){
@@ -80,10 +82,12 @@ class SmartestUserApplicationHelper{
                     $identifier = 'org.yourname.'.$classname.SmartestStringHelper::random(8);
                 }
                 
-                $config_file_content = str_replace('%CLASSNAME%', $classname, $raw_config_file_content);
-                $config_file_content = str_replace('%SHORTNAME%', $shortname, $config_file_content);
-                $config_file_content = str_replace('%APPIDENTIFIER%', $identifier, $config_file_content);
-                $config_file_content = str_replace('%RANDOMURL%', SmartestStringHelper::random(6), $config_file_content);
+                $config_file_content = self::applyTokenReplacements($raw_config_file_content, array(
+                    '%%CLASSNAME%%' => $classname,
+                    '%%SHORTNAME%%' => $shortname,
+                    '%%APPIDENTIFIER%%' => $identifier,
+                    '%%RANDOMURL%%' => SmartestStringHelper::random(6)
+                ));
                 
                 if(!is_dir($dir) && @mkdir($dir, 0777, true)){
 	                    
@@ -129,6 +133,19 @@ class SmartestUserApplicationHelper{
         $shortname = self::createShortName($shortname);
         return in_array($shortname, self::getAllModuleShortNames(), true);
 	        
+    }
+
+    protected static function applyTokenReplacements($contents, $replacements){
+
+        if(!is_array($replacements) || !count($replacements)){
+            return $contents;
+        }
+
+        uksort($replacements, function($a, $b){
+            return strlen($b) - strlen($a);
+        });
+
+        return str_replace(array_keys($replacements), array_values($replacements), $contents);
     }
 
     public static function getAllModuleShortNames(){

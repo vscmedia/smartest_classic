@@ -466,11 +466,31 @@ class Settings extends SmartestSystemApplication{
 	public function listBuildKits(){
 
 	    $this->setTitle('Build Kits');
-	    $buildkits = SmartestBuildKitUtilities::getAvailableBuildKits();
+	    $buildkits = SmartestBuildKitUtilities::getVisibleBuildKits();
 	    $this->send($buildkits, 'buildkits');
 	    $this->send(count($buildkits), 'num_buildkits');
 
 	}
+
+    public function buildKitInfo(){
+
+        $buildkit_id = $this->getRequestParameter('buildkit_id');
+        $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($buildkit_id);
+
+        if($buildkit instanceof SmartestBuildKit && !$buildkit->isHidden()){
+            $this->setTitle($buildkit->getLabel().' Build Kit');
+            $this->send($buildkit, 'buildkit');
+            $this->send(count($buildkit->getUnwritableRequiredWriteLocations()), 'num_unwritable_locations');
+            $this->send(count($buildkit->getRequiredWriteLocations()), 'num_required_locations');
+            $this->send(count($buildkit->getCreationSummary()), 'num_creation_summary_items');
+            $this->send(count($buildkit->getThirdPartyLicenses()), 'num_third_party_licenses');
+            $this->send(count($buildkit->getFeatureSummary()), 'num_features');
+        }else{
+            $this->addUserMessage('The selected Build Kit could not be found.', SmartestUserMessage::WARNING);
+            $this->redirect('/smartest/buildkits');
+        }
+
+    }
 
     public function listElasticSearchIndices(){
 

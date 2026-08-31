@@ -149,12 +149,18 @@ class Desktop extends SmartestSystemApplication{
 	        $this->setTitle('Create a new site');
 	        $this->send(SM_ROOT_DIR, "sm_root_dir");
 	        $this->send($this->getUser(), "user");
-	        $tlh = new SmartestTemplatesLibraryHelper;
-		        $templates = $tlh->getSharedMasterTemplates();
-		        $this->send($templates, 'templates');
-		        $this->send(SmartestBuildKitUtilities::getAvailableBuildKits(), 'buildkits');
+		        $buildkits = SmartestBuildKitUtilities::getAvailableBuildKits();
+		        $default_buildkit = SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+                $selected_buildkit = $this->getRequestParameter('use_buildkit', $default_buildkit);
+
+                if(!isset($buildkits[$selected_buildkit])){
+                    $selected_buildkit = $default_buildkit;
+                }
+
+		        $this->send($buildkits, 'buildkits');
+		        $this->send($default_buildkit, 'default_buildkit');
+		        $this->send($selected_buildkit, 'selected_buildkit');
 		        if(!$this->getRequestParameter('site_name')){$this->setRequestParameter('site_name', 'My Smartest Web Site');}
-		        $this->send(is_writable(SM_ROOT_DIR.'Presentation/Masters/'), 'allow_create_master_tpl');
 		    }else{
 	        $this->addUserMessageToNextRequest('You don\'t have permission to create new sites. This action has been logged.', SmartestUserMessage::ACCESS_DENIED);
 	        SmartestLog::getInstance('system')->log($this->getUser()->getFullName().' tried to create a new site, but doesn\'t have permission to do so.');
@@ -191,10 +197,13 @@ class Desktop extends SmartestSystemApplication{
 	        $errors['email'] = "The administrator email address you entered was not valid.";
 	    }
 
-		    $build_kit_name = $this->getRequestParameter('use_buildkit');
+		    $build_kit_name = $this->getRequestParameter('use_buildkit', SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName());
+		    if($build_kit_name == '_NONE'){
+		        $build_kit_name = SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
+		    }
 		    $prepared_buildkit_params = array();
 
-		    if(strlen((string) $build_kit_name) && $build_kit_name != '_NONE'){
+		    if(strlen((string) $build_kit_name)){
 		        $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($build_kit_name);
 
 		        if($buildkit instanceof SmartestBuildKit){
