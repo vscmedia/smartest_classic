@@ -34,6 +34,18 @@ class SmartestAuthenticationHelper extends SmartestHelper{
 	}
 	
 	public function checkLoginDetails($username, $password, $service, $use_email=false){
+	    
+	    if(!is_scalar($username) || !is_scalar($password) || (!is_null($service) && !is_scalar($service))){
+	        return false;
+	    }
+	    
+	    $username = trim((string) $username);
+	    $password = (string) $password;
+	    $service = (string) $service;
+	    
+	    if(strlen($username) < 1 || strlen($username) > 128 || strlen($password) > 1024 || strlen($service) > 64 || preg_match('/[\x00-\x1F\x7F]/', $username.$service)){
+	        return false;
+	    }
 		
 		// What kind of user object should be instantiated
 		if(strtolower($service) == 'smartest'){
@@ -74,7 +86,8 @@ class SmartestAuthenticationHelper extends SmartestHelper{
                             $userObj->getTokens();
                         }
     			        
-                        SmartestSession::start();
+    			        SmartestSession::start();
+    			        SmartestSession::regenerateId(true);
     			        SmartestSession::set('user:isAuthenticated', true);
     			        
     			        if($userObj->getType() == 'SM_USERTYPE_SYSTEM_USER'){
@@ -110,6 +123,7 @@ class SmartestAuthenticationHelper extends SmartestHelper{
                         SmartestLog::getInstance('auth')->log('User \''.$username.'\' authenticated successfully from IP address '.$_SERVER['REMOTE_ADDR'].'. Their password was not salted, but a salt has now been added.');
 			            
                         SmartestSession::start();
+                        SmartestSession::regenerateId(true);
                         
 			            if($userObj->getType() == 'SM_USERTYPE_SYSTEM_USER'){
     			            SmartestSession::set('user:isAuthenticatedToCms', true);
@@ -154,6 +168,7 @@ class SmartestAuthenticationHelper extends SmartestHelper{
 		}else{
 			
             SmartestSession::start();
+            SmartestSession::regenerateId(true);
             
 			$u->setLastVisit(time());
 	        $u->save();
@@ -200,6 +215,7 @@ class SmartestAuthenticationHelper extends SmartestHelper{
         
 		SmartestSession::set('user:isAuthenticated', false);
 		SmartestSession::clearAll();
+		SmartestSession::regenerateId(true);
 		$this->user = array();
         
 	}

@@ -9,6 +9,10 @@ class SmartestSession{
     
     final public static function start(){
         if(!self::isRegistered()){
+            if(!headers_sent()){
+                $cookie_params = session_get_cookie_params();
+                session_set_cookie_params($cookie_params['lifetime'], $cookie_params['path'], $cookie_params['domain'], $cookie_params['secure'], true);
+            }
             session_start();
             /* if(!defined('SM_SESSION_ACTIVE')){
                 define('SM_SESSION_ACTIVE', true);
@@ -17,6 +21,14 @@ class SmartestSession{
         }
     }
     
+    final public static function regenerateId($delete_old_session=true){
+        if(self::isRegistered() && !headers_sent()){
+            return session_regenerate_id((bool) $delete_old_session);
+        }else{
+            return false;
+        }
+    }
+	    
     final public static function isRegistered(){
         
         if(SmartestInfo::$session_active){

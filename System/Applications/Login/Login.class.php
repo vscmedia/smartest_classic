@@ -56,17 +56,26 @@ class Login extends SmartestSystemApplication{
 		
         $this->startSession();
         
-		if($this->requestParameterIsSet('service') && strlen($this->getRequestParameter('service'))){
-		    $service = $this->getRequestParameter('service');
-		}else{
-		    $service = 'SMARTEST';
-		}
+        $username = $this->getRequestParameter('user');
+        $password = $this->getRequestParameter('passwd');
+        $service = 'SMARTEST';
+        
+        if(!is_scalar($username) || !is_scalar($password)){
+            $this->redirect("/smartest/login#badauth");
+        }
+        
+        $username = trim((string) $username);
+        $password = (string) $password;
+        
+        if(strlen($username) < 1 || strlen($username) > 128 || strlen($password) > 1024 || preg_match('/[\x00-\x1F\x7F]/', $username)){
+            $this->redirect("/smartest/login#badauth");
+        }
 		
 		if($this->getUser() && $this->getUser()->isAuthenticated() && $this->_auth->getSystemUserIsLoggedIn()){
 		    $this->redirect('/smartest');
 		}
 		
-		if($user = $this->_auth->newLogin($this->getRequestParameter('user'), $this->getRequestParameter('passwd'), $service)){
+		if($user = $this->_auth->newLogin($username, $password, $service)){
 		    
 		    SmartestSession::set('user', $user);
 		    
@@ -84,7 +93,7 @@ class Login extends SmartestSystemApplication{
     	                if(strlen($this->getCookie('SMARTEST_RET'))){
     	                    
     	                    // $url = '/'.$this->getCookie('SMARTEST_RET');
-    	                    $url = $this->getCookie('SMARTEST_RET');
+    	                    $url = $this->getSafeReturnUrl($this->getCookie('SMARTEST_RET'));
                             $this->clearCookie('SMARTEST_RET');
     	                    
     	                    // user still has access to last edited site, so return to what they were last doing
@@ -145,4 +154,28 @@ class Login extends SmartestSystemApplication{
         
 	}
 	
+	private function getSafeReturnUrl($url){
+	    
+	    if(!is_scalar($url)){
+	        return '/smartest';
+	    }
+	    
+	    $url = trim((string) $url);
+	    
+	    if(!strlen($url) || strlen($url) > 1024){
+	        return '/smartest';
+	    }
+	    
+	    if(preg_match('/[\x00-\x1F\x7F]/', $url) || preg_match('/^[a-z][a-z0-9+\.-]*:/i', $url) || substr($url, 0, 2) == '//' || strpos($url, '\\') !== false){
+	        return '/smartest';
+	    }
+	    
+	    if(substr($url, 0, 1) != '/'){
+	        return '/smartest';
+	    }
+	    
+	    return $url;
+	    
+	}
+    
 }
