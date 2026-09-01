@@ -19,6 +19,9 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
     protected $_thumbnail_asset = null;
     protected $_default_parameter_values = null;
     protected $_asset_info = null;
+    protected $_parent_asset = null;
+    protected $_parent_asset_loaded = false;
+    protected $_derived_assets = null;
     
     protected function __objectConstruct(){
         $this->_asset_info = new SmartestDbStorageParameterHolder("Asset info");
@@ -301,6 +304,47 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
             
             case "is_too_large":
             return $this->isTooLarge();
+
+            case "is_heic_source":
+            return $this->isHeicSource();
+
+            case "can_convert_to_jpeg":
+            return $this->canConvertToJpeg();
+
+            case "can_create_downscaled_derivative":
+            return $this->canCreateDownscaledDerivative();
+
+            case "large_image_width_threshold":
+            return $this->getLargeImageWidthThreshold();
+
+            case "default_downscale_width":
+            case "suggested_downscale_width":
+            return $this->getSuggestedDownscaleWidth();
+
+            case "maximum_downscale_width":
+            return $this->getMaximumDownscaleWidth();
+
+            case "parent_asset":
+            return $this->getParentAsset();
+
+            case "derived_assets":
+            return $this->getDerivedAssets();
+
+            case "has_derived_assets":
+            return count($this->getDerivedAssets()) > 0;
+
+            case "generated_jpeg_version":
+            return $this->getGeneratedJpegVersion();
+
+            case "has_generated_jpeg_version":
+            return $this->getGeneratedJpegVersion() instanceof SmartestAsset;
+
+            case "derivation_summary":
+            return $this->getDerivationSummary();
+
+            case "browser_previewable":
+            case "is_browser_previewable":
+            return $this->isBrowserPreviewable();
             
             case "mime_type":
             return $this->getMimeType();
@@ -934,6 +978,182 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
 	        return $this->getImage()->isTooLarge();
 	    }
 	}
+
+    public function isHeicSource(){
+        return $this->getType() == 'SM_ASSETTYPE_HEIC_IMAGE';
+    }
+
+    public function canConvertToJpeg(){
+
+        if(!$this->isHeicSource() || !is_file($this->getFullPathOnDisk())){
+            return false;
+        }
+
+        if(!class_exists('SmartestImageAssetDerivativeHelper')){
+            return false;
+        }
+
+        $helper = new SmartestImageAssetDerivativeHelper;
+        return $helper->heicConversionIsAvailable();
+
+    }
+
+    public function canCreateDownscaledDerivative($threshold_width=null){
+
+        if(!class_exists('SmartestImageAssetDerivativeHelper')){
+            return false;
+        }
+
+        $helper = new SmartestImageAssetDerivativeHelper;
+        return $helper->canCreateDownscaledDerivative($this, $threshold_width);
+
+    }
+
+    public function getLargeImageWidthThreshold(){
+
+        if(class_exists('SmartestImageAssetDerivativeHelper')){
+            return SmartestImageAssetDerivativeHelper::getLargeImageWidthThreshold();
+        }
+
+        return 3000;
+
+    }
+
+    public function getMaximumDownscaleWidth(){
+
+        if(!class_exists('SmartestImageAssetDerivativeHelper')){
+            return 0;
+        }
+
+        $helper = new SmartestImageAssetDerivativeHelper;
+        return $helper->getMaximumDownscaleWidth($this);
+
+    }
+
+    public function getSuggestedDownscaleWidth(){
+
+        if(!class_exists('SmartestImageAssetDerivativeHelper')){
+            return 0;
+        }
+
+        $helper = new SmartestImageAssetDerivativeHelper;
+        return $helper->getSuggestedDownscaleWidth($this);
+
+    }
+
+    public function getParentAsset(){
+
+        if($this->_parent_asset_loaded){
+            return $this->_parent_asset;
+        }
+
+        $parent_id = (int) $this->getParentId();
+
+        if($parent_id){
+            $asset = new SmartestAsset;
+            if($asset->find($parent_id)){
+                $this->_parent_asset = $asset;
+                $this->_parent_asset_loaded = true;
+                return $this->_parent_asset;
+            }
+        }
+
+        $this->_parent_asset = null;
+        $this->_parent_asset_loaded = true;
+        return null;
+
+    }
+
+    public function getDerivedAssets($variant_name='', $asset_type=''){
+
+        if(!is_array($this->_derived_assets)){
+
+            $asset_id = (int) $this->getId();
+
+            if(!$asset_id){
+                return array();
+            }
+
+            $result = $this->database->preparedQuery(
+                'SELECT * FROM Assets WHERE asset_parent_id=:asset_id AND asset_deleted != 1 ORDER BY asset_created DESC, asset_id DESC',
+                array('asset_id' => $asset_id)
+            );
+
+            $assets = array();
+
+            foreach((array) $result as $record){
+                $asset = new SmartestAsset;
+                $asset->hydrate($record);
+                $assets[] = $asset;
+            }
+
+            $this->_derived_assets = $assets;
+
+        }
+
+        if(!strlen((string) $variant_name) && !strlen((string) $asset_type)){
+            return $this->_derived_assets;
+        }
+
+        $filtered_assets = array();
+
+        foreach($this->_derived_assets as $asset){
+            if(strlen((string) $variant_name) && $asset->getVariantName() != $variant_name){
+                continue;
+            }
+
+            if(strlen((string) $asset_type) && $asset->getType() != $asset_type){
+                continue;
+            }
+
+            $filtered_assets[] = $asset;
+        }
+
+        return $filtered_assets;
+
+    }
+
+    public function getGeneratedJpegVersion(){
+
+        if(!class_exists('SmartestImageAssetDerivativeHelper')){
+            return null;
+        }
+
+        $assets = $this->getDerivedAssets(SmartestImageAssetDerivativeHelper::VARIANT_HEIC_TO_JPEG, SmartestImageAssetDerivativeHelper::JPEG_TYPE);
+
+        if(count($assets)){
+            return $assets[0];
+        }
+
+        return null;
+
+    }
+
+    public function getDerivationSummary(){
+
+        if($parent = $this->getParentAsset()){
+            if(strlen((string) $this->getVariantLabel())){
+                return $this->getVariantLabel().' of '.$parent->getLabel();
+            }else{
+                return 'Derived from '.$parent->getLabel();
+            }
+        }
+
+        return '';
+
+    }
+
+    public function isBrowserPreviewable(){
+
+        $info = $this->getTypeInfo();
+
+        if(isset($info['browser_previewable'])){
+            return SmartestStringHelper::toRealBool($info['browser_previewable']);
+        }
+
+        return true;
+
+    }
 	
 	public function getImage(){
 	    if($this->isImage()){

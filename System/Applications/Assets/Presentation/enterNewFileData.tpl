@@ -19,8 +19,10 @@
         {else}
         <select name="new_files[{$smarty.foreach.files.index}][type]">{foreach from=$file.possible_types item="ptype"}<option value="{$ptype.type.id}">{$ptype.type.label} (will be renamed {$ptype.filename})</option>{/foreach}</select>
         {/if}
-      {else}
+      {elseif count($file.possible_types) == 1}
         {$file.possible_types[0].type.label}{if $file.current_directory != $file.possible_types[0].storage_location} (file will be moved to <code>{$file.possible_types[0].storage_location}{$file.filename}</code>){/if}<input type="hidden" name="new_files[{$smarty.foreach.files.index}][type]" value="{$file.possible_types[0].type.id}" />
+      {else}
+        <span class="warning-color">No supported file type could be found for this file.</span>
       {/if}<br />
       
       <b>Size</b>: {$file.size}<br />

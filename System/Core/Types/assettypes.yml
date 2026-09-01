@@ -279,6 +279,39 @@ type:
       - {name: source_url, label: "Source URL", type: SM_DATATYPE_URL, required: false}
       - {name: alt_text, label: "Text alternative", type: SM_DATATYPE_SL_TEXT, required: false}
 
+  SM_ASSETTYPE_HEIC_IMAGE:
+    id: SM_ASSETTYPE_HEIC_IMAGE
+    category: image
+    label: HEIC image
+    description: A high-efficiency image file that can be stored in Smartest but must be converted before it can be displayed on web pages.
+    class: SmartestAsset
+    icon: picture.png
+    fa_iconname: file-image-o
+    large_icon: page_white_picture.png
+    attachable: false
+    captionable: false
+    binary_image: false
+    parsable: false
+    editable: false
+    html_friendly: false
+    browser_previewable: false
+    dependent_function: exec
+    dependent_class: 'Maestroerror\HeicToJpg'
+    maximum_filesize_before_warning: 1048576
+    storage:
+      type: file
+      location: Public/Resources/Images/
+      system_location: Public/Resources/System/Images/
+    input_options:
+      - SM_ASSETINPUTTYPE_BROWSER_UPLOAD
+      - SM_ASSETINPUTTYPE_FTP_UPLOAD
+    suffix:
+      - {mime: image/heic, _content: heic}
+      - {mime: image/heif, _content: heif}
+    param:
+      - {name: credit, label: "Credit", type: SM_DATATYPE_SL_TEXT, required: false}
+      - {name: source_url, label: "Source URL", type: SM_DATATYPE_URL, required: false}
+
   SM_ASSETTYPE_ICO_FAVICON:
     id: SM_ASSETTYPE_ICO_FAVICON
     category: image
@@ -290,6 +323,7 @@ type:
     attachable: false
     captionable: true
     parsable: false
+    browser_previewable: false
     show_preview_edit_link: false
     maximum_filesize_before_warning: 1048576
     storage:

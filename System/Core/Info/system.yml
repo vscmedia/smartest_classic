@@ -74,6 +74,9 @@ system:
   places:
     templates_dir: System/Presentation/
     public_dir: Public/
+  assets:
+    large_image_width_threshold: 3000
+    default_downscale_width: 1200
   writable_locations:
     always:
       - Sites/

@@ -570,8 +570,16 @@ class SmartestImage extends SmartestFile{
     
     public function getConstrainedVersionWithin($width, $height){
         
-        $width_change = $width/$this->getWidth();
-        $height_change = $height/$this->getHeight();
+        $current_width = (int) $this->getWidth();
+        $current_height = (int) $this->getHeight();
+
+        if($current_width < 1 || $current_height < 1){
+            SmartestLog::getInstance('system')->log('SmartestImage::getConstrainedVersionWithin() could not create a constrained image because the source dimensions could not be read for '.$this->getPath().'.');
+            return null;
+        }
+
+        $width_change = $width/$current_width;
+        $height_change = $height/$current_height;
         
         if($width_change >= 1 && $height_change >= 1){
             return $this;
@@ -645,11 +653,8 @@ class SmartestImage extends SmartestFile{
         if(isset($this->_width)){
             return $this->_width;
         }else{
-            
-            list($width, $height) = getimagesize($this->getPath(), $data);
-            
-            $this->_width = $width;
-            $this->_height = $height;
+
+            $this->loadDimensions();
             return $this->_width;
         }
     }
@@ -658,13 +663,25 @@ class SmartestImage extends SmartestFile{
         if(isset($this->_height)){
             return $this->_height;
         }else{
-            
-            list($width, $height) = getimagesize($this->getPath(), $data);
-            
-            $this->_width = $width;
-            $this->_height = $height;
+
+            $this->loadDimensions();
             return $this->_height;
         }
+    }
+
+    protected function loadDimensions(){
+
+        $dimensions = @getimagesize($this->getPath());
+
+        if(is_array($dimensions) && isset($dimensions[0], $dimensions[1])){
+            $this->_width = (int) $dimensions[0];
+            $this->_height = (int) $dimensions[1];
+        }else{
+            $this->_width = 0;
+            $this->_height = 0;
+            SmartestLog::getInstance('system')->log('SmartestImage could not read image dimensions for '.$this->getPath().'.');
+        }
+
     }
     
     public function resize($percentage){

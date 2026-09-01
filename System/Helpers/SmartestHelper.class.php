@@ -51,6 +51,27 @@ class SmartestHelper{
 			}
 		} */
 	}
+
+    protected static function getHelperAutoloadHashData($helper_dir){
+
+        $hash_data = '';
+        $autoload_file = SM_ROOT_DIR.$helper_dir.'autoload.conf';
+
+        if(is_file($autoload_file)){
+            $hash_data .= sha1_file($autoload_file);
+            $autoload_file_contents = file_get_contents($autoload_file);
+            preg_match_all('/^(\w+)\s+([^\s]+)$/m', $autoload_file_contents, $matches, PREG_SET_ORDER);
+
+            foreach($matches as $m){
+                if(in_array($m[1], array('load', 'loadlater')) && is_file(SM_ROOT_DIR.$helper_dir.$m[2])){
+                    $hash_data .= sha1_file(SM_ROOT_DIR.$helper_dir.$m[2]);
+                }
+            }
+        }
+
+        return $hash_data;
+
+    }
     
     public static function loadAllLaterFiles(){
         
@@ -92,6 +113,7 @@ class SmartestHelper{
                     $system_helpers[] = $helper;
     				$system_helper_names[] = $helper['name'];
     				$system_helper_cache_string .= sha1_file($helper['file']);
+                    $system_helper_cache_string .= self::getHelperAutoloadHashData($helper['dir']);
     			}
     		
 			}

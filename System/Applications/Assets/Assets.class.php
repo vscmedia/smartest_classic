@@ -393,14 +393,29 @@ class Assets extends SmartestSystemApplication{
     public function previewUnimportedImageFile(){
         
         $base_file_path = 'Public/Resources/Images/';
+        $file_path = (string) $this->getRequestParameter('file_path');
+        $full_path = SM_ROOT_DIR.$file_path;
+        $this->send(false, 'found_file');
+        $this->send(false, 'found_image');
         
-        if(SmartestFileSystemHelper::isSafeFileName($this->getRequestParameter('file_path'), $base_file_path) && is_file(SM_ROOT_DIR.$this->getRequestParameter('file_path'))){
-            $image = new SmartestImage;
-            $image->loadFile(SM_ROOT_DIR.$this->getRequestParameter('file_path'));
-            $this->send(true, 'found_image');
-            $this->send($image, 'image');
-        }else{
-            $this->send(false, 'found_image');
+        if(SmartestFileSystemHelper::isSafeFileName($file_path, $base_file_path) && is_file($full_path)){
+            $suffix = strtolower((string) SmartestStringHelper::getDotSuffix($file_path));
+            $assets_helper = new SmartestAssetsLibraryHelper;
+            $previewable_suffixes = $assets_helper->getBinaryImageFileSuffixes();
+            $dimensions = @getimagesize($full_path);
+            $this->send(true, 'found_file');
+            $this->send(basename($file_path), 'file_name');
+            $this->send(strtoupper($suffix), 'file_suffix');
+            $this->send(SmartestFileSystemHelper::getFileSizeFormatted($full_path), 'file_size');
+
+            if(is_array($dimensions) && isset($dimensions[0], $dimensions[1]) && $dimensions[0] > 0 && $dimensions[1] > 0 && in_array($suffix, $previewable_suffixes)){
+                $image = new SmartestImage;
+                $image->loadFile($full_path);
+                $this->send(true, 'found_image');
+                $this->send($image, 'image');
+            }else{
+                $this->send(false, 'found_image');
+            }
         }
         
     }
@@ -429,6 +444,7 @@ class Assets extends SmartestSystemApplication{
 	        $files_array[$i]['filename'] = basename($f);
 	        $files_array[$i]['suggested_name'] = SmartestStringHelper::toTitleCaseFromFileName(SmartestStringHelper::removeDotSuffix($files_array[$i]['filename']));
 	        $files_array[$i]['current_directory'] = dirname($f).'/';
+	        $files_array[$i]['possible_groups'] = array();
 	        
             if(in_array(strtolower(SmartestStringHelper::getDotSuffix($f)), $h->getBinaryImageFileSuffixes())){
                 $files_array[$i]['image'] = new SmartestImage;
@@ -446,18 +462,23 @@ class Assets extends SmartestSystemApplication{
                 $files_array[$i]['suffix_recognized'] = false;
                 $files_array[$i]['actual_suffix'] = SmartestStringHelper::getDotSuffix($f);
             }
-            
-	        $files_array[$i]['type_code'] = $type['id'];
-	        $files_array[$i]['type_label'] = $type['label'];
+
+            $selected_type = array();
+
+            if(isset($files_array[$i]['possible_types'][0]['type']) && is_array($files_array[$i]['possible_types'][0]['type'])){
+                $selected_type = $files_array[$i]['possible_types'][0]['type'];
+            }
+
+	        $files_array[$i]['type_code'] = isset($selected_type['id']) ? $selected_type['id'] : '';
+	        $files_array[$i]['type_label'] = isset($selected_type['label']) ? $selected_type['label'] : '';
 	        
 	        $alh = new SmartestAssetsLibraryHelper;
 	        
-	        if(count($types)){
-	            $files_array[$i]['possible_groups'] = $alh->getAssetGroupsThatAcceptType($types[0]['type']['id']);
+	        if(count($files_array[$i]['possible_types']) == 1 && strlen($files_array[$i]['type_code'])){
+	            $files_array[$i]['possible_groups'] = $alh->getAssetGroupsThatAcceptType($files_array[$i]['type_code']);
             }
             
 	        $files_array[$i]['size'] = SmartestFileSystemHelper::getFileSizeFormatted(SM_ROOT_DIR.$f);
-	        // $files_array[$i]['correct_directory'] = $type['storage']['location'];
 	        $i++;
 	    }
 	    
@@ -477,10 +498,15 @@ class Assets extends SmartestSystemApplication{
 	    
 	    $h = new SmartestAssetsLibraryHelper;
 	    $asset_types = $h->getTypes();
-        $groups = array();
+	    $groups = array();
 	    
 	    foreach($new_files as $nf){
-	        
+
+            if(!isset($nf['type']) || !isset($asset_types[$nf['type']])){
+                $this->addUserMessage('One of the selected files could not be imported because its file type was not recognized.', SmartestUserMessage::WARNING);
+                continue;
+            }
+
 	        $type = $asset_types[$nf['type']];
 	        $required_suffixes = array();
 	        
@@ -2158,8 +2184,112 @@ class Assets extends SmartestSystemApplication{
 	}
 	
 	public function resizeImageAsset(){
-	    
+
+        if(!$this->getUser()->hasToken('create_assets')){
+            if($this->requestParameterIsSet('_confirm_downscale')){
+                $this->addUserMessageToNextRequest("You don't currently have permission to add new files.", SmartestUserMessage::ACCESS_DENIED);
+                $this->formForward();
+            }else{
+                $this->send(false, 'asset_id');
+                $this->send("You don't currently have permission to add new files.", 'message');
+                return;
+            }
+        }
+
+        $asset = new SmartestAsset;
+
+        if($asset->find($this->getRequestParameter('asset_id'))){
+
+            $helper = new SmartestImageAssetDerivativeHelper;
+
+            if($this->requestParameterIsSet('_confirm_downscale')){
+
+                $max_width = is_numeric($this->getRequestParameter('max_width')) ? (int) $this->getRequestParameter('max_width') : null;
+
+                try{
+                    $derived_asset = $helper->createDownscaledImageAsset($asset, $max_width, $this->getUser());
+                    $this->addUserMessageToNextRequest('A '.$derived_asset->getWidth().'px-wide version of this image has been created.', SmartestUserMessage::SUCCESS);
+                    $this->redirect('/assets/editAsset?asset_id='.$derived_asset->getId());
+                }catch(Throwable $e){
+                    $this->addUserMessageToNextRequest($e->getMessage(), SmartestUserMessage::ERROR);
+                    $this->redirect('/assets/editAsset?asset_id='.$asset->getId());
+                }
+
+            }else{
+
+                $threshold = SmartestImageAssetDerivativeHelper::getLargeImageWidthThreshold();
+                $maximum_width = $helper->getMaximumDownscaleWidth($asset);
+                $suggested_width = $helper->getSuggestedDownscaleWidth($asset);
+                $original_width = (int) $asset->getWidth();
+                $original_height = (int) $asset->getHeight();
+                $suggested_height = ($original_width > 0 && $suggested_width > 0) ? (int) ceil($suggested_width / $original_width * $original_height) : 0;
+                $suggested_percentage = ($original_width > 0 && $suggested_width > 0) ? round($suggested_width / $original_width * 100, 1) : 0;
+
+                $this->send($asset->canCreateDownscaledDerivative(), 'can_resize');
+                $this->send($asset, 'asset');
+                $this->send($asset->getId(), 'asset_id');
+                $this->send($threshold, 'large_image_width_threshold');
+                $this->send($maximum_width, 'maximum_downscale_width');
+                $this->send($suggested_width, 'suggested_downscale_width');
+                $this->send($suggested_height, 'suggested_downscale_height');
+                $this->send($suggested_percentage, 'suggested_downscale_percentage');
+                $this->send($original_width, 'original_width');
+                $this->send($original_height, 'original_height');
+
+                if(!$asset->canCreateDownscaledDerivative()){
+                    $this->send('This image is not wider than Smartest\'s large-image threshold.', 'message');
+                }
+            }
+
+        }else{
+            if($this->requestParameterIsSet('_confirm_downscale')){
+                $this->addUserMessageToNextRequest('The file ID wasn\'t recognized.', SmartestUserMessage::ERROR);
+                $this->formForward();
+            }else{
+                $this->send(false, 'asset_id');
+                $this->send('The file ID wasn\'t recognized.', 'message');
+            }
+        }
+
 	}
+
+    public function convertHeicAssetToJpeg(){
+
+        if(!$this->getUser()->hasToken('create_assets')){
+            $this->addUserMessageToNextRequest("You don't currently have permission to add new files.", SmartestUserMessage::ACCESS_DENIED);
+            $this->formForward();
+        }
+
+        $asset = new SmartestAsset;
+
+        if($asset->find($this->getRequestParameter('asset_id'))){
+
+            $helper = new SmartestImageAssetDerivativeHelper;
+            $set_thumbnail = SmartestStringHelper::toRealBool($this->getRequestParameter('set_heic_thumbnail', '1'));
+
+            try{
+                $derived_asset = $helper->convertHeicAssetToJpeg($asset, $this->getUser());
+
+                if($set_thumbnail){
+                    $asset->setThumbnailId($derived_asset->getId());
+                    $asset->save();
+                    $this->addUserMessageToNextRequest('A JPEG version of this HEIC image has been created and set as its thumbnail.', SmartestUserMessage::SUCCESS);
+                }else{
+                    $this->addUserMessageToNextRequest('A JPEG version of this HEIC image has been created.', SmartestUserMessage::SUCCESS);
+                }
+
+                $this->redirect('/assets/editAsset?asset_id='.$derived_asset->getId());
+            }catch(Throwable $e){
+                $this->addUserMessageToNextRequest($e->getMessage(), SmartestUserMessage::ERROR);
+                $this->redirect('/assets/editAsset?asset_id='.$asset->getId());
+            }
+
+        }else{
+            $this->addUserMessageToNextRequest('The file ID wasn\'t recognized.', SmartestUserMessage::ERROR);
+            $this->formForward();
+        }
+
+    }
 	
 	public function assetCommentStream(){
         
@@ -2708,7 +2838,32 @@ class Assets extends SmartestSystemApplication{
 		    
 		    // for html reusability
     	    $this->send($asset['type_info'], 'asset_type');
-    	    $html = $asset->renderPreview();
+            $this->send(false, 'preview_not_available');
+            $this->send(false, 'generated_jpeg_version');
+            $this->send(false, 'heic_temporary_preview_url');
+            $this->send('', 'heic_preview_message');
+
+            if($asset->isBrowserPreviewable()){
+                $html = $asset->renderPreview();
+            }else{
+                $html = '';
+                $this->send(true, 'preview_not_available');
+
+                if($asset->isHeicSource()){
+                    $generated_jpeg_version = $asset->getGeneratedJpegVersion();
+                    $this->send($generated_jpeg_version, 'generated_jpeg_version');
+
+                    if(!$generated_jpeg_version && $asset->canConvertToJpeg()){
+                        try{
+                            $helper = new SmartestImageAssetDerivativeHelper;
+                            $this->send($helper->createTemporaryHeicPreview($asset), 'heic_temporary_preview_url');
+                            $this->send('This is a temporary low-resolution JPEG preview generated for this screen only.', 'heic_preview_message');
+                        }catch(Throwable $e){
+                            $this->send($e->getMessage(), 'heic_preview_message');
+                        }
+                    }
+                }
+            }
     	    
     	    $this->send($html, 'html');
     	    $this->send($asset, 'asset');

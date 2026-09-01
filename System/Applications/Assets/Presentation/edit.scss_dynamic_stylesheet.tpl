@@ -12,6 +12,8 @@
   {/foreach}
     </select>
   </div>
+
+  <div class="special-box">You are editing a Dynamic Stylesheet (SCSS) file. {help id="assets:dynamic_stylesheets"}Click here{/help} to learn how Smartest variables work.</div>
     
   {foreach from=$asset._editor_parameters key="parameter_name" item="parameter"}
   <div class="edit-form-row">

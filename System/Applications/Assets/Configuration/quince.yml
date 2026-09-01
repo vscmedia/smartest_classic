@@ -42,6 +42,12 @@ module:
     file_info:
       action: assetInfo
       url: /smartest/file/:asset_id
+    convert_heic_file:
+      action: convertHeicAssetToJpeg
+      url: /smartest/file/:asset_id/convert-to-jpeg
+    downscale_image_file:
+      action: resizeImageAsset
+      url: /smartest/file/:asset_id/downscale
     ajax_full_text_search:
       action: fullTextSearchResults
       url: /smartest/assets/:asset_type/full_text_search

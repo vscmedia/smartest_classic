@@ -826,6 +826,10 @@ class SmartestDataUtility{
                     }
                 }
 
+                if(!array_key_exists('html_friendly', $types[$id])){
+                    $types[$id]['html_friendly'] = true;
+                }
+
                 if(isset($types[$id]['storage']) && is_array($types[$id]['storage']) && !array_key_exists('location', $types[$id]['storage'])){
                     $types[$id]['storage']['location'] = '';
                 }
@@ -861,11 +865,11 @@ class SmartestDataUtility{
 
     public static function getUnsupportedAssetTypes(){
 
-        if(!is_array(self::$unsupported_asset_types)){
+        if(!is_array(self::$asset_types)){
             self::getAssetTypes();
         }
 
-        return self::$unsupported_asset_types;
+        return is_array(self::$unsupported_asset_types) ? self::$unsupported_asset_types : array();
 
     }
 
@@ -890,14 +894,30 @@ class SmartestDataUtility{
 
     protected static function assetTypeDependencyIsSatisfied($type){
 
-        if(!isset($type['dependent_function']) || (is_array($type['dependent_function']) && !count($type['dependent_function'])) || (!is_array($type['dependent_function']) && !strlen((string) $type['dependent_function']))){
+        if(!self::assetTypeHasDependencies($type)){
             return true;
         }
 
-        $functions = is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function']);
+        $functions = isset($type['dependent_function']) ? (is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function'])) : array();
 
         foreach($functions as $function_name){
             if(!function_exists((string) $function_name)){
+                return false;
+            }
+        }
+
+        $classes = isset($type['dependent_class']) ? (is_array($type['dependent_class']) ? $type['dependent_class'] : array($type['dependent_class'])) : array();
+
+        foreach($classes as $class_name){
+            if(!class_exists((string) $class_name)){
+                return false;
+            }
+        }
+
+        $callables = isset($type['dependent_callable']) ? (is_array($type['dependent_callable']) ? $type['dependent_callable'] : array($type['dependent_callable'])) : array();
+
+        foreach($callables as $callable_name){
+            if(!is_callable((string) $callable_name)){
                 return false;
             }
         }
@@ -908,24 +928,52 @@ class SmartestDataUtility{
 
     protected static function getAssetTypeDependencyMessage($type){
 
-        if(!isset($type['dependent_function'])){
+        if(!self::assetTypeHasDependencies($type)){
             return '';
         }
 
         $missing = array();
-        $functions = is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function']);
+        $functions = isset($type['dependent_function']) ? (is_array($type['dependent_function']) ? $type['dependent_function'] : array($type['dependent_function'])) : array();
 
         foreach($functions as $function_name){
             if(!function_exists((string) $function_name)){
-                $missing[] = $function_name;
+                $missing[] = 'PHP function '.$function_name;
+            }
+        }
+
+        $classes = isset($type['dependent_class']) ? (is_array($type['dependent_class']) ? $type['dependent_class'] : array($type['dependent_class'])) : array();
+
+        foreach($classes as $class_name){
+            if(!class_exists((string) $class_name)){
+                $missing[] = 'PHP class '.$class_name;
+            }
+        }
+
+        $callables = isset($type['dependent_callable']) ? (is_array($type['dependent_callable']) ? $type['dependent_callable'] : array($type['dependent_callable'])) : array();
+
+        foreach($callables as $callable_name){
+            if(!is_callable((string) $callable_name)){
+                $missing[] = 'PHP callable '.$callable_name;
             }
         }
 
         if(count($missing)){
-            return 'Missing PHP function'.(count($missing) == 1 ? '' : 's').': '.implode(', ', $missing);
+            return 'Missing required '.(count($missing) == 1 ? 'dependency' : 'dependencies').': '.implode(', ', $missing);
         }
 
         return '';
+
+    }
+
+    protected static function assetTypeHasDependencies($type){
+
+        foreach(array('dependent_function', 'dependent_class', 'dependent_callable') as $dependency_key){
+            if(isset($type[$dependency_key]) && ((is_array($type[$dependency_key]) && count($type[$dependency_key])) || (!is_array($type[$dependency_key]) && strlen((string) $type[$dependency_key])))){
+                return true;
+            }
+        }
+
+        return false;
 
     }
 	

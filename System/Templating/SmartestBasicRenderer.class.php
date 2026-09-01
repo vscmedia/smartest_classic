@@ -157,6 +157,10 @@ class SmartestBasicRenderer extends SmartestEngine{
     public function renderAsset($render_data='', $path='none', $preview_mode=false){
         
         $asset_type_info = $this->_asset->getTypeInfo();
+
+        if(!isset($asset_type_info['render']) || !is_array($asset_type_info['render']) || !isset($asset_type_info['render']['template'])){
+            return $this->raiseError('This file type cannot be rendered in a web browser.');
+        }
         
         if($preview_mode && isset($asset_type_info['render']['preview_template'])){
             $render_template = SM_ROOT_DIR.$asset_type_info['render']['preview_template'];

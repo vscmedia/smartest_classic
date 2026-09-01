@@ -36,7 +36,7 @@ var addAttachmentTag = function(attachmentName){
     </div>
     {/foreach}
     
-    <div class="special-box">You are editing a Markdown file.</div>
+    <div class="special-box">You are editing a Markdown file. {help id="assets:markdown"}Click here{/help} to learn more about how these are formatted.</div>
     
     <a class="button" href="#add-attachment" onclick="makeAttachment(); return false;">Add an attachment</a>
     

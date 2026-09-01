@@ -7,3 +7,11 @@ help:
     title: Easy texts
     keywords: formatting, text
     content: textile.tpl
+  markdown:
+    title: Markdown text
+    keywords: formatting, text, markdown
+    content: markdown.tpl
+  dynamic_stylesheets:
+    title: Dynamic stylesheets and SASS variables
+    keywords: css, scss, sass, stylesheets, variables, fields, placeholders
+    content: dynamic_stylesheets.tpl

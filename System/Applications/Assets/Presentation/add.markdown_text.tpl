@@ -1,4 +1,4 @@
-  <div class="special-box">You are creating a Markdown file.</div>
+  <div class="special-box">You are creating a Markdown file. {help id="assets:markdown"}Click here{/help} to learn more about how these are formatted.</div>
   
   <div class="edit-form-row">
     <div class="form-section-label">Please enter your text here</div>

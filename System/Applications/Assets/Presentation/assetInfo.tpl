@@ -7,6 +7,27 @@
     {load_interface file="edit_asset_tabs.tpl"}
     
     <h3>{$_l10n_action_strings.title}</h3>
+
+    {if $asset.is_heic_source}
+    <div class="warning">
+      This image format can't be displayed on web pages.
+      {if $asset.generated_jpeg_version}
+        A JPEG version has been generated: <a href="{$domain}{$section}/assetInfo?asset_id={$asset.generated_jpeg_version.id}">{$asset.generated_jpeg_version.label}</a>.
+      {elseif $asset.can_convert_to_jpeg}
+        <form action="{$domain}smartest/file/{$asset.id}/convert-to-jpeg" method="post" style="display:inline-block;margin:8px 0 0 0">
+          <input type="hidden" name="set_heic_thumbnail" value="0" />
+          <label><input type="checkbox" name="set_heic_thumbnail" value="1" checked="checked" /> Use the JPEG as this HEIC file's thumbnail</label>
+          <input type="submit" value="Convert it to JPEG" class="button" />
+        </form>
+      {else}
+        HEIC conversion is not currently available on this server.
+      {/if}
+    </div>
+    {/if}
+
+    {if $asset.can_create_downscaled_derivative}
+    <div class="warning">At {$asset.dimensions} pixels and {$asset.size}, this image is very large for normal web use. <a href="#resize-image" onclick="MODALS.load('assets/resizeImageAsset?asset_id={$asset.id}', 'Create smaller image'); return false;" class="button">Create a smaller version</a></div>
+    {/if}
     
     <input type="hidden" name="asset_id" value="{$asset.id}" />
     
@@ -54,10 +75,16 @@
         <td class="field-name">Type:</td>
         <td><a href="{$domain}{$section}/getAssetTypeMembers?asset_type={$asset.type}">{$asset.type_info.label}</a> <span style="color:#666">({$asset.type})</span></td>
       </tr>
+      {if $asset.has_derived_assets}
+      <tr>
+        <td class="field-name">Generated versions:</td>
+        <td>{foreach from=$asset.derived_assets item="derived_asset"}<a href="{$domain}{$section}/assetInfo?asset_id={$derived_asset.id}">{$derived_asset.label}</a>{if !$derived_asset@last}, {/if}{/foreach}</td>
+      </tr>
+      {/if}
       {if $asset.created > 0}
       <tr>
-        <td class="field-name">{if $asset.type_info.storage.type == 'file'}Uploaded{else}Created{/if}:</td>
-        <td>{$asset.created|date_format:"%A %B %e, %Y, %l:%M%p"}</span></td>
+        <td class="field-name">{if $asset.parent_asset}Generated{elseif $asset.type_info.storage.type == 'file'}Uploaded{else}Created{/if}:</td>
+        <td>{if $asset.parent_asset}From <a href="{$domain}{$section}/assetInfo?asset_id={$asset.parent_asset.id}">{$asset.parent_asset.label}</a> on {/if}{$asset.created|date_format:"%A %B %e, %Y, %l:%M%p"}</td>
       </tr>
       {/if}
       {if $asset.modified > 0}
@@ -426,6 +453,8 @@
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/editAsset?asset_type={$asset_type.id}&amp;asset_id={$asset.id}'"><img src="{$domain}Resources/Icons/pencil.png" alt=""/> {$_l10n_action_strings.sidebar.edit_file_option}</a></li>
     {if $allow_source_edit}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/editTextFragmentSource?assettype_code={$asset_type.id}&amp;asset_id={$asset.id}{if $request_parameters.from}&amp;from={$request_parameters.from}{/if}'"><img src="{$domain}Resources/Icons/page_edit.png" alt=""/> Edit This File's Source</a></li>{/if}
     {if $show_attachments}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/textFragmentElements?assettype_code={$asset_type.id}&amp;asset_id={$asset.id}{if $request_parameters.from}&amp;from={$request_parameters.from}{/if}'"><img src="{$domain}Resources/Icons/attach.png" alt=""/> Edit File Attachments</a></li>{/if}
+    {if $asset.is_heic_source && $asset.generated_jpeg_version}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/assetInfo?asset_id={$asset.generated_jpeg_version.id}'"><i class="fa fa-file-image-o"></i> View JPEG version</a></li>{elseif $asset.is_heic_source && $asset.can_convert_to_jpeg}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}smartest/file/{$asset.id}/convert-to-jpeg'"><i class="fa fa-exchange"></i> Convert to JPEG</a></li>{/if}
+    {if $asset.can_create_downscaled_derivative}<li class="permanent-action"><a href="{dud_link}" onclick="MODALS.load('assets/resizeImageAsset?asset_id={$asset.id}', 'Create smaller image'); return false;"><i class="fa fa-compress"></i> Create smaller version</a></li>{/if}
     {if $show_publish}<li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/publishTextAsset?assettype_code={$asset_type.id}&amp;asset_id={$asset.id}'"><img src="{$domain}Resources/Icons/page_lightning.png" alt=""/> Publish This Text</a></li>{/if}
     <li class="permanent-action"><a href="{dud_link}" onclick="window.location='{$domain}{$section}/getAssetTypeMembers?asset_type={$asset.type_info.id}'"><img src="{$domain}Resources/Icons/folder_old.png" alt=""/> View all {$asset.type_info.label} files</a></li>
   </ul>

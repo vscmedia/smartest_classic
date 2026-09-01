@@ -7,7 +7,15 @@ help:
     title: Easy texts
     keywords: [formatting, text]
     content: textile.tpl
+  markdown:
+    title: Markdown text
+    keywords: [formatting, text, markdown]
+    content: markdown.tpl
   attachments:
     title: File attachments
     keywords: [formatting, text, images]
     content: attachments.tpl
+  dynamic_stylesheets:
+    title: Dynamic stylesheets and SASS variables
+    keywords: [css, scss, sass, stylesheets, variables, fields, placeholders]
+    content: dynamic_stylesheets.tpl
