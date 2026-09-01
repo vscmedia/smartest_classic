@@ -506,10 +506,26 @@ class CmsFrontEnd extends SmartestSystemApplication{
 	        
 	            $database = SmartestDatabase::getInstance('SMARTEST');
 	        
-    	        $asset_url = addslashes(urldecode($this->getRequestParameter('url')));
+    	        $asset_url = $this->getRequestParameter('url');
     	        $asset_webid = $this->getRequestParameter('key');
-	        
-    	        $sql = "SELECT * FROM Assets WHERE (asset_site_id='".$this->_site->getId()."' OR asset_shared='1') AND asset_url='".$asset_url."' AND asset_webid='".$asset_webid."'";
+    	        
+    	        if(!is_scalar($asset_url) || !is_scalar($asset_webid)){
+    	            $this->renderNotFoundPage(SM_ERROR_FILE_NOT_FOUND);
+    	            return;
+    	        }
+    	        
+    	        $asset_url = urldecode((string) $asset_url);
+    	        $asset_webid = (string) $asset_webid;
+    	        
+    	        if(!preg_match('/^[A-Za-z0-9]{16,80}$/', $asset_webid) || strlen($asset_url) < 1 || strlen($asset_url) > 512 || preg_match('/[\x00-\x1F\x7F]/', $asset_url) || strpos($asset_url, '..') !== false){
+    	            $this->renderNotFoundPage(SM_ERROR_FILE_NOT_FOUND);
+    	            return;
+    	        }
+    	        
+    	        $asset_url = $database->escapeString($asset_url);
+    	        $asset_webid = $database->escapeString($asset_webid);
+		        
+    	        $sql = "SELECT * FROM Assets WHERE (asset_site_id='".(int) $this->_site->getId()."' OR asset_shared='1') AND asset_deleted!='1' AND asset_url='".$asset_url."' AND asset_webid='".$asset_webid."' LIMIT 1";
     	        $result = $database->queryToArray($sql);
 	        
     	        if(count($result)){

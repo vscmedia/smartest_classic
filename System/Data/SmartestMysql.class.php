@@ -91,6 +91,17 @@ class SmartestMysql{
 	    return $this->connection_config['short_name'];
 	}
 	
+	public function escapeString($value){
+	    
+	    if(!$this->dblink && !$this->reconnect()){
+	        if($this->connection_config['short_name']) SmartestCache::clear('dbc_'.$this->connection_config['short_name'], true);
+	        throw new SmartestDatabaseException("Lost connection to to MySQL database and could not reconnect", SmartestDatabaseException::LOST_CONNECTION);
+        }
+	    
+	    return mysql_real_escape_string((string) $value, $this->dblink);
+	    
+	}
+		
 	public function getTables($refresh=false){
 		
 		$sql = "SHOW TABLES FROM `".$this->connection_config['database'].'`';
