@@ -456,11 +456,6 @@ class SmartestBaseApplication extends QuinceBase{
 	    return SmartestPersistentObject::get('userAgent');
 	}
 	
-	final protected function bring($data, $name=""){
-	    SmartestLog::getInstance('system')->log('Deprecated function used: SmartestBaseApplication->bring(). Use SmartestBaseApplication->send()');
-    	$this->send($data, $name);
-    }
-    
     final protected function send($data, $name=""){
         
         if(strlen($name) > 0){
