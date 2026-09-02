@@ -1,5 +1,9 @@
 <?php
 
+if (!class_exists('QuinceRequestLocationResolver', false)) {
+    require_once __DIR__.'/QuinceRequestLocationResolver.class.php';
+}
+
 class QuinceAction{
     
     protected $_request;
@@ -220,7 +224,9 @@ class QuinceRequest{
     
     protected $_module;
     protected $_action;
-    protected $_domain;
+    protected $_base_path = '/';
+    protected $_front_controller = null;
+    protected $_uses_path_info = false;
     protected $_namespace;
     protected $_request_string;
     protected $_content_type = null;
@@ -255,20 +261,55 @@ class QuinceRequest{
         $this->_action = $a;
     }
     
+    final public function getBasePath(){
+        return $this->_base_path;
+    }
+
+    final public function setBasePath($path){
+        $this->_base_path = QuinceRequestLocationResolver::normalizeBasePath($path);
+        return $this;
+    }
+
+    /** @deprecated Use getBasePath(). */
     final public function getDomain(){
-        return $this->_domain;
+        return $this->getBasePath();
     }
     
-    final public function getHyperlinkDomain(){
+    final public function getHyperlinkBasePath(){
         if($this->_namespace == 'default'){
-            return $this->_domain;
+            return $this->getBasePath();
         }else{
-            return $this->_domain.$this->_namespace.':';
+            return $this->getBasePath().$this->_namespace.':';
         }
     }
+
+    /**
+     * @deprecated Use getHyperlinkBasePath(). The returned value may also
+     * contain Quince's routing namespace prefix; it is never an HTTP domain.
+     */
+    final public function getHyperlinkDomain(){
+        return $this->getHyperlinkBasePath();
+    }
     
-    final public function setDomain($d){
-        $this->_domain = $d;
+    /** @deprecated Use setBasePath(). */
+    final public function setDomain($path){
+        return $this->setBasePath($path);
+    }
+
+    final public function getFrontController(){
+        return $this->_front_controller;
+    }
+
+    final public function setFrontController($frontController){
+        $this->_front_controller = $frontController ?: null;
+    }
+
+    final public function usesPathInfo(){
+        return $this->_uses_path_info;
+    }
+
+    final public function setUsesPathInfo($usesPathInfo){
+        $this->_uses_path_info = (bool) $usesPathInfo;
     }
     
     final public function getRequestString(){
@@ -475,14 +516,14 @@ class QuinceBase{
         
         if(!$to){
 			
-			$destination = $this->_request->getDomain();
+			$destination = $this->_request->getBasePath();
 			
 		}else if($to[0] == "/"){
 		    
-		    if($this->_request->getDomain() == '/' || substr($to, 0, strlen($this->_request->getDomain())) == $this->_request->getDomain()){
+		    if($this->_request->getBasePath() == '/' || substr($to, 0, strlen($this->_request->getBasePath())) == $this->_request->getBasePath()){
 		        $destination = $to;
 	        }else{
-	            $destination = $this->_request->getDomain().substr($to, 1);
+	            $destination = $this->_request->getBasePath().substr($to, 1);
 	        }
 	        
 	    }else if(preg_match('/^@(\w+):(\w+)(\?(.*))?$/', $to, $matches)){
@@ -734,9 +775,9 @@ class QuinceRouter{
             if(isset($route['url'])){
                 
                 if($namespace == 'default'){
-                    $url = $this->_request->getDomain().substr($route['url'], 1);
+                    $url = $this->_request->getBasePath().substr($route['url'], 1);
                 }else{
-                    $url = $this->_request->getDomain().$namespace.'+_NSS+'.substr($route['url'], 1);
+                    $url = $this->_request->getBasePath().$namespace.'+_NSS+'.substr($route['url'], 1);
                 }
             
                 $route_required_params = QuinceUtilities::getAliasUrlRequiredArguments($route['url']);
@@ -762,9 +803,9 @@ class QuinceRouter{
             
                 // No url is specified for this route, so just return the ordinary /module/action?args type of URL
                 if($namespace == 'default'){
-                    $url = $this->_request->getDomain().$route['module'].'/'.$route['action'];
+                    $url = $this->_request->getBasePath().$route['module'].'/'.$route['action'];
                 }else{
-                    $url = $this->_request->getDomain().$namespace.'+_NSS+'.$route['module'].'/'.$route['action'];
+                    $url = $this->_request->getBasePath().$namespace.'+_NSS+'.$route['module'].'/'.$route['action'];
                 }
             
                 if(strlen($matches[3])){
@@ -888,8 +929,7 @@ class Quince{
 	protected $_num_redirects = 0;
 	protected $_current_request;
 	protected $_current_action;
-    protected $_use_manual_domain = false;
-    protected $_manual_domain = '/';
+    protected $_configured_base_path = null;
 	
 	public $module_shortnames;
 	
@@ -938,9 +978,12 @@ class Quince{
         self::$default_content_type = $config['default_content_type'];
         self::$use_namespaces = $config['use_namespaces'];
         
-        if(isset($config['domain'])){
-            $this->_use_manual_domain = true;
-            $this->_manual_domain = $config['domain'];
+        // base_path is canonical. domain remains a configuration alias so old
+        // Smartest quince.yml files continue to work unchanged.
+        if(isset($config['base_path'])){
+            $this->_configured_base_path = QuinceRequestLocationResolver::normalizeBasePath($config['base_path']);
+        }else if(isset($config['domain'])){
+            $this->_configured_base_path = QuinceRequestLocationResolver::normalizeBasePath($config['domain']);
         }
         
     }
@@ -965,144 +1008,18 @@ class Quince{
     public function processRequest($url){
 	    
 	    $r = new $this->_request_class;
-	    
-	    // $ulength = strlen($url.'/');
-	    
-	    // echo getcwd().' ';
-	    // echo $_SERVER["DOCUMENT_ROOT"].'/ ';
-	    // echo $url;
-	    
-	    /* 
-	    // If the end of the url and the file path are the same
-	    if(substr(getcwd().'/', $ulength*-1, $ulength) == $url.'/'){
-	        $r->setRequestString('');
-	        $r->setDomain($url.'/');
-	        return $r;
-	    }
-	    */
-	    
-        if($this->_use_manual_domain){
-            
-            $r->setDomain($this->_manual_domain);
-            $r->setRequestString(substr($url, 1));
-            
-        }else{
-            
-    	    // TAKE ALL THE BITS OF THE REQUEST_URI THAT AREN'T IN THE DOCUMENT_ROOT AND MAKE THEM THE DOMAIN
-	    
-	    $test_url = $url[(strlen($url)-1)] == '/' ? substr($url, 0, -1) : $url;
-	    
-    	    // Calculate the domain
-    	    $dr = realpath($_SERVER["DOCUMENT_ROOT"]).'/';
-    	    $hdp = explode('/', $test_url);
-        
-            array_shift($hdp);
-            $possible_dir = implode('/', $hdp).'/';
-        
-            // MultiViews support: look for URLS like index.php/module/action
-    		// $fc_filename = basename($_SERVER['SCRIPT_FILENAME']);
-    		// $fc_filename_len = strlen($fc_filename)+1;
-		
-    		while(!is_dir($dr.$possible_dir)){
-                array_pop($hdp);
-                $possible_dir = implode('/', $hdp).'/';
-            }
-        
-            /* if(substr($possible_dir, 0, $fc_filename_len) == '/'.$fc_filename){
-    		    $possible_dir .= $fc_filename.'/';
-    		    $url = substr($url, $fc_filename_len);
-    		} */
-        
-            if($possible_dir == '/'){
-                $r->setDomain('/');
-                $r->setRequestString(substr($url, 1));
-            }else{
-                $r->setDomain('/'.$possible_dir);
-                $r->setRequestString(substr($url, strlen($possible_dir)+1));
-            }
-        
-            /* if(is_dir($dr.$possible_dir)){
-                $r->setDomain('/'.$possible_dir);
-                $r->setRequestString(substr($url, strlen($possible_dir)+1));
-            }else{
-                $r->setDomain('/');
-                $r->setRequestString(substr($url, 1));
-            } */
-        
-            /* if($f === false){
-                throw new QuinceException("Domain could not be calculated: Document root not found in current working directory");
-            }else{
-                if($f > 0){
-                    $docroot = substr($cwd, 0, $f).$_SERVER["DOCUMENT_ROOT"];
-                }else{
-                    $docroot = $_SERVER["DOCUMENT_ROOT"];
-                }
-            } */
-        
-            /* if(strlen($cwd) == strlen($docroot)){
-            
-                $r->setRequestString('');
-    	        $r->setDomain($url.'/');
-    	        return $r;
-	        
-            }else if(strlen($cwd) > strlen($docroot)){
-            
-                $possible_domain = substr($cwd, strlen($docroot));
-                $start = strlen($possible_domain)+1;
-            
-                if(substr($_SERVER['REQUEST_URI'], 0, $start) == $possible_domain.'/'){
-                    $r->setDomain($possible_domain.'/');
-                    $r->setRequestString(substr($url, $start));
-                    return $r;
-                }
-            
-            } */
-        
-            // $num_folders = count($hdp);
-        
-            /* for($i=0;$i<$num_folders;$i++){
-                $try_path = '/'.implode('/', $hdp).'/';
-                // echo $try_path.' ';
-                $substr_start = strlen($try_path)*-1;
-                // print_r($hdp);
-                $request = array_pop($hdp).'/'.$request;
-                // echo $request;
-            
-            }
-        
-            $argnum = 1;
-            $count = (count($hdp)-1);
-            $ds = array();
-        
-            for($i=0;$i<$count;++$i){
-                $ds[] = '/'.implode('/', array_reverse(array_slice($hdp, 0, ($argnum * -1)))).'/';
-                ++$argnum;
-            }
-        
-            $ds = array_reverse($ds);
-            $r->setRequestString(substr($url, 1));
-            $r->setDomain('/');
-        
-            // Loop through the directory paths until one matches
-            foreach($ds as $try){
-            
-                $dlen = strlen($try);
-            
-                if(substr($url, 0, $dlen) == $try){
-                
-                    $r->setRequestString(substr($url, $dlen));
-                    $r->setDomain($try);
-                
-                    if(substr($r->getRequestString(), 0, $fc_filename_len) == $fc_filename){
-            		    $r->setDomain($r->getDomain().$fc_filename);
-            		    $r->setRequestString(substr($r->getRequestString(), $fc_filename_len));
-            		}
-                
-                    return $r;
-                }
-            } */
-            
-        }
+
+        // Configured and detected prefixes deliberately share one resolver and
+        // one stripping implementation; this fixes the old manual-domain bug.
+        $location = (new QuinceRequestLocationResolver)->resolve(
+            $_SERVER,
+            $this->_configured_base_path,
+            $url
+        );
+        $r->setBasePath($location['basePath']);
+        $r->setRequestString($location['requestString']);
+        $r->setFrontController($location['frontController']);
+        $r->setUsesPathInfo($location['usesPathInfo']);
         
 	    return $r;
 	}
@@ -1366,7 +1283,7 @@ class Quince{
 	public function prepare($url='___QUINCE_CURRENT_URL'){
 	    
 	    if($url == "___QUINCE_CURRENT_URL"){
-	        $url = $_SERVER['REQUEST_URI'];
+	        $url = $_SERVER['REQUEST_URI'] ?? '/';
 	        $url_is_current_request = true;
 	    }else{
 	        $url_is_current_request = false;
@@ -1625,4 +1542,18 @@ class QuinceLegacy extends Quince{
         return $this->_request->getIsAlias();
     }
     
+}
+
+// Provide the standalone package namespace without breaking Smartest's many
+// include-based global class references. These aliases can be removed only in
+// a future major release after consumers have migrated.
+foreach(array(
+    'QuinceAction', 'QuinceRequest', 'QuinceBase', 'QuinceUtilities',
+    'QuinceRouter', 'QuinceException', 'QuinceForwardException',
+    'QuinceRedirectException', 'Quince', 'QuinceLegacy'
+) as $quinceClass){
+    $namespacedClass = 'QuinceController\\'.$quinceClass;
+    if(!class_exists($namespacedClass, false)){
+        class_alias($quinceClass, $namespacedClass);
+    }
 }

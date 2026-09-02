@@ -97,6 +97,14 @@ Smartest is designed to create its runtime configuration through the browser-bas
 
 The installer will ask for database connection details, create the required tables, create the first user, and prepare the first site. It may also generate a one-off permissions repair script in `/tmp` if it detects directories that the web server cannot write to.
 
+Server automation may perform the permissions and database-configuration parts before the browser installer is opened. In that case, create the empty database, fix the required writable locations, and either create `Configuration/database.yml` directly or place temporary database details here:
+
+```text
+System/Temporary/installer-database.yml
+```
+
+The temporary file may use the format shown in `System/Install/Samples/automated-database-sample.yml`. On the next browser request, Smartest will import that file into `Configuration/database.yml`, test the connection, delete the temporary file, log the import, create the database tables if needed, and continue the installer at Step 3: user account creation. A pre-created `Configuration/database.yml` does not mark Smartest as installed; the installer remains active until the first user and first site have been created.
+
 For specialised local development work only, this repository includes a helper script to bypass the installer:
 
 ```bash

@@ -5,9 +5,14 @@ require SM_ROOT_DIR.'System/Base/Exceptions/SmartestNotInstalledException.class.
 class SmartestInstallationStatusHelper{
 
     const INSTALLATION_RECEIPT_FILE = 'System/Core/Info/.installation.log';
+    const AUTOMATED_DATABASE_CONFIG_FILE = 'System/Temporary/installer-database.yml';
     
     public static function checkStatus($purge=false){
         
+        if(!$purge){
+            self::importAutomatedDatabaseConfig();
+        }
+
         if(!$purge && self::installationLooksComplete()){
             self::markInstallationComplete();
             return;
@@ -509,9 +514,136 @@ class SmartestInstallationStatusHelper{
         }
     }
 
+    protected static function databaseConfigurationConnects(){
+
+        if(!is_file(SM_ROOT_DIR.'Configuration/database.yml') && !is_file(SM_ROOT_DIR.'Configuration/database.ini')){
+            return false;
+        }
+
+        try{
+            SmartestDatabase::testConnection('SMARTEST');
+            return true;
+        }catch(Exception $e){
+            return false;
+        }
+    }
+
+    protected static function importAutomatedDatabaseConfig(){
+
+        if(is_file(SM_ROOT_DIR.'Configuration/database.yml') || is_file(SM_ROOT_DIR.'Configuration/database.ini')){
+            return false;
+        }
+
+        $source_file = SM_ROOT_DIR.self::AUTOMATED_DATABASE_CONFIG_FILE;
+
+        if(!is_file($source_file)){
+            return false;
+        }
+
+        if(!is_readable($source_file)){
+            SmartestLog::getInstance('installer')->log('Automated installer database configuration file exists but is not readable: '.self::AUTOMATED_DATABASE_CONFIG_FILE, SM_LOG_WARNING);
+            return false;
+        }
+
+        $data = SmartestYamlHelper::load($source_file);
+        $params = self::getAutomatedDatabaseConfigParameters($data);
+
+        if(!$params instanceof SmartestParameterHolder){
+            SmartestLog::getInstance('installer')->log('Automated installer database configuration file could not be used because it did not contain username, database, and host values.', SM_LOG_WARNING);
+            self::removeAutomatedDatabaseConfigFile($source_file);
+            return false;
+        }
+
+        if(!is_writable(SM_ROOT_DIR.'Configuration/')){
+            SmartestLog::getInstance('installer')->log('Automated installer database configuration file was found but ./Configuration/ is not writable, so Configuration/database.yml could not be created.', SM_LOG_WARNING);
+            return false;
+        }
+
+        if(!class_exists('SmartestInstaller')){
+            require SM_ROOT_DIR.'System/Install/SmartestInstaller.class.php';
+        }
+
+        $installer = new SmartestInstaller;
+
+        if(!$installer->createNewDatabaseConfig($params) || !is_file(SM_ROOT_DIR.'Configuration/database.yml')){
+            SmartestLog::getInstance('installer')->log('Automated installer database configuration file was found but Configuration/database.yml could not be created.', SM_LOG_WARNING);
+            return false;
+        }
+
+        SmartestCache::clear('dbc_SMARTEST', true);
+        SmartestCache::clear('db_config_yaml_file_md5', true);
+
+        try{
+            SmartestDatabase::testConnection('SMARTEST');
+        }catch(Exception $e){
+            if(is_file(SM_ROOT_DIR.'Configuration/database.yml') && is_writable(SM_ROOT_DIR.'Configuration/database.yml')){
+                unlink(SM_ROOT_DIR.'Configuration/database.yml');
+            }
+            SmartestCache::clear('dbc_SMARTEST', true);
+            SmartestCache::clear('db_config_yaml_file_md5', true);
+            SmartestLog::getInstance('installer')->log('Automated installer database configuration was rejected because Smartest could not connect to the database: '.$e->getMessage(), SM_LOG_WARNING);
+            self::removeAutomatedDatabaseConfigFile($source_file);
+            return false;
+        }
+
+        self::removeAutomatedDatabaseConfigFile($source_file);
+        SmartestLog::getInstance('installer')->log('Imported and tested automated installer database configuration from '.self::AUTOMATED_DATABASE_CONFIG_FILE.'. The browser installer can continue from user account creation.', SM_LOG_DEBUG);
+        return true;
+    }
+
+    protected static function getAutomatedDatabaseConfigParameters($data){
+
+        if(!is_array($data)){
+            return false;
+        }
+
+        if(isset($data['SMARTEST']) && is_array($data['SMARTEST'])){
+            $data = $data['SMARTEST'];
+        }
+
+        $required = array('username', 'database', 'host');
+
+        foreach($required as $name){
+            if(!isset($data[$name]) || !is_scalar($data[$name]) || !strlen(trim((string) $data[$name])) || preg_match('/[\x00-\x1F\x7F]/', (string) $data[$name])){
+                return false;
+            }
+        }
+
+        if(isset($data['password']) && !is_scalar($data['password'])){
+            return false;
+        }
+
+        $ph = new SmartestParameterHolder("Automated database connection parameters");
+        $ph->setParameter('username', trim((string) $data['username']));
+        $ph->setParameter('password', isset($data['password']) ? (string) $data['password'] : '');
+        $ph->setParameter('database', trim((string) $data['database']));
+        $ph->setParameter('host', trim((string) $data['host']));
+
+        return $ph;
+    }
+
+    protected static function removeAutomatedDatabaseConfigFile($source_file){
+
+        if(is_file($source_file)){
+            if(is_writable($source_file) && is_writable(dirname($source_file))){
+                unlink($source_file);
+                SmartestLog::getInstance('installer')->log('Deleted automated installer database configuration file '.$source_file.'.', SM_LOG_DEBUG);
+                return true;
+            }else{
+                SmartestLog::getInstance('installer')->log('Automated installer database configuration file could not be deleted; please remove it manually: '.$source_file, SM_LOG_WARNING);
+            }
+        }
+
+        return false;
+    }
+
     protected static function getInstallationWritableLocations(SmartestParameterHolder $system_data){
 
         $writable_files = array_merge($system_data->g('system')->g('writable_locations')->g('always')->toArray(), $system_data->g('system')->g('writable_locations')->g('installation')->toArray());
+
+        if(self::databaseConfigurationConnects()){
+            $writable_files = array_diff($writable_files, array('Configuration/'));
+        }
 
         if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
             require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';

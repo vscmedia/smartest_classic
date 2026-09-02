@@ -1,0 +1,14 @@
+# Temporary database connection handoff for automated Smartest installers.
+#
+# Copy this file to:
+#
+#   System/Temporary/installer-database.yml
+#
+# The browser installer will import it into Configuration/database.yml, test the
+# connection, delete the temporary file, and continue from user account creation.
+
+---
+username: "smartest"
+password: "change-this-password"
+database: "smartest"
+host: "localhost"
