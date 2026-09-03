@@ -1506,8 +1506,11 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
         }
         
         // This bit guarantees that new files are saved to the correct (current) site
-        if($this->getCurrentSiteId() && !$this->getCameFromDatabase() && $this->getSiteId() != $this->getCurrentSiteId() && !isset($this->_modified_properties['site_id'])){
-            $this->setSiteId($this->getCurrentSiteId());
+        if(!isset($this->_modified_properties['site_id']) && !$this->getCameFromDatabase()){
+            $current_site_id = $this->getCurrentSiteId();
+            if($current_site_id && $this->getSiteId() != $current_site_id){
+                $this->setSiteId($current_site_id);
+            }
         }
         
 	    parent::save();

@@ -9,10 +9,12 @@ class SmartestFrontEndSystemInfoQueryService extends SmartestObject{
     }
     
     public function getSiteId(){
-        
+
+        $site_id = null;
+
         if(isset($GLOBALS['_site']) && is_object($GLOBALS['_site'])){
             $site_id = $GLOBALS['_site']->getId();
-        }else if($this->getRequest()->getModule() == 'website' && defined('SM_CMS_PAGE_SITE_ID')){
+        }else if(is_object($this->getRequest()) && $this->getRequest()->getModule() == 'website' && defined('SM_CMS_PAGE_SITE_ID')){
 	        // This is mostly for when objects are used on web pages
             $site_id = constant('SM_CMS_PAGE_SITE_ID');
         }else if(is_object(SmartestSession::get('current_open_project'))){
