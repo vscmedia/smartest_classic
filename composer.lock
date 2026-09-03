@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9848d424c9cec7d77a33f7cf85e673e6",
+    "content-hash": "5b6830111d229949a8388906e8f84c2a",
     "packages": [
         {
             "name": "dflydev/dot-access-data",
@@ -676,6 +676,60 @@
             "time": "2026-05-24T12:32:40+00:00"
         },
         {
+            "name": "mustangostang/spyc",
+            "version": "0.6.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mustangostang/spyc.git",
+                "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mustangostang/spyc/zipball/4627c838b16550b666d15aeae1e5289dd5b77da0",
+                "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "4.3.*@dev"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.5.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "Spyc.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "mustangostang",
+                    "email": "vlad.andersen@gmail.com"
+                }
+            ],
+            "description": "A simple YAML loader/dumper class for PHP",
+            "homepage": "https://github.com/mustangostang/spyc/",
+            "keywords": [
+                "spyc",
+                "yaml",
+                "yml"
+            ],
+            "support": {
+                "issues": "https://github.com/mustangostang/spyc/issues",
+                "source": "https://github.com/mustangostang/spyc/tree/0.6.3"
+            },
+            "time": "2019-09-10T13:16:29+00:00"
+        },
+        {
             "name": "netcarver/textile",
             "version": "v4.1.5",
             "source": {
@@ -1100,6 +1154,44 @@
                 "source": "https://github.com/php-fig/simple-cache/tree/3.0.0"
             },
             "time": "2021-10-29T13:26:27+00:00"
+        },
+        {
+            "name": "quincecontroller/quince",
+            "version": "v0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vscmedia/quince.git",
+                "reference": "de14dbe31cd66e55532d123694012a943ae13e60"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vscmedia/quince/zipball/de14dbe31cd66e55532d123694012a943ae13e60",
+                "reference": "de14dbe31cd66e55532d123694012a943ae13e60",
+                "shasum": ""
+            },
+            "require": {
+                "mustangostang/spyc": "^0.6.3",
+                "php": ">=8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/compatibility.php"
+                ],
+                "psr-4": {
+                    "QuinceController\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "description": "A lightweight modular PHP controller, router and dispatcher",
+            "support": {
+                "issues": "https://github.com/vscmedia/quince/issues",
+                "source": "https://github.com/vscmedia/quince/tree/v0.5.0"
+            },
+            "time": "2026-09-02T11:37:59+00:00"
         },
         {
             "name": "scssphp/scssphp",

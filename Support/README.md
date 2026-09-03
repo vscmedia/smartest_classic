@@ -189,7 +189,7 @@ Important directories:
 
 - `Public/`: the only directory served by the web server.
 - `System/`: Smartest core code, applications, helpers, templates, configuration, install assets, and cache.
-- `System/Library/`: Composer vendor directory plus first-party Quince code.
+- `System/Library/`: Smartest's system-library area, including the Composer-managed `vendor/` directory.
 - `Library/`: project-level first-party extension code such as API classes, actions, and object model files.
 - `Applications/`: custom or generated application modules.
 - `Presentation/`: shared site presentation files such as masters and layouts.
@@ -198,7 +198,7 @@ Important directories:
 
 ## Composer
 
-Smartest Classic now uses Composer for third-party PHP libraries. The Composer vendor directory is configured as:
+Smartest Classic now uses Composer for third-party PHP libraries and package-managed system libraries such as Quince. The Composer vendor directory is configured as:
 
 ```json
 "vendor-dir": "System/Library/vendor"

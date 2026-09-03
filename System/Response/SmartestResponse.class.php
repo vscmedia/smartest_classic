@@ -180,8 +180,6 @@ class SmartestResponse{
         	'System/Data/SmartestSortableItemReferenceSet.class.php',
         	'System/Data/SmartestManyToManyQuery.class.php',
         	'System/Data/SmartestObjectModelHelper.class.php',
-		'System/Library/Quince/QuinceRequestLocationResolver.class.php',
-		'System/Library/Quince/Quince.class.php',
         	'System/Templating/SmartestEngine.class.php',
         	'System/Templating/SmartestInterfaceBuilder.class.php',
         	'System/Templating/SmartyManager.class.php',
@@ -234,7 +232,10 @@ class SmartestResponse{
             self::debugTrace('construct: basic objects loaded');
             $d->loadExtendedObjects();
             self::debugTrace('construct: extended objects loaded');
-            
+
+            SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit();
+            self::debugTrace('construct: pending first-site buildkit checked');
+
             SmartestFileSystemHelper::include_group(
 
             	'Library/API/SmartestApplication.class.php',
