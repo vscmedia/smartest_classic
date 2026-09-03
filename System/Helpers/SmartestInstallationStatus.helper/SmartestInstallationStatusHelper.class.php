@@ -612,7 +612,6 @@ class SmartestInstallationStatusHelper{
 
         if(!$params instanceof SmartestParameterHolder){
             SmartestLog::getInstance('installer')->log('Automated installer database configuration file could not be used because it did not contain username, database, and host values.', SM_LOG_WARNING);
-            self::removeAutomatedDatabaseConfigFile($source_file);
             return false;
         }
 
@@ -644,7 +643,6 @@ class SmartestInstallationStatusHelper{
             SmartestCache::clear('dbc_SMARTEST', true);
             SmartestCache::clear('db_config_yaml_file_md5', true);
             SmartestLog::getInstance('installer')->log('Automated installer database configuration was rejected because Smartest could not connect to the database: '.$e->getMessage(), SM_LOG_WARNING);
-            self::removeAutomatedDatabaseConfigFile($source_file);
             return false;
         }
 

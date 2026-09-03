@@ -513,11 +513,16 @@ class CmsFrontEnd extends SmartestSystemApplication{
 	        
 	            $database = SmartestDatabase::getInstance('SMARTEST');
 	        
-    	        $asset_url = addslashes(urldecode($this->getRequestParameter('url')));
-    	        $asset_webid = $this->getRequestParameter('key');
+	        $asset_url = urldecode((string) $this->getRequestParameter('url'));
+	        $asset_webid = (string) $this->getRequestParameter('key');
 	        
-    	        $sql = "SELECT * FROM Assets WHERE (asset_site_id='".$this->_site->getId()."' OR asset_shared='1') AND asset_url='".$asset_url."' AND asset_webid='".$asset_webid."'";
-    	        $result = $database->queryToArray($sql);
+	        $sql = 'SELECT * FROM Assets WHERE (asset_site_id=:site_id OR asset_shared=:asset_shared) AND asset_url=:asset_url AND asset_webid=:asset_webid LIMIT 1';
+	        $result = $database->preparedQuery($sql, array(
+	            'site_id' => (int) $this->_site->getId(),
+	            'asset_shared' => 1,
+	            'asset_url' => $asset_url,
+	            'asset_webid' => $asset_webid,
+	        ));
 	        
     	        if(count($result)){
 	            
