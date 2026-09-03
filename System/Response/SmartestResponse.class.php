@@ -233,6 +233,11 @@ class SmartestResponse{
             $d->loadExtendedObjects();
             self::debugTrace('construct: extended objects loaded');
 
+            if(!SmartestPersistentObject::get('prefs_helper')){
+                SmartestPersistentObject::set('prefs_helper', new SmartestPreferencesHelper);
+                self::debugTrace('construct: preferences helper loaded for pending installer work');
+            }
+
             SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit();
             self::debugTrace('construct: pending first-site buildkit checked');
 
