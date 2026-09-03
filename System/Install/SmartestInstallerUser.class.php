@@ -16,7 +16,7 @@ class SmartestInstallerUser{
         $hashed_password = $this->hasUserColumn('user_password_salt') ? md5($password.$salt) : md5($password);
         $now = time();
 
-        $this->database->preparedQuery('TRUNCATE TABLE Users');
+        $this->assertUsersTableIsEmpty();
 
         if(!$this->insertUser($this->getFirstUserData($username, $hashed_password, $salt, $firstname, $lastname, $email, $now))){
             throw new SmartestException('The installer could not create the first user account.');
@@ -96,6 +96,18 @@ class SmartestInstallerUser{
 
         $sql = 'INSERT INTO Users (`'.implode('`, `', $columns).'`) VALUES ('.implode(', ', $placeholders).')';
         return $this->database->preparedQuery($sql, $insert_data);
+
+    }
+
+    protected function assertUsersTableIsEmpty(){
+
+        $existing_users = $this->database->preparedQuery('SELECT user_id FROM Users LIMIT 1');
+
+        if(is_array($existing_users) && count($existing_users)){
+            throw new SmartestException('The installer will not create bootstrap user accounts because the Users table already contains data.');
+        }
+
+        return true;
 
     }
 
