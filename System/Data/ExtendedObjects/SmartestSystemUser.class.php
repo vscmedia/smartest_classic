@@ -399,7 +399,7 @@ class SmartestSystemUser extends SmartestUser implements SmartestSystemUserApi{
 	    // $token = new SmartestUserToken;
 	    $h = new SmartestUsersHelper;
 	    
-	    if($token_id = $h->getTokenId($token_code)){
+	    if(($token_id = $h->getTokenId($token_code)) !== null){
 	        $this->addTokenById($token_id, $site_id);
 		    
 		}else{

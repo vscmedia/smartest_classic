@@ -50,6 +50,7 @@ class SmartestSiteCreationHelper{
         }
 
         $ph = new SmartestPreferencesHelper;
+        $is_first_site = !count(SmartestDatabase::getInstance('SMARTEST')->preparedQuery('SELECT site_id FROM Sites LIMIT 1'));
 
         $site = new SmartestSite;
         $site->setName($p->getParameter('site_name'));
@@ -64,6 +65,7 @@ class SmartestSiteCreationHelper{
         $site->setAutomaticUrls('OFF');
 	    $site->save();
 	    $site->getUniqueId();
+        self::ensureCreatorSitePermissions($u, $site, $is_first_site);
         self::ensureDefaultSystemAssets($u, $site);
 	    SmartestLog::getInstance('system')->log("User {$u->__toString()} created a new site record: '{$site->getName()}/{$site->getDomain()}'", SM_LOG_DEBUG);
 
@@ -88,14 +90,6 @@ class SmartestSiteCreationHelper{
             self::createSiteDirectory($site);
 
             $site = $buildkit->execute($site, $u, $prepared_params);
-
-            if(!$u->hasGlobalPermission('site_access')){
-                $u->addToken('site_access', $site->getId());
-            }
-
-            if(!$u->hasGlobalPermission('modify_user_permissions')){
-                $u->addToken('modify_user_permissions', $site->getId());
-            }
 
             SmartestLog::getInstance('system')->log("Executed Build Kit '".$buildkit->getLabel()."' for new site '".$site->getName()."'.", SM_LOG_DEBUG);
 
@@ -277,20 +271,39 @@ class SmartestSiteCreationHelper{
 
 	    self::createSiteDirectory($site);
 
-		if(!$u->hasGlobalPermission('site_access')){
-		    $u->addToken('site_access', $site->getId());
-		}
-
-		if(!$u->hasGlobalPermission('modify_user_permissions')){
-		    $u->addToken('modify_user_permissions', $site->getId());
-		}
-
 		return $site;
 
 	    }
 
         public function createNewSiteFromBuildKit(SmartestParameterHolder $p, $initial_user, $buildkit, $prepared_params=array()){
             return $this->createNewSite($p, $initial_user, $buildkit, $prepared_params);
+        }
+
+        protected static function ensureCreatorSitePermissions($user, SmartestSite $site, $is_first_site=false){
+
+            if(!$user instanceof SmartestSystemUser){
+                SmartestLog::getInstance('system')->log("Could not grant creator site permissions because user object was not a system user.", SM_LOG_WARNING);
+                return false;
+            }
+
+            if($is_first_site){
+                $user->addToken('root_permission', 'GLOBAL');
+                $user->addToken('site_access', 'GLOBAL');
+                $user->addToken('modify_user_permissions', 'GLOBAL');
+                $user->addToken('modify_user_own_permissions', 'GLOBAL');
+                SmartestLog::getInstance('system')->log("Granted first-site global root and site access permissions to user {$user->getId()}.", SM_LOG_DEBUG);
+            }else{
+                if(!$user->hasGlobalPermission('site_access')){
+                    $user->addToken('site_access', $site->getId());
+                }
+
+                if(!$user->hasGlobalPermission('modify_user_permissions')){
+                    $user->addToken('modify_user_permissions', $site->getId());
+                }
+            }
+
+            return true;
+
         }
 
 	    public static function createStandardPagesLayout(SmartestSite $site, $master_template='', $initial_user=''){
