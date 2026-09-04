@@ -201,19 +201,19 @@ class SmartestBuildKit implements ArrayAccess{
     }
 
     public function getContentIsRequired(){
-        return $this->getSectionFlag('content', 'required', true);
+        return $this->getContentIsEnabled() && $this->getSectionFlag('content', 'required', true);
     }
 
     public function getTemplatesAreRequired(){
-        return $this->getSectionFlag('templates', 'required', true);
+        return $this->getTemplatesAreEnabled() && $this->getSectionFlag('templates', 'required', true);
     }
 
     public function getDataStructureIsRequired(){
-        return $this->getSectionFlag('data_structure', 'required', true);
+        return $this->getDataStructureIsEnabled() && $this->getSectionFlag('data_structure', 'required', true);
     }
 
     public function getPageStructureIsRequired(){
-        return $this->getSectionFlag('frontend_structure', 'required', true);
+        return $this->getPageStructureIsEnabled() && $this->getSectionFlag('frontend_structure', 'required', true);
     }
 
     public function getContentConfigurationOptions(){

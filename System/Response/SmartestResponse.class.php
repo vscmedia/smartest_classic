@@ -126,6 +126,7 @@ class SmartestResponse{
         	'System/Data/ExtendedTypes/SmartestExternalFeed.class.php',
             'System/Data/ExtendedTypes/SmartestDbStorageParameterHolder.class.php',
         	'System/Data/ExtendedTypes/SmartestEmailAddress.class.php',
+            'System/Data/ExtendedTypes/SmartestRenderableString.class.php',
             'System/Data/ExtendedTypes/SmartestAssetClassDefinitionsHolder.class.php'
 
         );

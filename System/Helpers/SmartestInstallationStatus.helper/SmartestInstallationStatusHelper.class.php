@@ -7,6 +7,7 @@ class SmartestInstallationStatusHelper{
     const INSTALLATION_RECEIPT_FILE = 'System/Core/Info/.installation.log';
     const AUTOMATED_DATABASE_CONFIG_FILE = 'System/Temporary/installer-database.yml';
     const PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY = 'installer_pending_first_site_buildkit';
+    const INSTALLATION_DATABASE_MARKER = '_system_installed_timestamp';
     
     public static function checkStatus($purge=false){
         
@@ -431,11 +432,8 @@ class SmartestInstallationStatusHelper{
 
 	                }
 
-	                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
-		                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
-                    if(!SmartestSystemSettingHelper::hasData('_system_installed_timestamp')){
-                        SmartestSystemSettingHelper::save('_system_installed_timestamp', time());
-                    }
+                if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
+	                    SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
                 }
                 self::markInstallationComplete();
                 self::logInstall('Installation marked complete.', SM_LOG_DEBUG);
@@ -459,6 +457,8 @@ class SmartestInstallationStatusHelper{
         if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
             SmartestCache::save('installation_status', SM_INSTALLSTATUS_COMPLETE, -1, true);
         }
+
+        self::markInstallationDatabaseComplete();
 
         $file = SM_ROOT_DIR.self::INSTALLATION_RECEIPT_FILE;
         $dir = dirname($file);
@@ -486,7 +486,79 @@ class SmartestInstallationStatusHelper{
     }
 
     protected static function pendingFirstSiteBuildKitIsLocked(){
-        return self::hasInstallationReceipt();
+        return self::hasInstallationReceipt() || self::hasInstallationDatabaseReceipt();
+    }
+
+    protected static function hasInstallationDatabaseReceipt(){
+
+        try{
+            $db = SmartestDatabase::getInstance('SMARTEST', true);
+
+            if(!in_array('Settings', $db->getTables(true))){
+                return false;
+            }
+
+            $result = $db->preparedQuery(
+                "SELECT setting_id FROM Settings WHERE setting_name=:setting_name AND setting_application_id=:application_id AND setting_type=:setting_type LIMIT 1",
+                array(
+                    'setting_name' => self::INSTALLATION_DATABASE_MARKER,
+                    'application_id' => '_GLOBAL',
+                    'setting_type' => 'SM_SETTINGTYPE_GLOBAL_PREFERENCE',
+                )
+            );
+
+            return is_array($result) && count($result);
+        }catch(Throwable $e){
+            return false;
+        }
+
+    }
+
+    protected static function markInstallationDatabaseComplete(){
+
+        try{
+            $db = SmartestDatabase::getInstance('SMARTEST', true);
+
+            if(!in_array('Settings', $db->getTables(true))){
+                return false;
+            }
+
+            $value = (string) time();
+            $params = array(
+                'setting_name' => self::INSTALLATION_DATABASE_MARKER,
+                'application_id' => '_GLOBAL',
+                'setting_type' => 'SM_SETTINGTYPE_GLOBAL_PREFERENCE',
+            );
+
+            $result = $db->preparedQuery(
+                "SELECT setting_id FROM Settings WHERE setting_name=:setting_name AND setting_application_id=:application_id AND setting_type=:setting_type LIMIT 1",
+                $params
+            );
+
+            if(is_array($result) && isset($result[0]['setting_id'])){
+                $params['setting_id'] = (int) $result[0]['setting_id'];
+                $params['setting_value'] = $value;
+                $db->preparedQuery(
+                    "UPDATE Settings SET setting_value=:setting_value WHERE setting_id=:setting_id LIMIT 1",
+                    array(
+                        'setting_value' => $params['setting_value'],
+                        'setting_id' => $params['setting_id'],
+                    )
+                );
+            }else{
+                $params['setting_value'] = $value;
+                $db->preparedQuery(
+                    "INSERT INTO Settings (setting_site_id, setting_user_id, setting_application_id, setting_type, setting_name, setting_value) VALUES (0, 0, :application_id, :setting_type, :setting_name, :setting_value)",
+                    $params
+                );
+            }
+
+            return true;
+        }catch(Throwable $e){
+            self::logInstall('Could not write database installation marker: '.self::describeThrowable($e), SM_LOG_WARNING);
+            return false;
+        }
+
     }
 
     protected static function clearPendingFirstSiteBuildKit($message=''){
@@ -775,18 +847,18 @@ class SmartestInstallationStatusHelper{
         $pending_host = isset($pending['site_host']) ? (string) $pending['site_host'] : '';
         $matched_id = null;
 
+        if(!strlen($pending_name) || !strlen($pending_host)){
+            throw new SmartestException('A first-site Build Kit is pending, but the saved site name or hostname is missing, so Smartest cannot safely resume installation.');
+        }
+
         foreach($rows as $row){
-            $name_matches = !strlen($pending_name) || (isset($row['site_name']) && $row['site_name'] == $pending_name);
-            $host_matches = !strlen($pending_host) || (isset($row['site_domain']) && $row['site_domain'] == $pending_host);
+            $name_matches = isset($row['site_name']) && $row['site_name'] == $pending_name;
+            $host_matches = isset($row['site_domain']) && $row['site_domain'] == $pending_host;
 
             if($name_matches && $host_matches){
                 $matched_id = $row['site_id'];
                 break;
             }
-        }
-
-        if($matched_id === null && count($rows) == 1){
-            $matched_id = $rows[0]['site_id'];
         }
 
         if($matched_id !== null){
@@ -828,7 +900,7 @@ class SmartestInstallationStatusHelper{
                 && count($db->queryToArray("SELECT asset_id FROM Assets LIMIT 1")) > 0;
 
             if($complete && self::hasPendingFirstSiteBuildKit()){
-                if(self::hasInstallationReceipt()){
+                if(self::pendingFirstSiteBuildKitIsLocked()){
                     self::clearPendingFirstSiteBuildKit("Cleared stale pending first-site Build Kit work because Smartest is already installed.");
                 }else{
                     return false;
