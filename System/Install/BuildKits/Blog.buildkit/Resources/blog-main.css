@@ -339,6 +339,7 @@ a:hover {
    Blog list: banner
    ========================================================================== */
 
+#home-hero-image,
 #blog-banner-image {
     width: min(100%, 1240px);
     margin: 0 auto 58px;
@@ -349,6 +350,7 @@ a:hover {
     line-height: 0;
 }
 
+#home-hero-image > img:first-child,
 #blog-banner-image > img:first-child {
     display: block;
 
@@ -359,6 +361,69 @@ a:hover {
     object-position: center;
 
     border-radius: inherit;
+}
+
+
+/* ==========================================================================
+   Home page
+   ========================================================================== */
+
+.home-welcome {
+    max-width: 980px;
+}
+
+.home-eyebrow {
+    margin: 0 0 18px !important;
+
+    color: var(--sm-accent);
+
+    font-size: 0.74rem;
+    font-weight: 780;
+    line-height: 1;
+
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+}
+
+.home-copy {
+    max-width: var(--sm-reading-width);
+
+    color: var(--sm-muted);
+
+    font-size: 1.08rem;
+}
+
+.home-actions {
+    margin-top: 30px !important;
+}
+
+.home-actions a.button {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 11px 17px 12px;
+
+    border-radius: 999px;
+
+    background: var(--sm-text);
+    color: #fff;
+
+    font-size: 0.78rem;
+    font-weight: 740;
+    line-height: 1;
+
+    text-decoration: none;
+
+    transition:
+        background-color 140ms ease,
+        transform 140ms ease;
+}
+
+.home-actions a.button:hover {
+    background: var(--sm-accent);
+    color: #fff;
+
+    transform: translateY(-1px);
 }
 
 
@@ -632,11 +697,17 @@ a:hover {
 
 #no-more-posts {
     margin: 50px 0 10px;
+    padding: 20px;
 
-    color: var(--sm-muted) !important;
+    border-top: 3px solid var(--sm-highlight-blue);
+    border-radius: var(--sm-radius-small);
+
+    background: var(--sm-accent-soft);
+
+    color: var(--sm-accent-dark) !important;
 
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 760;
 
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -770,6 +841,7 @@ a:hover {
         margin-bottom: 42px !important;
     }
 
+    #home-hero-image,
     #blog-banner-image {
         margin-bottom: 42px;
     }
@@ -839,12 +911,14 @@ a:hover {
         border-radius: 12px;
     }
 
+    #home-hero-image,
     #blog-banner-image {
         margin-bottom: 34px;
 
         border-radius: 12px;
     }
 
+    #home-hero-image > img:first-child,
     #blog-banner-image > img:first-child {
         height: 52vw;
         min-height: 180px;

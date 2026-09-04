@@ -21,10 +21,10 @@ function buildkit_sm_blog_setup_page_structures($buildkit, $site, $user, $option
         }
         
         $is_javascript = get_registered_file_if_exists('is_javascript');
+        $home_template = get_registered_file_if_exists('home_template');
         $blog_home_template = get_registered_file_if_exists('blog_home_template');
         $home_page = $site->getHomePage();
-        define_placeholder('page_specific_javascript', $is_javascript, $home_page);
-        define_container('page_layout', $blog_home_template, $home_page);
+        define_container('page_layout', $home_template, $home_page);
 
         if(BUILDKIT_EXECUTE_CONTENT){
             $thumbnail_image = get_registered_file_if_exists('blog_post_thumbnail');
@@ -46,7 +46,15 @@ function buildkit_sm_blog_setup_page_structures($buildkit, $site, $user, $option
         $list_page->setDraftTemplate($master_template->getUrl());
         $list_page->save();
         add_page_to_group($list_page, $main_nav);
+        define_placeholder('page_specific_javascript', $is_javascript, $list_page);
         define_container('page_layout', $blog_home_template, $list_page);
+
+        if(BUILDKIT_EXECUTE_CONTENT){
+            $thumbnail_image = get_registered_file_if_exists('blog_post_thumbnail');
+            if($thumbnail_image instanceof SmartestAsset){
+                define_placeholder('banner_image', $thumbnail_image, $list_page);
+            }
+        }
 
         $blog_page = create_meta_page('Blog post', '/posts/:name', $blog_post_model, $list_page, $master_template);
         $blog_post_model->setDefaultMetaPageId($site->getId(), $blog_page->getId());

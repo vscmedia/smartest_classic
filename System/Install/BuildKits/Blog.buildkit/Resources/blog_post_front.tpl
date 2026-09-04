@@ -22,10 +22,10 @@
 <div id="width-reducer-outer">
   <div id="width-reducer-inner">
 
-    <h1 class="page-title big"><?sm:$this.site.title:?></h1>
+    <h2 class="page-title"><?sm:$this.page.title:?></h2>
 
     <div id="blog-posts">
-    <?sm:repeat from="blog_posts_main" limit="5":?>
+    <?sm:repeat from="blog_posts_main" limit="10":?>
       <div class="blog-post text <?sm:cycle value="left,right":?>" data-id="<?sm:$repeated_item.id:?>">
         <div class="post-details">
           <h2><?sm:link to=$repeated_item with=$repeated_item.name:?></h2>

@@ -26,7 +26,8 @@ var InfiniteScroller = Class.create({
                 evalScripts: true,
                 onSuccess: function(response) {
                     InfiniteScrollerRetrieving = false;
-                    if(response.responseText.length == 0){
+                    var responseText = response.responseText || '';
+                    if(responseText.strip().length == 0){
                         AllowInfiniteScrollerRetrieving = false;
                         $('no-more-posts').appear();
                     }

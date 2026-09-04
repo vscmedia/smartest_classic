@@ -8,6 +8,9 @@ function buildkit_sm_blog_setup_templates($buildkit, $site, $user, $options){
     $master_template = create_page_template('main.tpl', $site->getName().' page template');
     register_file($master_template, 'master_template');
 
+    $home_template = create_container_template('home.tpl', 'Home page layout');
+    register_file($home_template, 'home_template');
+
     $blog_home_template = create_container_template('blog_post_front.tpl', 'Blog index layout');
     register_file($blog_home_template, 'blog_home_template');
 

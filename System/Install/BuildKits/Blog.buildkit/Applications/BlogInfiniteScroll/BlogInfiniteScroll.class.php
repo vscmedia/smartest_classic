@@ -7,12 +7,16 @@ class %%CLASSNAME%% extends SmartestUserApplication{
         $s = new SmartestCmsItemSet;
         
         if($s->findBy('name', 'blog_posts_main', $this->getSite()->getId())){
-            $this->send($s->getMembersPagedAfterId('DEF', 5, $this->getRequestParameter('last_post_id')), 'blog_posts');
-        }else{
-            $this->send(array(), 'blog_posts');
+            $blog_posts = $s->getMembersPagedAfterId('DEF', 5, $this->getRequestParameter('last_post_id'), $this->getSite()->getId());
+
+            if(count($blog_posts)){
+                $this->send($blog_posts, 'blog_posts');
+                return;
+            }
         }
-        
-        
+
+        exit;
+
     }
     
 }
