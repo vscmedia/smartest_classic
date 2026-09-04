@@ -405,23 +405,33 @@ class SmartestCmsItemSet extends SmartestSet implements SmartestSetApi, Smartest
 	}
     
     public function getMembersPagedAfterId($mode='DEF', $limit=0, $last_id=1, $site_id=null){
-        
+
         // Figure out where the supplied ID falls in the order
+        $ids = array();
+
         if($this->getType() == 'STATIC'){
             $ids = $this->getRawStaticSetMemberIds($mode, $site_id);
         }else if($this->getType() == 'DYNAMIC'){
-	        $ids = $this->getRawDynamicSetMemberIds($mode, null, $site_id);
-	    }
-        
-        foreach($ids as $k=>$id){
-            if($id == $last_id){
-                $last_id_position = $k;
-                break;
-            }
+            $ids = $this->getRawDynamicSetMemberIds($mode, null, $site_id);
         }
-        
+
+        if(!is_array($ids) || !count($ids)){
+            return array();
+        }
+
+        if(!is_numeric($last_id) || (int) $last_id < 1){
+            return $this->getMembersPaged($mode, $limit, 1, '', $site_id);
+        }
+
+        $last_id_position = array_search((string) $last_id, array_map('strval', $ids), true);
+
+        if($last_id_position === false){
+            SmartestLog::getInstance('system')->log("SmartestCmsItemSet::getMembersPagedAfterId() could not find item ID '".$last_id."' in data set '".$this->getName()."'.", SM_LOG_WARNING);
+            return array();
+        }
+
         return $this->getMembersPaged($mode, $limit, $last_id_position+2, '', $site_id);
-        
+
     }
 	
 	public function getRawStaticSetMemberIds($mode, $site_id=null){
@@ -480,9 +490,9 @@ class SmartestCmsItemSet extends SmartestSet implements SmartestSetApi, Smartest
         
 	}
 	
-	public function getRawDynamicSetMemberIds($mode='DEF', $limit=0, $start=1){
+	public function getRawDynamicSetMemberIds($mode='DEF', $query_data=null, $site_id=null){
 	    if($this->getType() == 'DYNAMIC'){
-	        return $this->getRawDynamicSetResultSet()->getIds();
+	        return $this->getRawDynamicSetResultSet($mode, $query_data, $site_id)->getIds();
         }
 	}
 	
@@ -549,7 +559,7 @@ class SmartestCmsItemSet extends SmartestSet implements SmartestSetApi, Smartest
 	    
 	}
 	
-	public function getRawDynamicSetMembers($mode='DEF', $query_data=null, $site_id){
+	public function getRawDynamicSetMembers($mode='DEF', $query_data=null, $site_id=null){
 	    
 	    if(!is_numeric($mode)){
 	        $mode = $this->_retrieve_mode;
