@@ -244,9 +244,6 @@ class SmartestResponse{
                 self::debugTrace('construct: preferences helper loaded for pending installer work');
             }
 
-            SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit();
-            self::debugTrace('construct: pending first-site buildkit checked');
-
             SmartestFileSystemHelper::include_group(
 
             	'Library/API/SmartestApplication.class.php',

@@ -1245,7 +1245,14 @@ class SmartestBuildKitsHelper{
 
         $target_dir = $info->getParameter('directory');
 
-        $controller_domain = defined('SM_CONTROLLER_DOMAIN') ? SM_CONTROLLER_DOMAIN : '/';
+        $controller_domain = '/';
+        $controller = SmartestPersistentObject::get('controller');
+
+        if(is_object($controller) && method_exists($controller, 'getCurrentRequest') && is_object($controller->getCurrentRequest())){
+            $controller_domain = $controller->getCurrentRequest()->getDomain();
+        }else if(defined('SM_CONTROLLER_DOMAIN')){
+            $controller_domain = SM_CONTROLLER_DOMAIN;
+        }
 
         $replacements = array(
             '%%CLASSNAME%%' => $class_name,

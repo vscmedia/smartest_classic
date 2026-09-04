@@ -34,7 +34,7 @@ if($stage->getParameter('db_connection_parameters')){
 <?php if($stage->hasParameter('errors') && $stage->getParameter('errors')->hasData()): ?>
 <ul class="errors-list">
     <?php foreach($stage->getParameter('errors')->getParameters() as $error): ?>
-    <li><?php echo $error ?></li>
+    <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
     <?php endforeach; ?>
 </ul>
 <?php endif; ?>
@@ -52,7 +52,7 @@ if($stage->getParameter('db_connection_parameters')){
 
 <div class="form-row">
     <div class="form-row-label">Username</div>
-    <input type="text" name="db_username" value="<?php echo $db_username; ?>" />
+    <input type="text" name="db_username" value="<?php echo htmlspecialchars($db_username, ENT_QUOTES, 'UTF-8'); ?>" />
 </div>
 
 <div class="form-row">
@@ -62,12 +62,12 @@ if($stage->getParameter('db_connection_parameters')){
 
 <div class="form-row">
     <div class="form-row-label">Database Name</div>
-    <input type="text" name="db_database" value="<?php echo $db_database; ?>" />
+    <input type="text" name="db_database" value="<?php echo htmlspecialchars($db_database, ENT_QUOTES, 'UTF-8'); ?>" />
 </div>
 
 <div class="form-row">
     <div class="form-row-label">Host</div>
-    <input type="text" name="db_host" value="<?php echo $db_host; ?>" />
+    <input type="text" name="db_host" value="<?php echo htmlspecialchars($db_host, ENT_QUOTES, 'UTF-8'); ?>" />
 </div>
 
 <?php if($show_cd): ?>

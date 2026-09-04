@@ -248,32 +248,32 @@ class SmartestInstallationStatusHelper{
                         }
                         
 	                        $installer = new SmartestInstaller;
-	                        $installer->createHtAccessFile('/'.$controller_domain, true);
+	                        if(!$installer->createHtAccessFile('/'.$controller_domain, true) || !is_file(SM_ROOT_DIR.'Public/.htaccess')){
+                                $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+                                $errors = new SmartestParameterHolder("Site creation form validator errors");
+                                $errors->setParameter('htaccess', "Smartest could not create Public/.htaccess. Please check write permissions for Public/.");
+                                $nie->setValidationErrors($errors);
+                                throw $nie;
+                            }
 	                        $installer->moveEssentialFilesIntoPlace();
 
-                            if(!self::savePendingFirstSiteBuildKit(
+                            $post_install_token = self::savePendingFirstSiteBuildKit(
                                 $_POST['site_name'],
                                 $_POST['site_host'],
                                 $buildkit,
                                 $prepared_buildkit_params,
                                 $controller_domain
-                            )){
+                            );
+
+                            if(!$post_install_token){
                                 $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
                                 $errors = new SmartestParameterHolder("Site creation form validator errors");
                                 $errors->setParameter('buildkit', "The first site could not be queued for creation. Please check write permissions for System/Cache/Data/.");
                                 $nie->setValidationErrors($errors);
                                 throw $nie;
                             }
-
-	                        // $cd = SmartestSystemSettingHelper::load('htaccess_rewrite_base');
-	                        $cd = '/'.$controller_domain;
                         
-                        if(strlen($cd) && $cd != '/'){
-                            $location = $cd.'smartest/login#welcome';
-                        }else{
-                            $location = '/smartest/login#welcome';
-                        }
-                        
+                            $location = self::getPendingFirstSiteBuildKitExecutionUrl($controller_domain, $post_install_token);
 	                        header("Location: ".$location);
 	                        exit;
 
@@ -394,8 +394,19 @@ class SmartestInstallationStatusHelper{
                 } */
                 
                 if(self::hasPendingFirstSiteBuildKit()){
-                    SmartestLog::getInstance('installer')->log('First site creation is pending and will be executed after the Smartest object model has loaded.', SM_LOG_DEBUG);
-                    return;
+                    if(self::pendingFirstSiteBuildKitIsLocked()){
+                        self::clearPendingFirstSiteBuildKit("Rejected pending first-site Build Kit work because Smartest has already recorded a completed installation.");
+                    }else if(self::isPendingFirstSiteBuildKitExecutionRequest() && self::currentRequestHasValidPendingFirstSiteBuildKitToken()){
+                        SmartestLog::getInstance('installer')->log('First site creation is pending and this request has a valid post-installer token. Allowing normal runtime to continue.', SM_LOG_DEBUG);
+                        return;
+                    }else{
+                        $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+                        $errors = new SmartestParameterHolder("Site creation form validator errors");
+                        $errors->setParameter('buildkit', "First site creation has been queued but has not yet completed. Please continue using the one-time post-installer URL created by the installer.");
+                        $nie->setValidationErrors($errors);
+                        SmartestLog::getInstance('installer')->log('First site creation is pending but this request is not an authorized post-installer execution request.', SM_LOG_DEBUG);
+                        throw $nie;
+                    }
                 }
 
 		                if(count($db->queryToArray("SELECT site_id FROM Sites")) < 1){
@@ -470,9 +481,29 @@ class SmartestInstallationStatusHelper{
         return file_put_contents($file, implode("\n", $contents)."\n") !== false;
     }
 
+    protected static function hasInstallationReceipt(){
+        return is_file(SM_ROOT_DIR.self::INSTALLATION_RECEIPT_FILE);
+    }
+
+    protected static function pendingFirstSiteBuildKitIsLocked(){
+        return self::hasInstallationReceipt();
+    }
+
+    protected static function clearPendingFirstSiteBuildKit($message=''){
+
+        $cleared = SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(strlen((string) $message)){
+            self::logInstall((string) $message, $cleared ? SM_LOG_WARNING : SM_LOG_DEBUG);
+        }
+
+        return $cleared;
+    }
+
     protected static function savePendingFirstSiteBuildKit($site_name, $site_host, $buildkit, $prepared_params, $controller_domain=''){
 
         $buildkit_name = $buildkit instanceof SmartestBuildKit ? $buildkit->getShortName() : (string) $buildkit;
+        $token = self::generatePendingFirstSiteBuildKitToken();
 
         $pending = array(
             'site_name' => SmartestStringHelper::sanitize($site_name),
@@ -480,12 +511,13 @@ class SmartestInstallationStatusHelper{
             'buildkit' => $buildkit_name,
             'buildkit_params' => is_array($prepared_params) ? $prepared_params : array(),
             'controller_domain' => trim((string) $controller_domain, '/'),
+            'token_hash' => hash('sha256', $token),
             'created' => time(),
         );
 
         if(SmartestCache::save(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, $pending, -1, true)){
-            self::logInstall("Queued first site creation with Build Kit '".$buildkit_name."' for execution after Smartest runtime loading.", SM_LOG_DEBUG);
-            return true;
+            self::logInstall("Queued first site creation with Build Kit '".$buildkit_name."' for post-installer normal-runtime execution.", SM_LOG_DEBUG);
+            return $token;
         }
 
         self::logInstall('Could not queue first site creation Build Kit payload. Check write permissions for System/Cache/Data/.', SM_LOG_ERROR);
@@ -500,7 +532,7 @@ class SmartestInstallationStatusHelper{
 
     }
 
-    public static function executePendingFirstSiteBuildKit(){
+    public static function executePendingFirstSiteBuildKit($token='', $redirect=true){
 
         $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
 
@@ -508,7 +540,17 @@ class SmartestInstallationStatusHelper{
             return false;
         }
 
-        self::logInstall("Pending first-site Build Kit '".$pending['buildkit']."' found; execution will continue in the normal runtime.", SM_LOG_DEBUG);
+        if(self::pendingFirstSiteBuildKitIsLocked()){
+            self::clearPendingFirstSiteBuildKit("Rejected pending first-site Build Kit work because Smartest has already recorded a completed installation.");
+            return false;
+        }
+
+        if(!self::pendingFirstSiteBuildKitTokenMatches($pending, $token)){
+            self::logInstall("A pending first-site Build Kit execution request was rejected because the token was missing or invalid.", SM_LOG_WARNING);
+            throw new SmartestException('The one-time first-site Build Kit token was missing or invalid.');
+        }
+
+        self::logInstall("Pending first-site Build Kit '".$pending['buildkit']."' found; executing in the normal runtime.", SM_LOG_DEBUG);
 
         $db = SmartestDatabase::getInstance('SMARTEST');
 
@@ -568,10 +610,12 @@ class SmartestInstallationStatusHelper{
             self::markInstallationComplete();
             self::logInstall("Created first site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."'.", SM_LOG_DEBUG);
         }catch(SmartestBuildKitException $buildkit_error){
+            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
             self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
             throw $buildkit_error;
         }catch(Throwable $buildkit_error){
             $detail = self::describeThrowable($buildkit_error);
+            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
             self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail, SM_LOG_ERROR);
             throw new SmartestException("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail);
         }finally{
@@ -589,9 +633,129 @@ class SmartestInstallationStatusHelper{
         }
 
         $controller_domain = isset($pending['controller_domain']) ? trim((string) $pending['controller_domain'], '/') : '';
-        $location = strlen($controller_domain) ? '/'.$controller_domain.'/smartest/login#welcome' : '/smartest/login#welcome';
-        header("Location: ".$location);
+
+        if($redirect){
+            $location = strlen($controller_domain) ? '/'.$controller_domain.'/smartest/login#welcome' : '/smartest/login#welcome';
+            header("Location: ".$location);
+            exit;
+        }
+
+        return $site;
+
+    }
+
+    public static function recordPendingFirstSiteBuildKitFailure(Throwable $e){
+
+        $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(is_array($pending)){
+            $pending['last_error'] = self::describeThrowable($e);
+            $pending['last_error_time'] = time();
+            SmartestCache::save(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, $pending, -1, true);
+        }
+
+    }
+
+    public static function showPendingFirstSiteBuildKitFailure(Throwable $buildkit_error){
+
+        self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
+
+        $errors = new SmartestParameterHolder("Site creation form validator errors");
+        $errors->setParameter('buildkit', "The selected Build Kit could not finish creating your first site. Smartest has kept the setup details so you can fix the problem and try again using the same one-time URL. Technical detail: ".get_class($buildkit_error).': '.$buildkit_error->getMessage());
+
+        $e = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
+        $e->setValidationErrors($errors);
+
+        if(!class_exists('SmartestInstaller')){
+            require SM_ROOT_DIR.'System/Install/SmartestInstaller.class.php';
+        }
+
+        require SM_ROOT_DIR.'System/Install/Screens/index.php';
         exit;
+
+    }
+
+    public static function getPendingFirstSiteBuildKitExecutionUrl($controller_domain, $token){
+
+        $controller_domain = trim((string) $controller_domain, '/');
+        $prefix = strlen($controller_domain) ? '/'.$controller_domain : '';
+
+        return $prefix.'/smartest/settings/buildFirstSitePostInstaller?token='.rawurlencode($token);
+
+    }
+
+    protected static function isPendingFirstSiteBuildKitExecutionRequest(){
+
+        $path = isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '';
+        $path = is_string($path) ? trim($path, '/') : '';
+
+        return (bool) preg_match('#(^|/)smartest/settings/buildFirstSitePostInstaller/?$#', $path);
+
+    }
+
+    protected static function currentRequestHasValidPendingFirstSiteBuildKitToken(){
+
+        $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(!is_array($pending)){
+            return false;
+        }
+
+        $token = '';
+
+        if(isset($_GET['token'])){
+            $token = $_GET['token'];
+        }else if(isset($_POST['token'])){
+            $token = $_POST['token'];
+        }
+
+        return self::pendingFirstSiteBuildKitTokenMatches($pending, $token);
+
+    }
+
+    protected static function pendingFirstSiteBuildKitTokenMatches($pending, $token){
+
+        if(!is_array($pending) || !isset($pending['token_hash']) || !strlen((string) $pending['token_hash'])){
+            return false;
+        }
+
+        if(!is_scalar($token) || !strlen((string) $token)){
+            return false;
+        }
+
+        $candidate = hash('sha256', (string) $token);
+
+        if(function_exists('hash_equals')){
+            return hash_equals((string) $pending['token_hash'], $candidate);
+        }
+
+        return (string) $pending['token_hash'] === $candidate;
+
+    }
+
+    protected static function generatePendingFirstSiteBuildKitToken(){
+
+        if(function_exists('random_bytes')){
+            try{
+                return bin2hex(random_bytes(32));
+            }catch(Throwable $e){
+                self::logInstall('Could not use random_bytes() for post-installer token generation; falling back to SmartestStringHelper::random().', SM_LOG_WARNING);
+            }
+        }
+
+        return SmartestStringHelper::random(64, SM_RANDOM_ALPHANUMERIC);
+
+    }
+
+    protected static function getPendingFirstSiteBuildKitFailureMessage(){
+
+        $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(is_array($pending) && isset($pending['last_error']) && strlen((string) $pending['last_error'])){
+            return "The queued first-site Build Kit failed: ".$pending['last_error'];
+        }
+
+        return '';
 
     }
 
@@ -643,10 +807,6 @@ class SmartestInstallationStatusHelper{
             return false;
         }
 
-        if(self::hasPendingFirstSiteBuildKit()){
-            return false;
-        }
-
         try{
             $db = SmartestDatabase::getInstance('SMARTEST', true);
             $tables = $db->getTables(true);
@@ -661,11 +821,21 @@ class SmartestInstallationStatusHelper{
         }
 
         try{
-            return count($db->queryToArray("SELECT user_id FROM Users LIMIT 2")) > 1
+            $complete = count($db->queryToArray("SELECT user_id FROM Users LIMIT 2")) > 1
                 && count($db->queryToArray("SELECT site_id FROM Sites LIMIT 1")) > 0
                 && count($db->queryToArray("SELECT page_id FROM Pages LIMIT 1")) > 0
                 && count($db->queryToArray("SELECT setting_id FROM Settings LIMIT 1")) > 0
                 && count($db->queryToArray("SELECT asset_id FROM Assets LIMIT 1")) > 0;
+
+            if($complete && self::hasPendingFirstSiteBuildKit()){
+                if(self::hasInstallationReceipt()){
+                    self::clearPendingFirstSiteBuildKit("Cleared stale pending first-site Build Kit work because Smartest is already installed.");
+                }else{
+                    return false;
+                }
+            }
+
+            return $complete;
         }catch(Throwable $e){
             return false;
         }

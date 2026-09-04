@@ -30,7 +30,7 @@ $message = $stage->getParameter('message');
       <div id="container">
         <h1>Install Smartest</h1>
         <?php if($message): ?>
-            <p class="message"><?php echo $message; ?></p>
+            <p class="message"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
         <?php include SM_ROOT_DIR.'System/Install/Screens/'.$screen; ?>
       </div>
@@ -39,4 +39,4 @@ $message = $stage->getParameter('message');
 
     </div>
   </body>
-</html>    
+</html>

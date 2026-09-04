@@ -290,8 +290,17 @@ class SmartestSiteCreationHelper{
         protected static function completeSiteWithBuildKit(SmartestSite $site, SmartestUser $user, SmartestBuildKit $buildkit, array $prepared_params, $is_first_site=false){
 
             self::logSiteCreation("Build Kit site completion starting for site #".$site->getId()." using '".$buildkit->getLabel()."'.");
+            $had_global_site = array_key_exists('_site', $GLOBALS);
+            $previous_global_site = $had_global_site ? $GLOBALS['_site'] : null;
+            $had_session_site = SmartestSession::hasData('current_open_project');
+            $previous_session_site = $had_session_site ? SmartestSession::get('current_open_project') : null;
 
             try{
+                $GLOBALS['_site'] = $site;
+                if(SmartestSession::isRegistered()){
+                    SmartestSession::set('current_open_project', $site);
+                }
+
                 $ph = new SmartestPreferencesHelper;
 
                 if(!SmartestPersistentObject::get('prefs_helper')){
@@ -338,6 +347,20 @@ class SmartestSiteCreationHelper{
             }catch(Throwable $e){
                 self::logSiteCreation("Build Kit site completion failed for site #".$site->getId().": ".self::describeThrowable($e), SM_LOG_ERROR);
                 throw SmartestBuildKitException::fromThrowable("Completing site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."' failed", $e, $buildkit->getShortName());
+            }finally{
+                if($had_global_site){
+                    $GLOBALS['_site'] = $previous_global_site;
+                }else{
+                    unset($GLOBALS['_site']);
+                }
+
+                if(SmartestSession::isRegistered()){
+                    if($had_session_site){
+                        SmartestSession::set('current_open_project', $previous_session_site);
+                    }else{
+                        SmartestSession::clear('current_open_project');
+                    }
+                }
             }
 
         }

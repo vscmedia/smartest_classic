@@ -9,6 +9,9 @@ module:
     settings_home:
       action: startPage
       url: /smartest/settings
+    first_site_postinstaller:
+      action: buildFirstSitePostInstaller
+      url: /smartest/settings/buildFirstSitePostInstaller
 #    tags:
 #      action: listTags
 #      url: /smartest/tags

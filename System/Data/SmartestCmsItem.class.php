@@ -109,7 +109,7 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
 		
 		$this->generateModel();
 		// $this->generatePropertiesLookup();
-		$this->_request = SmartestPersistentObject::get('controller')->getCurrentRequest();
+		$this->loadRequestContextIfAvailable();
 		
 		/* if(get_class($this) == 'SmartestCmsItem'){
 		    throw new SmartestException('here');
@@ -513,7 +513,16 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
 	}
 	
 	public function getRequest(){
+	    $this->loadRequestContextIfAvailable();
 	    return $this->_request;
+	}
+
+	protected function loadRequestContextIfAvailable(){
+	    $controller = SmartestPersistentObject::get('controller');
+
+	    if(is_object($controller) && method_exists($controller, 'getCurrentRequest')){
+	        $this->_request = $controller->getCurrentRequest();
+	    }
 	}
 	
 	public function setSiteId($id){
@@ -753,7 +762,7 @@ class SmartestCmsItem extends SmartestObject implements SmartestGenericListedObj
 	
 	public function getName(){
 		$n = $this->getItem()->getName();
-		if($this->_draft_mode && $this->getItem()->getPublic() != 'TRUE' && $this->getRequest()->getAction() == "renderEditableDraftPage"){
+		if($this->_draft_mode && $this->getItem()->getPublic() != 'TRUE' && is_object($this->getRequest()) && $this->getRequest()->getAction() == "renderEditableDraftPage"){
 		    $n = '*'.$n;
 		}
 		return $n;

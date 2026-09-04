@@ -3,7 +3,7 @@
 <?php if($stage->hasParameter('errors') && $stage->getParameter('errors')->hasData()): ?>
 <ul class="errors-list">
     <?php foreach($stage->getParameter('errors')->getParameters() as $error): ?>
-    <li><?php echo $error ?></li>
+    <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
     <?php endforeach; ?>
 </ul>
 <?php endif; ?>
@@ -29,7 +29,7 @@ $default_buildkit = class_exists('SmartestBuildKitUtilities') ? SmartestBuildKit
     
     <div class="form-row">
         <div class="form-row-label">Hostname of your site</div>
-        <input type="text" name="site_host" value="<?php echo $_SERVER['HTTP_HOST']; ?>" style="width:240px" />
+        <input type="text" name="site_host" value="<?php echo htmlspecialchars($_SERVER['HTTP_HOST'], ENT_QUOTES, 'UTF-8'); ?>" style="width:240px" />
     </div>
     
     <?php if(count($buildkits)): ?>

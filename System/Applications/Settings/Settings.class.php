@@ -19,6 +19,20 @@ class Settings extends SmartestSystemApplication{
 
 	}
 
+    public function buildFirstSitePostInstaller(){
+
+        $token = $this->getRequestParameter('token');
+
+        try{
+            SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit($token, true);
+        }catch(Throwable $e){
+            SmartestInstallationStatusHelper::showPendingFirstSiteBuildKitFailure($e);
+        }
+
+        $this->redirect('/smartest/login#welcome');
+
+    }
+
     /* public function getPreferencePanels(){
 
         // $c = SmartestPersistentObject::get('controller');

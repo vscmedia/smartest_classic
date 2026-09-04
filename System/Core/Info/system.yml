@@ -25,6 +25,7 @@ system:
     - loginscreen/loginScreen
     - loginscreen/doAuth
     - loginscreen/doLogOut
+    - settings/buildFirstSitePostInstaller
     - website/renderPageFromUrl
     - website/renderPageFromId
     - website/searchDomain

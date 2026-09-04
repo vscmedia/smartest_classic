@@ -3,7 +3,7 @@
 <?php if($stage->hasParameter('errors') && $stage->getParameter('errors')->hasData()): ?>
 <ul class="errors-list">
     <?php foreach($stage->getParameter('errors')->getParameters() as $error): ?>
-    <li><?php echo $error ?></li>
+    <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
     <?php endforeach; ?>
 </ul>
 <?php endif; ?>
