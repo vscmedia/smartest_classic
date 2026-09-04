@@ -595,7 +595,11 @@ class SmartestInstallationStatusHelper{
 
     }
 
-    protected static function getPendingFirstSiteIfAlreadyCreated(SmartestDatabase $db, $pending){
+    protected static function getPendingFirstSiteIfAlreadyCreated($db, $pending){
+
+        if(!is_object($db) || !method_exists($db, 'queryToArray')){
+            throw new SmartestException('A first-site Build Kit is pending, but the database adapter could not be used to check whether the site was already created.');
+        }
 
         $rows = $db->queryToArray('SELECT site_id, site_name, site_domain FROM Sites ORDER BY site_id ASC');
 
