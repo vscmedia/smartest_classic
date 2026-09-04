@@ -12,24 +12,32 @@
 
 $buildkits = $stage->hasParameter('buildkits') ? $stage->getParameter('buildkits') : array();
 $default_buildkit = class_exists('SmartestBuildKitUtilities') ? SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName() : 'sm_blank_site';
+$pending_defaults = class_exists('SmartestInstallationStatusHelper') ? SmartestInstallationStatusHelper::getPendingFirstSiteBuildKitFormDefaults() : array();
+$site_name = isset($_POST['site_name']) ? $_POST['site_name'] : (isset($pending_defaults['site_name']) ? $pending_defaults['site_name'] : '');
+$site_host = isset($_POST['site_host']) ? $_POST['site_host'] : (isset($pending_defaults['site_host']) && strlen($pending_defaults['site_host']) ? $pending_defaults['site_host'] : $_SERVER['HTTP_HOST']);
+$selected_buildkit = isset($_POST['use_buildkit']) ? $_POST['use_buildkit'] : (isset($pending_defaults['use_buildkit']) && strlen($pending_defaults['use_buildkit']) ? $pending_defaults['use_buildkit'] : $default_buildkit);
+$controller_domain = class_exists('SmartestInstallationStatusHelper') ? SmartestInstallationStatusHelper::getCachedControllerDomain() : '';
+$form_action = class_exists('SmartestInstallationStatusHelper') ? SmartestInstallationStatusHelper::getFirstSiteBuildKitExecutionPath($controller_domain) : '';
+$first_site_token = $stage->hasParameter('first_site_token') ? $stage->getParameter('first_site_token') : '';
 
 ?>
 
-<form action="" method="post" id="installerForm">
+<form action="<?php echo htmlspecialchars($form_action, ENT_QUOTES, 'UTF-8'); ?>" method="post" id="installerForm">
     
     <input type="hidden" name="execute" value="1" />
     <input type="hidden" name="action" value="createSite" />
+    <input type="hidden" name="token" value="<?php echo htmlspecialchars($first_site_token, ENT_QUOTES, 'UTF-8'); ?>" />
     
     <div class="hint" style="padding-bottom:10px">Finally, input some basic details about the website you are creating. You can easily change these later if you change your mind.</div>
     
     <div class="form-row">
         <div class="form-row-label">Name of your site</div>
-        <input type="text" name="site_name" />
+        <input type="text" name="site_name" value="<?php echo htmlspecialchars($site_name, ENT_QUOTES, 'UTF-8'); ?>" />
     </div>
     
     <div class="form-row">
         <div class="form-row-label">Hostname of your site</div>
-        <input type="text" name="site_host" value="<?php echo htmlspecialchars($_SERVER['HTTP_HOST'], ENT_QUOTES, 'UTF-8'); ?>" style="width:240px" />
+        <input type="text" name="site_host" value="<?php echo htmlspecialchars($site_host, ENT_QUOTES, 'UTF-8'); ?>" style="width:240px" />
     </div>
     
     <?php if(count($buildkits)): ?>
@@ -37,10 +45,10 @@ $default_buildkit = class_exists('SmartestBuildKitUtilities') ? SmartestBuildKit
         <div class="form-row-label">Build Kit</div>
         <select name="use_buildkit">
             <?php if(isset($buildkits[$default_buildkit])): ?>
-            <option value="<?php echo htmlspecialchars($buildkits[$default_buildkit]->getShortName(), ENT_QUOTES, 'UTF-8'); ?>">None</option>
+            <option value="<?php echo htmlspecialchars($buildkits[$default_buildkit]->getShortName(), ENT_QUOTES, 'UTF-8'); ?>"<?php if($selected_buildkit == $buildkits[$default_buildkit]->getShortName()): ?> selected="selected"<?php endif; ?>>None</option>
             <?php endif; ?>
             <?php foreach($buildkits as $buildkit): if($buildkit->getShortName() == $default_buildkit || $buildkit->isHidden()){ continue; } ?>
-            <option value="<?php echo htmlspecialchars($buildkit->getShortName(), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($buildkit->getLabel(), ENT_QUOTES, 'UTF-8'); ?></option>
+            <option value="<?php echo htmlspecialchars($buildkit->getShortName(), ENT_QUOTES, 'UTF-8'); ?>"<?php if($selected_buildkit == $buildkit->getShortName()): ?> selected="selected"<?php endif; ?>><?php echo htmlspecialchars($buildkit->getLabel(), ENT_QUOTES, 'UTF-8'); ?></option>
             <?php endforeach; ?>
         </select>
         <div class="hint">A Build Kit can create starter files, models, templates, pages and sample content for this site. Choose None for a blank Smartest site.</div>

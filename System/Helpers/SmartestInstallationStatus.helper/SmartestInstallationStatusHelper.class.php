@@ -7,6 +7,7 @@ class SmartestInstallationStatusHelper{
     const INSTALLATION_RECEIPT_FILE = 'System/Core/Info/.installation.log';
     const AUTOMATED_DATABASE_CONFIG_FILE = 'System/Temporary/installer-database.yml';
     const PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY = 'installer_pending_first_site_buildkit';
+    const FIRST_SITE_INSTALLER_TOKEN_CACHE_KEY = 'installer_first_site_buildkit_token';
     const INSTALLATION_DATABASE_MARKER = '_system_installed_timestamp';
     
     public static function checkStatus($purge=false){
@@ -104,19 +105,16 @@ class SmartestInstallationStatusHelper{
                         $installer = new SmartestInstaller;
                         $installer->createNewDatabaseConfig($ph);
 
-                        if(isset($_POST['controller_domain'])){
-                            $controller_domain = $_POST['controller_domain'];
-                            if(substr($controller_domain, -1, 1) != '/'){
-                                $controller_domain .= '/';
-                            }
-                        }else{
-                            $controller_domain = '';
-                        }
+                        $controller_domain = isset($_POST['controller_domain']) ? $_POST['controller_domain'] : '';
+                        $controller_domain = self::normalizeControllerDomain($controller_domain);
 
                         SmartestCache::save('controller_domain_temp', $controller_domain, -1, true);
 
                         // $installer->createQuinceControllerFile($controller_domain);
-                        // $installer->createHtAccessFile('/'.$controller_domain);
+                        if(!$installer->createHtAccessFile($controller_domain, true) || !is_file(SM_ROOT_DIR.'Public/.htaccess')){
+                            self::logInstall('Installer could not create Public/.htaccess during basic configuration.', SM_LOG_WARNING);
+                            throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_FILE_PERMS);
+                        }
                         
                     }
                     
@@ -178,6 +176,7 @@ class SmartestInstallationStatusHelper{
                     case 'createSite':
                     
                     $fve = new SmartestParameterHolder("Site creation form validator errors");
+                    $direct_postinstaller_request = self::isPendingFirstSiteBuildKitExecutionRequest();
                     
                     if(strlen($_POST['site_name']) < 3){
                         // problem with username
@@ -191,6 +190,11 @@ class SmartestInstallationStatusHelper{
 	                        SmartestLog::getInstance('installer')->log('The hostname given to the installer at stage 4 was shorter than the possible 5 characters ('.strlen($_POST['site_host']).' chars).', SM_LOG_WARNING);
 	                    }
 
+                        if($direct_postinstaller_request && !self::firstSiteInstallerTokenMatches(isset($_POST['token']) ? $_POST['token'] : '')){
+                            $fve->setParameter('token', "This installer form has expired. Please check the details below and click Finish & Log In again.");
+                            SmartestLog::getInstance('installer')->log('The final installer form submitted to the post-installer action with a missing or invalid token.', SM_LOG_WARNING);
+                        }
+
                         if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
                             require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
                         }
@@ -201,10 +205,6 @@ class SmartestInstallationStatusHelper{
 
                         if(!class_exists('SmartestBuildKitsHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitsHelper.class.php')){
                             require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitsHelper.class.php';
-                        }
-
-                        if(!class_exists('SmartestSiteCreationHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php')){
-                            require_once SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php';
                         }
 
                         $build_kit_name = isset($_POST['use_buildkit']) ? $_POST['use_buildkit'] : SmartestBuildKitUtilities::getDefaultInstallerBuildKitShortName();
@@ -240,23 +240,32 @@ class SmartestInstallationStatusHelper{
 	                        $controller_domain_cache = SmartestCache::load('controller_domain_temp', true);
                         
                         if($controller_domain_cache && strlen($controller_domain_cache)){
-                            $controller_domain = $controller_domain_cache;
-                            if(substr($controller_domain, -1, 1) != '/'){
-                                $controller_domain .= '/';
-                            }
+                            $controller_domain = self::normalizeControllerDomain($controller_domain_cache);
                         }else{
                             $controller_domain = '';
                         }
                         
 	                        $installer = new SmartestInstaller;
-	                        if(!$installer->createHtAccessFile('/'.$controller_domain, true) || !is_file(SM_ROOT_DIR.'Public/.htaccess')){
+	                        if(!$installer->createHtAccessFile($controller_domain, true) || !is_file(SM_ROOT_DIR.'Public/.htaccess')){
                                 $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
                                 $errors = new SmartestParameterHolder("Site creation form validator errors");
                                 $errors->setParameter('htaccess', "Smartest could not create Public/.htaccess. Please check write permissions for Public/.");
                                 $nie->setValidationErrors($errors);
                                 throw $nie;
-                            }
+	                        }
 	                        $installer->moveEssentialFilesIntoPlace();
+
+	                            if($direct_postinstaller_request){
+	                                SmartestPersistentObject::set('installer:first_site_creation_request', array(
+	                                    'site_name' => SmartestStringHelper::sanitize($_POST['site_name']),
+	                                    'site_host' => SmartestStringHelper::sanitize($_POST['site_host']),
+	                                    'buildkit' => $buildkit instanceof SmartestBuildKit ? $buildkit->getShortName() : (string) $build_kit_name,
+                                    'buildkit_params' => $prepared_buildkit_params,
+                                    'controller_domain' => $controller_domain,
+                                ));
+                                self::logInstall("Final installer form submitted directly to normal-runtime first-site creation action.", SM_LOG_DEBUG);
+                                return;
+                            }
 
                             $post_install_token = self::savePendingFirstSiteBuildKit(
                                 $_POST['site_name'],
@@ -273,10 +282,8 @@ class SmartestInstallationStatusHelper{
                                 $nie->setValidationErrors($errors);
                                 throw $nie;
                             }
-                        
-                            $location = self::getPendingFirstSiteBuildKitExecutionUrl($controller_domain, $post_install_token);
-	                        header("Location: ".$location);
-	                        exit;
+
+                            self::redirectToPendingFirstSiteBuildKit($controller_domain, $post_install_token);
 
 	                    }
                     
@@ -403,7 +410,11 @@ class SmartestInstallationStatusHelper{
                     }else{
                         $nie = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
                         $errors = new SmartestParameterHolder("Site creation form validator errors");
-                        $errors->setParameter('buildkit', "First site creation has been queued but has not yet completed. Please continue using the one-time post-installer URL created by the installer.");
+                        if(self::isPendingFirstSiteBuildKitExecutionRequest()){
+                            $errors->setParameter('buildkit', "The one-time first-site setup link is missing or invalid. Please return to this installer screen and click Finish & Log In again.");
+                        }else{
+                            $errors->setParameter('buildkit', "Smartest has not finished creating your first site. Please check the details below and click Finish & Log In again.");
+                        }
                         $nie->setValidationErrors($errors);
                         SmartestLog::getInstance('installer')->log('First site creation is pending but this request is not an authorized post-installer execution request.', SM_LOG_DEBUG);
                         throw $nie;
@@ -604,6 +615,56 @@ class SmartestInstallationStatusHelper{
 
     }
 
+    protected static function firstSiteRequestMatchesPendingBuildKit($request){
+
+        $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(!is_array($pending) || !is_array($request)){
+            return false;
+        }
+
+        foreach(array('site_name', 'site_host', 'buildkit') as $field){
+            $pending_value = isset($pending[$field]) ? (string) $pending[$field] : '';
+            $request_value = isset($request[$field]) ? (string) $request[$field] : '';
+
+            if($pending_value !== $request_value){
+                return false;
+            }
+        }
+
+        self::logInstall("Direct first-site POST matches the saved pending Build Kit request, so partial site creation may be resumed.", SM_LOG_DEBUG);
+        return true;
+
+    }
+
+    public static function executeFirstSiteBuildKitFromInstallerPost($redirect=true){
+
+        $request = SmartestPersistentObject::get('installer:first_site_creation_request');
+
+        if(!is_array($request) || !isset($request['buildkit']) || !strlen((string) $request['buildkit'])){
+            throw new SmartestException('Smartest could not verify this first-site setup request. Please return to the installer and click Finish & Log In again.');
+        }
+
+        if(self::pendingFirstSiteBuildKitIsLocked()){
+            throw new SmartestException('Smartest has already recorded this installation as complete, so first-site setup cannot run again.');
+        }
+
+        self::logInstall("Executing first-site Build Kit '".$request['buildkit']."' from direct installer POST.", SM_LOG_DEBUG);
+
+        $site = self::executeFirstSiteBuildKitRequest($request, self::firstSiteRequestMatchesPendingBuildKit($request));
+
+        SmartestCache::clear(self::FIRST_SITE_INSTALLER_TOKEN_CACHE_KEY, true);
+        SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+        self::markInstallationComplete();
+
+        if($redirect){
+            self::redirectToInstallerLogin(isset($request['controller_domain']) ? $request['controller_domain'] : '');
+        }
+
+        return $site;
+
+    }
+
     public static function executePendingFirstSiteBuildKit($token='', $redirect=true){
 
         $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
@@ -624,24 +685,42 @@ class SmartestInstallationStatusHelper{
 
         self::logInstall("Pending first-site Build Kit '".$pending['buildkit']."' found; executing in the normal runtime.", SM_LOG_DEBUG);
 
+        try{
+            $site = self::executeFirstSiteBuildKitRequest($pending, true);
+
+            SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+            SmartestCache::clear(self::FIRST_SITE_INSTALLER_TOKEN_CACHE_KEY, true);
+            self::markInstallationComplete();
+            self::logInstall("Created first site '".$site->getName()."' with pending Build Kit request.", SM_LOG_DEBUG);
+        }catch(SmartestBuildKitException $buildkit_error){
+            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
+            self::logInstall("Pending first-site Build Kit failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
+            throw $buildkit_error;
+        }catch(Throwable $buildkit_error){
+            $detail = self::describeThrowable($buildkit_error);
+            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
+            self::logInstall("Pending first-site Build Kit failed: ".$detail, SM_LOG_ERROR);
+            throw new SmartestException("Pending first-site Build Kit failed: ".$detail);
+        }
+
+        if($redirect){
+            self::redirectToInstallerLogin(isset($pending['controller_domain']) ? $pending['controller_domain'] : '');
+        }
+
+        return $site;
+
+    }
+
+    protected static function executeFirstSiteBuildKitRequest($request, $allow_resume=false){
+
         $db = SmartestDatabase::getInstance('SMARTEST');
 
-        if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
-            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
-        }
+        self::includeFirstSiteBuildKitRuntimeClasses();
 
-        if(!class_exists('SmartestBuildKit') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php')){
-            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php';
-        }
-
-        if(!class_exists('SmartestSiteCreationHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php')){
-            require_once SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php';
-        }
-
-        $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($pending['buildkit']);
+        $buildkit = SmartestBuildKitUtilities::getBuildKitIfInstalled($request['buildkit']);
 
         if(!$buildkit instanceof SmartestBuildKit){
-            throw new SmartestException("Pending first-site Build Kit '".$pending['buildkit']."' could not be found.");
+            throw new SmartestException("First-site Build Kit '".$request['buildkit']."' could not be found.");
         }
 
         $user = new SmartestSystemUser;
@@ -652,8 +731,8 @@ class SmartestInstallationStatusHelper{
 
         $uq = $db->preparedQuery('SELECT user_email FROM Users WHERE user_id=:user_id LIMIT 1', array('user_id' => 1));
         $email = isset($uq[0]['user_email']) ? $uq[0]['user_email'] : '';
-        $sitename = isset($pending['site_name']) ? $pending['site_name'] : '';
-        $hostname = isset($pending['site_host']) ? $pending['site_host'] : '';
+        $sitename = isset($request['site_name']) ? $request['site_name'] : '';
+        $hostname = isset($request['site_host']) ? $request['site_host'] : '';
 
         $site_params = new SmartestParameterHolder('Pending first site creation parameters');
         $site_params->setParameter('site_name', $sitename);
@@ -669,27 +748,22 @@ class SmartestInstallationStatusHelper{
 
         try{
             $sch = new SmartestSiteCreationHelper;
-            $existing_site = self::getPendingFirstSiteIfAlreadyCreated($db, $pending);
+            $existing_site = $allow_resume ? self::getPendingFirstSiteIfAlreadyCreated($db, $request) : null;
+
+            if(!$allow_resume && count($db->preparedQuery('SELECT site_id FROM Sites LIMIT 1'))){
+                throw new SmartestException('A site already exists, so the installer cannot create a first site.');
+            }
 
             if($existing_site instanceof SmartestSite){
                 self::logInstall("Resuming pending first-site Build Kit '".$buildkit->getLabel()."' on existing site '".$existing_site->getName()."'.", SM_LOG_WARNING);
-                $site = $sch->completeExistingSiteFromBuildKit($existing_site, $user, $buildkit, $pending['buildkit_params']);
+                $site = $sch->completeExistingSiteFromBuildKit($existing_site, $user, $buildkit, isset($request['buildkit_params']) ? $request['buildkit_params'] : array());
             }else{
-                $site = $sch->createNewSiteFromBuildKit($site_params, $user, $buildkit, $pending['buildkit_params']);
+                $site = $sch->createNewSiteFromBuildKit($site_params, $user, $buildkit, isset($request['buildkit_params']) ? $request['buildkit_params'] : array());
             }
-
-            SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
-            self::markInstallationComplete();
-            self::logInstall("Created first site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."'.", SM_LOG_DEBUG);
         }catch(SmartestBuildKitException $buildkit_error){
-            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
-            self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
             throw $buildkit_error;
         }catch(Throwable $buildkit_error){
-            $detail = self::describeThrowable($buildkit_error);
-            self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
-            self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail, SM_LOG_ERROR);
-            throw new SmartestException("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail);
+            throw new SmartestException("First-site Build Kit '".$buildkit->getLabel()."' failed: ".self::describeThrowable($buildkit_error));
         }finally{
             if($previous_buildkit_log === null){
                 unset($GLOBALS['_buildkit_execution_log']);
@@ -702,14 +776,6 @@ class SmartestInstallationStatusHelper{
             }else{
                 $GLOBALS['_site_creation_log'] = $previous_site_creation_log;
             }
-        }
-
-        $controller_domain = isset($pending['controller_domain']) ? trim((string) $pending['controller_domain'], '/') : '';
-
-        if($redirect){
-            $location = strlen($controller_domain) ? '/'.$controller_domain.'/smartest/login#welcome' : '/smartest/login#welcome';
-            header("Location: ".$location);
-            exit;
         }
 
         return $site;
@@ -728,12 +794,28 @@ class SmartestInstallationStatusHelper{
 
     }
 
+    public static function getPendingFirstSiteBuildKitFormDefaults(){
+
+        $pending = SmartestCache::load(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
+
+        if(!is_array($pending)){
+            return array();
+        }
+
+        return array(
+            'site_name' => isset($pending['site_name']) ? (string) $pending['site_name'] : '',
+            'site_host' => isset($pending['site_host']) ? (string) $pending['site_host'] : '',
+            'use_buildkit' => isset($pending['buildkit']) ? (string) $pending['buildkit'] : '',
+        );
+
+    }
+
     public static function showPendingFirstSiteBuildKitFailure(Throwable $buildkit_error){
 
         self::recordPendingFirstSiteBuildKitFailure($buildkit_error);
 
         $errors = new SmartestParameterHolder("Site creation form validator errors");
-        $errors->setParameter('buildkit', "The selected Build Kit could not finish creating your first site. Smartest has kept the setup details so you can fix the problem and try again using the same one-time URL. Technical detail: ".get_class($buildkit_error).': '.$buildkit_error->getMessage());
+        $errors->setParameter('buildkit', "The selected Build Kit could not finish creating your first site. Please fix the problem and click Finish & Log In again. Technical detail: ".get_class($buildkit_error).': '.$buildkit_error->getMessage());
 
         $e = new SmartestNotInstalledException(SM_INSTALLSTATUS_SITE_DATA_INVALID);
         $e->setValidationErrors($errors);
@@ -749,10 +831,128 @@ class SmartestInstallationStatusHelper{
 
     public static function getPendingFirstSiteBuildKitExecutionUrl($controller_domain, $token){
 
-        $controller_domain = trim((string) $controller_domain, '/');
+        return self::getFirstSiteBuildKitExecutionPath($controller_domain).'?token='.rawurlencode($token);
+
+    }
+
+    public static function getFirstSiteBuildKitExecutionPath($controller_domain=''){
+
+        $controller_domain = self::normalizeControllerDomain($controller_domain);
         $prefix = strlen($controller_domain) ? '/'.$controller_domain : '';
 
-        return $prefix.'/smartest/settings/buildFirstSitePostInstaller?token='.rawurlencode($token);
+        return $prefix.'/smartest/settings/buildFirstSitePostInstaller';
+
+    }
+
+    public static function getCachedControllerDomain(){
+
+        return self::normalizeControllerDomain(SmartestCache::load('controller_domain_temp', true));
+
+    }
+
+    public static function getFirstSiteInstallerToken(){
+
+        $token = self::generatePendingFirstSiteBuildKitToken();
+
+        SmartestCache::save(self::FIRST_SITE_INSTALLER_TOKEN_CACHE_KEY, array(
+            'token_hash' => hash('sha256', $token),
+            'created' => time(),
+        ), -1, true);
+
+        return $token;
+
+    }
+
+    protected static function firstSiteInstallerTokenMatches($token){
+
+        $stored = SmartestCache::load(self::FIRST_SITE_INSTALLER_TOKEN_CACHE_KEY, true);
+
+        if(!is_array($stored) || !isset($stored['token_hash']) || !strlen((string) $stored['token_hash'])){
+            return false;
+        }
+
+        if(!is_scalar($token) || !strlen((string) $token)){
+            return false;
+        }
+
+        $candidate = hash('sha256', (string) $token);
+
+        if(function_exists('hash_equals')){
+            return hash_equals((string) $stored['token_hash'], $candidate);
+        }
+
+        return (string) $stored['token_hash'] === $candidate;
+
+    }
+
+    protected static function includeFirstSiteBuildKitRuntimeClasses(){
+
+        if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
+        }
+
+        if(!class_exists('SmartestBuildKit') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKit.class.php';
+        }
+
+        if(!class_exists('SmartestSiteCreationHelper') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php')){
+            require_once SM_ROOT_DIR.'System/Helpers/SmartestSiteCreation.helper/SmartestSiteCreationHelper.class.php';
+        }
+
+    }
+
+    protected static function redirectToPendingFirstSiteBuildKit($controller_domain, $token){
+
+        $location = self::getAbsoluteInstallerUrl(self::getPendingFirstSiteBuildKitExecutionUrl($controller_domain, $token));
+        self::logInstall("Redirecting to one-time first-site Build Kit execution URL: ".$location, SM_LOG_DEBUG);
+
+        if(headers_sent($file, $line)){
+            throw new SmartestException('Smartest could not continue to first-site creation because HTTP headers had already been sent at '.$file.':'.$line.'.');
+        }
+
+        header("Location: ".$location, true, 303);
+        exit;
+
+    }
+
+    protected static function redirectToInstallerLogin($controller_domain=''){
+
+        $controller_domain = self::normalizeControllerDomain($controller_domain);
+        $location = self::getAbsoluteInstallerUrl((strlen($controller_domain) ? '/'.$controller_domain : '').'/smartest/login#welcome');
+        self::logInstall("Redirecting to login after first-site creation: ".$location, SM_LOG_DEBUG);
+
+        if(headers_sent($file, $line)){
+            throw new SmartestException('Smartest could not redirect to the login screen because HTTP headers had already been sent at '.$file.':'.$line.'.');
+        }
+
+        header("Location: ".$location, true, 303);
+        exit;
+
+    }
+
+    protected static function getAbsoluteInstallerUrl($path){
+
+        if(preg_match('#^https?://#i', $path)){
+            return $path;
+        }
+
+        $https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] && strtolower((string) $_SERVER['HTTPS']) != 'off';
+
+        if(!$https && isset($_SERVER['HTTP_X_FORWARDED_PROTO'])){
+            $https = strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https';
+        }
+
+        $scheme = $https ? 'https://' : 'http://';
+        $host = isset($_SERVER['HTTP_HOST']) && strlen((string) $_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+
+        return $scheme.$host.'/'.ltrim($path, '/');
+
+    }
+
+    protected static function normalizeControllerDomain($controller_domain){
+
+        $controller_domain = preg_replace('#/+#', '/', str_replace('\\', '/', trim((string) $controller_domain)));
+        return trim($controller_domain, '/');
 
     }
 

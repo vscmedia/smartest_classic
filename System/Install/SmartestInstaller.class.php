@@ -31,6 +31,17 @@ class SmartestInstaller{
 
         return class_exists('SmartestBuildKitUtilities') ? SmartestBuildKitUtilities::getAvailableBuildKits() : array();
     }
+
+    protected function prepareFirstSiteCreationStage(SmartestParameterHolder $ph){
+
+        $controller_domain = SmartestInstallationStatusHelper::getCachedControllerDomain();
+        $this->createHtAccessFile($controller_domain, true);
+
+        $ph->setParameter('screen', 'create_site.php');
+        $ph->setParameter('buildkits', $this->getAvailableBuildKitsForInstaller());
+        $ph->setParameter('first_site_token', SmartestInstallationStatusHelper::getFirstSiteInstallerToken());
+
+    }
     
     public function getStage(SmartestNotInstalledException $e){
         
@@ -98,14 +109,12 @@ class SmartestInstaller{
             break;
             
             case SM_INSTALLSTATUS_NO_SITES:
-            $ph->setParameter('screen', 'create_site.php');
-            $ph->setParameter('buildkits', $this->getAvailableBuildKitsForInstaller());
+            $this->prepareFirstSiteCreationStage($ph);
             break;
             
             case SM_INSTALLSTATUS_SITE_DATA_INVALID:
-            $ph->setParameter('screen', 'create_site.php');
             $ph->setParameter('errors', $this->_exception->getValidationErrors());
-            $ph->setParameter('buildkits', $this->getAvailableBuildKitsForInstaller());
+            $this->prepareFirstSiteCreationStage($ph);
             break;
         
         }

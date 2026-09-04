@@ -24,7 +24,11 @@ class Settings extends SmartestSystemApplication{
         $token = $this->getRequestParameter('token');
 
         try{
-            SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit($token, true);
+            if($this->getRequestParameter('execute') == '1' && $this->getRequestParameter('action') == 'createSite'){
+                SmartestInstallationStatusHelper::executeFirstSiteBuildKitFromInstallerPost(true);
+            }else{
+                SmartestInstallationStatusHelper::executePendingFirstSiteBuildKit($token, true);
+            }
         }catch(Throwable $e){
             SmartestInstallationStatusHelper::showPendingFirstSiteBuildKitFailure($e);
         }
