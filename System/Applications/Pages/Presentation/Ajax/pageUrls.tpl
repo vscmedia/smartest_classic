@@ -4,7 +4,7 @@
 	<tr style="background-color:#{cycle name="urls" values="ddd,fff"};height:20px">
 	  <td>
 		  <div style="display:inline" id="siteDomainField_0">
-		    <strong>{if $page.is_published == "TRUE" && $site.is_enabled == 1}<a href="http://{$site.domain}{$domain}" target="_blank">{/if}http://{$site.domain}{$domain}{if $page.is_published == "TRUE" && $site.is_enabled == 1}</a>{/if}</strong> (default)</div></td>
+		    <strong>{if $page.is_published == "TRUE" && $site.is_enabled == 1}<a href="{$site.top_level_url}" target="_blank">{/if}{$site.top_level_url}{if $page.is_published == "TRUE" && $site.is_enabled == 1}</a>{/if}</strong> (default)</div></td>
 	  <td style="width:32%">&nbsp;</td>
   </tr>
   {/if}
@@ -12,7 +12,7 @@
   {if count($page.urls)}
   
   {foreach from=$page.urls item=pageurl}
-    {capture name="pageUrl" assign="pageUrl"}http://{$site.domain}{$domain}{$pageurl.url}{/capture}
+    {capture name="pageUrl" assign="pageUrl"}{$site.top_level_url}{$pageurl.url}{/capture}
   <tr style="background-color:#{cycle name="urls" values="ddd,fff"};height:20px">
     <td class="page-urls-table-cell">
 	    <div style="display:inline" id="siteDomainField_{$pageurl.id}">
@@ -31,7 +31,7 @@
   <tr style="background-color:#{cycle name="urls" values="ddd,fff"};height:20px">
       <td colspan="2" class="page-urls-table-cell">
         <div style="display:inline" id="siteDomainField">
-        {if $link_urls && $page.is_published == "TRUE" && $site.is_enabled == 1}<a href="http://{$site.domain}{$domain}{$page.forced_fallback_url}" target="_blank">http://{$site.domain}{$domain}{$page.forced_fallback_url|truncate:50:"..."}</a>{else}http://{$site.domain}{$domain}{$page.forced_fallback_url|truncate:100:"..."}{/if}</div></td></tr>
+        {if $link_urls && $page.is_published == "TRUE" && $site.is_enabled == 1}<a href="{$site.top_level_url}{$page.forced_fallback_url}" target="_blank">{$site.top_level_url}{$page.forced_fallback_url|truncate:50:"..."}</a>{else}{$site.top_level_url}{$page.forced_fallback_url|truncate:100:"..."}{/if}</div></td></tr>
 
   
 </table>

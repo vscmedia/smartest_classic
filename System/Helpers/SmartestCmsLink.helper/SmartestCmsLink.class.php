@@ -1105,7 +1105,7 @@ class SmartestCmsLink extends SmartestHelper{
     
     public function getAbsoluteUrlObject(){
         // Returns a SmartestExternalUrl object pointing to the absolute uri of the link
-        $url = 'http://'.$this->getSite()->getDomain().$this->getUrl(false, true);
+        $url = $this->getSite()->getCanonicalOrigin().$this->getUrl(false, true);
         return new SmartestExternalUrl($url);
     }
     
@@ -1156,7 +1156,7 @@ class SmartestCmsLink extends SmartestHelper{
                             $site = new SmartestSite;
                             if($site->find($this->_destination->getSiteId())){
                                 if((bool) $site->getIsEnabled()){
-                                    $url = 'http://'.$site->getDomain().$this->_request->getDomain().$this->_destination->getDefaultUrl();
+                                    $url = $site->getTopLevelUrl().$this->_destination->getDefaultUrl();
                                 }else{
                                     $url = '#other-site-not-enabled';
                                 }

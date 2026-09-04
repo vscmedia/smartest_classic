@@ -6,6 +6,7 @@ var lastRow;
 var lastRowColor; */
 var treeNodes = new Array();
 var pageWebId = '{$page.webid}';
+var siteTopLevelUrl = '{$_site.top_level_url}';
 
 {literal}
 
@@ -18,7 +19,7 @@ function viewDraftPage(parameters){
 
 function viewLivePage(parameters){
 
-	var pageURL = 'http://'+parameters.domain+'/website/renderPageFromId?page_id='+pageWebId{/literal}{if $item}+'&item_id={$item.id}'{/if};
+	var pageURL = siteTopLevelUrl+'website/renderPageFromId?page_id='+pageWebId{/literal}{if $item}+'&item_id={$item.id}'{/if};
 	window.open(pageURL);
 
 {literal}}{/literal}

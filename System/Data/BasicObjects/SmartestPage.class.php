@@ -1112,7 +1112,7 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	public function getJsonInfoUrl($complete=false){
 	    
 	    if($complete){
-	        return $this->getSite()->getDomain().$this->_request->getDomain().'ajax:website/pageInfo?page_id='.$this->getWebid();
+	        return $this->getSite()->getTopLevelUrl().'ajax:website/pageInfo?page_id='.$this->getWebid();
         }else{
             return $this->_request->getDomain().'ajax:website/pageInfo?page_id='.$this->getWebId();
         }
@@ -1787,7 +1787,7 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
 	        return $this->getDefaultUrl();
 	        
 	        case "permalink":
-	        return new SmartestExternalUrl('http://'.$this->getSite()->getDomain().$this->_request->getDomain().$this->getDefaultUrl());
+	        return new SmartestExternalUrl($this->getFullUrl());
 	        
 	        case "fallback_url":
 	        return $this->getFallbackUrl();
@@ -3188,8 +3188,7 @@ class SmartestPage extends SmartestBasePage implements SmartestSystemUiObject, S
     }
     
     public function getOembedIFrameSrc(){
-        $request = SmartestPersistentObject::get('request_data');
-        return 'http://'.$this->getSite()->getDomain().$request->g('domain').'website/oEmbedIFrameContent?page_id='.$this->getWebId();
+        return $this->getSite()->getTopLevelUrl().'website/oEmbedIFrameContent?page_id='.$this->getWebId();
     }
 	
 	// SmartestStorableValue methods

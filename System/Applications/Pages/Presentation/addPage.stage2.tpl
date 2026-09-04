@@ -19,7 +19,7 @@
     
   	  <div class="edit-form-row">
   	    <div class="form-section-label">Please confirm the URL for your new page</div>
-  	    http://{$siteInfo.domain}{$domain}<input type="text" name="page_url" id="page_url" style="width:420px" value="{if $suggested_url}{$suggested_url}{else}{$newPage.url}{/if}" />
+	    {$siteInfo.top_level_url}<input type="text" name="page_url" id="page_url" style="width:420px" value="{if $suggested_url}{$suggested_url}{else}{$newPage.url}{/if}" />
         {if $newPage.type == "ITEMCLASS"}
         <div class="edit-form-sub-row">
   	      <input type="button" value="Insert item URL name variable" onclick="addField('page_url', 'name');" />

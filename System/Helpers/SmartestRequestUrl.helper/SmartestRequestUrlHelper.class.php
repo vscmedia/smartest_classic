@@ -31,8 +31,10 @@ class SmartestRequestUrlHelper{
 	        $sql = "SELECT * FROM Sites WHERE site_domain='".$try_domain."'";
     	    $result = $this->database->queryToArray($sql);
     	    
-    	    if(count($result)){
-    	        throw new SmartestRedirectException('http://'.$try_domain.'/'.$url, SmartestRedirectException::PERMANENT);
+            if(count($result)){
+                $site = new SmartestSite;
+                $site->hydrate($result[0]);
+                throw new SmartestRedirectException($site->getTopLevelUrl().ltrim($url, '/'), SmartestRedirectException::PERMANENT);
 	        }else{
 	            return false;
             }

@@ -339,9 +339,7 @@ class SmartestItemPage extends SmartestPage{
 	}
     
     public function getOembedIFrameSrc(){
-        $request = SmartestPersistentObject::get('request_data');
-        // TODO: Sort out https
-        return 'http://'.$this->getSite()->getDomain().$request->g('domain').'website/oEmbedIFrameContent?page_id='.$this->getWebId().'&amp;item_id='.$this->_simple_item->getWebId();
+        return $this->getSite()->getTopLevelUrl().'website/oEmbedIFrameContent?page_id='.$this->getWebId().'&amp;item_id='.$this->_simple_item->getWebId();
     }
     
 }

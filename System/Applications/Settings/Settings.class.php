@@ -69,6 +69,7 @@ class Settings extends SmartestSystemApplication{
                 $elastic_search_is_possible = SmartestSystemHelper::elasticSearchIsPossible();
                 $this->send($elastic_search_is_possible, 'allow_elastic_search');
                 $this->send(($this->getGlobalPreference('site_search_type') == 'ELASTICSEARCH' && $elastic_search_is_possible) ? 'ELASTICSEARCH' : 'BASIC', 'search_type');
+                $this->send($this->getSite()->getSslMode(), 'site_ssl_mode');
 
                 $alh = new SmartestAssetsLibraryHelper;
                 $icos = $alh->getAssetsByTypeCode('SM_ASSETTYPE_ICO_FAVICON', $this->getSite()->getId());
@@ -114,6 +115,11 @@ class Settings extends SmartestSystemApplication{
     	        $site->save();
 
                 $this->setGlobalPreference('site_search_type', $this->getRequestParameter('site_search_type'));
+
+                $ssl_mode = $this->getRequestParameter('site_ssl_mode');
+                if(in_array($ssl_mode, SmartestSite::getValidSslModes(), true)){
+                    $site->setSslMode($ssl_mode);
+                }
 
             }else{
 

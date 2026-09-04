@@ -1,6 +1,10 @@
 <?php
 
 class SmartestSite extends SmartestBaseSite{
+
+    const SSL_MODE_HTTP_ONLY = 'SM_SITESSL_HTTP_ONLY';
+    const SSL_MODE_HTTPS_PERMISSIVE = 'SM_SITESSL_HTTPS_PERMISSIVE';
+    const SSL_MODE_HTTPS_ONLY = 'SM_SITESSL_HTTPS_ONLY';
     
     protected $_home_page = null;
     protected $_containers = array();
@@ -12,6 +16,7 @@ class SmartestSite extends SmartestBaseSite{
     protected $displayPagesIndex = 0;
     protected $_last_search_time_taken = 0;
     protected $_draft_mode = false;
+    protected static $_ssl_modes = array();
     
     public static $special_page_ids = array();
     
@@ -747,7 +752,87 @@ class SmartestSite extends SmartestBaseSite{
     
     public function getTopLevelUrl(){
         $request = SmartestPersistentObject::get('request_data');
-	    return 'http://'.$this->getDomain().$request->g('domain');
+	    return $this->getCanonicalOrigin().$request->g('domain');
+    }
+
+    public function getCanonicalOrigin(){
+        return $this->getCanonicalProtocol().'://'.$this->getDomain();
+    }
+
+    /**
+     * Return the site's stored transport policy. Sites created before this
+     * preference existed remain HTTP-only until an administrator changes it.
+     */
+    public function getSslMode(){
+        $site_id = (int) $this->getId();
+        if(isset(self::$_ssl_modes[$site_id])){
+            return self::$_ssl_modes[$site_id];
+        }
+
+        $ph = new SmartestPreferencesHelper;
+        $mode = $ph->getGlobalPreference('site_ssl_mode', 0, $site_id);
+
+        if(!in_array($mode, self::getValidSslModes(), true)){
+            $mode = self::SSL_MODE_HTTP_ONLY;
+        }
+
+        self::$_ssl_modes[$site_id] = $mode;
+        return self::$_ssl_modes[$site_id];
+    }
+
+    public function setSslMode($mode){
+        if(!in_array($mode, self::getValidSslModes(), true)){
+            throw new SmartestException("Unknown site SSL mode: ".$mode);
+        }
+
+        $ph = new SmartestPreferencesHelper;
+        $result = $ph->setGlobalPreference('site_ssl_mode', $mode, 0, $this->getId());
+        self::$_ssl_modes[(int) $this->getId()] = $mode;
+        return $result;
+    }
+
+    public static function getValidSslModes(){
+        return array(
+            self::SSL_MODE_HTTP_ONLY,
+            self::SSL_MODE_HTTPS_PERMISSIVE,
+            self::SSL_MODE_HTTPS_ONLY,
+        );
+    }
+
+    public function getCanonicalProtocol(){
+        return $this->getSslMode() == self::SSL_MODE_HTTP_ONLY ? 'http' : 'https';
+    }
+
+    public function requiresHttps(){
+        return $this->getSslMode() == self::SSL_MODE_HTTPS_ONLY;
+    }
+
+    public static function currentRequestIsHttps($server=null){
+        $server = is_array($server) ? $server : $_SERVER;
+
+        if(isset($server['HTTPS'])){
+            $https_value = strtolower(trim((string) $server['HTTPS']));
+            if(strlen($https_value) && !in_array($https_value, array('off', '0', 'false', 'no'), true)){
+                return true;
+            }
+        }
+
+        if(isset($server['HTTP_X_FORWARDED_PROTO'])){
+            $forwarded_protocols = explode(',', strtolower((string) $server['HTTP_X_FORWARDED_PROTO']));
+            if(trim($forwarded_protocols[0]) == 'https'){
+                return true;
+            }
+        }
+
+        if(isset($server['REQUEST_SCHEME']) && strtolower((string) $server['REQUEST_SCHEME']) == 'https'){
+            return true;
+        }
+
+        return isset($server['SERVER_PORT']) && (int) $server['SERVER_PORT'] === 443;
+    }
+
+    public static function getInstallerDetectedSslMode($server=null){
+        return self::currentRequestIsHttps($server) ? self::SSL_MODE_HTTPS_PERMISSIVE : self::SSL_MODE_HTTP_ONLY;
     }
     
 	public function getHomepageFullUrl(){
@@ -991,6 +1076,8 @@ class SmartestSite extends SmartestBaseSite{
         $obj = parent::__toSimpleObject();
         $obj->is_enabled = SmartestStringHelper::toRealBool($obj->is_enabled);
         $obj->organization = $this->getOrganizationNameOrSiteName();
+        $obj->ssl_mode = $this->getSslMode();
+        $obj->uri = $this->getHomepageFullUrl();
         return $obj;
         
     }
@@ -1001,6 +1088,18 @@ class SmartestSite extends SmartestBaseSite{
             
             case "unique_id":
             return $this->getUniqueId();
+
+            case "ssl_mode":
+            return $this->getSslMode();
+
+            case "top_level_url":
+            return $this->getTopLevelUrl();
+
+            case "canonical_origin":
+            return $this->getCanonicalOrigin();
+
+            case "homepage_full_url":
+            return $this->getHomepageFullUrl();
             
             case "user_page_id":
             return $this->getUserPageId();

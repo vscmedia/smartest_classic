@@ -40,6 +40,16 @@
 </div>
 
 <div class="edit-form-row">
+  <div class="form-section-label">Connection security</div>
+  <select name="site_ssl_mode">
+    <option value="SM_SITESSL_HTTP_ONLY"{if $site_ssl_mode == 'SM_SITESSL_HTTP_ONLY'} selected="selected"{/if}>HTTP mode — testing and setup</option>
+    <option value="SM_SITESSL_HTTPS_PERMISSIVE"{if $site_ssl_mode == 'SM_SITESSL_HTTPS_PERMISSIVE'} selected="selected"{/if}>HTTPS (permissive) — recommended</option>
+    <option value="SM_SITESSL_HTTPS_ONLY"{if $site_ssl_mode == 'SM_SITESSL_HTTPS_ONLY'} selected="selected"{/if}>HTTPS only — strict</option>
+  </select>
+  <div class="form-hint">HTTP mode uses HTTP in generated URLs and is suitable for testing and setup. Permissive mode accepts both protocols but normalises generated URLs to HTTPS; HTTPS only refuses public content over HTTP.</div>
+</div>
+
+<div class="edit-form-row">
   <div class="form-section-label">Admin email</div>
   {email_input name="site_admin_email" value=$site.admin_email id="site-admin-id"}
 </div>

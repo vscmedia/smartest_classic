@@ -932,8 +932,14 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
 	        $url = $this->getUrl();
 	    }else{
 	        if($this->isWebAccessible()){
-                $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) ? 'https://' : 'http://';
-	            $url = $protocol.$this->getSite()->getDomain().$this->getFullWebPath();
+                $site = $this->getSite();
+                if(!$site instanceof SmartestSite && isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+                    $site = $GLOBALS['_site'];
+                }
+                $origin = $site instanceof SmartestSite
+                    ? $site->getCanonicalOrigin()
+                    : (defined('SM_PROTOCOL') && defined('SM_SITE_HOST') ? SM_PROTOCOL.SM_SITE_HOST : 'http://'.$_SERVER['HTTP_HOST']);
+                $url = $origin.$this->getFullWebPath();
 	        }else{
 	            return null;
 	        }
@@ -1461,15 +1467,17 @@ class SmartestAsset extends SmartestBaseAsset implements SmartestSystemUiObject,
 	
 	public function getAbsoluteDownloadUri($secure=false){
 	    if(!$this->_absolute_uri_object){
-	        $protocol = $secure ? 'https://' : 'http://';
 	        if($this->isExternal()){
     	        $this->_absolute_uri_object = new SmartestExternalUrl($this->getUrl());
     	    }else{
-                if($this->getSiteId() == 0){
-                    $this->_absolute_uri_object = new SmartestExternalUrl(SM_PROTOCOL.SM_SITE_HOST.$this->getDownloadUrl());
+                $site = $this->getSite();
+                if($site instanceof SmartestSite && $site->getId()){
+                    $url = $site->getCanonicalOrigin().$this->getDownloadUrl();
                 }else{
-                    $this->_absolute_uri_object = new SmartestExternalUrl(SM_PROTOCOL.SM_SITE_HOST.$this->getDownloadUrl());
+                    $protocol = $secure ? 'https://' : (defined('SM_PROTOCOL') ? SM_PROTOCOL : 'http://');
+                    $url = $protocol.SM_SITE_HOST.$this->getDownloadUrl();
                 }
+                $this->_absolute_uri_object = new SmartestExternalUrl($url);
             }
         }
         return $this->_absolute_uri_object;

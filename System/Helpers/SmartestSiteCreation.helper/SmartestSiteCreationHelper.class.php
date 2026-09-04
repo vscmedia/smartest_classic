@@ -69,6 +69,13 @@ class SmartestSiteCreationHelper{
         $site->setAdminEmail($p->getParameter('site_admin'));
         $site->setAutomaticUrls('OFF');
         $site->save();
+
+        $ssl_mode = $p->getParameter('site_ssl_mode', SmartestSite::getInstallerDetectedSslMode());
+        if(!in_array($ssl_mode, SmartestSite::getValidSslModes(), true)){
+            $ssl_mode = SmartestSite::getInstallerDetectedSslMode();
+        }
+        $site->setSslMode($ssl_mode);
+
 	    $site->getUniqueId();
 	    self::logSiteCreation("Created site record #".$site->getId()." '".$site->getName()."' on domain '".$site->getDomain()."'.");
 

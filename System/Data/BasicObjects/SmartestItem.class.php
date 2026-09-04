@@ -1066,8 +1066,8 @@ class SmartestItem extends SmartestBaseItem implements SmartestSystemUiObject{
 	}
 	
 	public function getAbsoluteUrl(){
-	    
-	    return 'http://'.$this->getSiteWhereObjectCreated()->getDomain().$this->getUrl(false, true);
+	    $site = $this->getSiteWhereObjectCreated();
+	    return $site->getCanonicalOrigin().$this->getUrl(false, true);
 	    
 	}
 	

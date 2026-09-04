@@ -7,13 +7,13 @@
     <div class="edit-form-row">
       <div class="form-section-label">Syndicate as RSS</div>
       {boolean name="set_syndicate_as_rss" id="set-syndicate-as-rss" changehook="toggleRssSettingsVisibility" value=$set_syndicate_as_rss}
-      <div class="form-hint">When syndicated, the RSS feed for this set will be available at: <strong>http://{$_site.domain}{$domain}feeds/rss/{$set.feed_nonce}/{$set.name}.xml</strong></div>
+      <div class="form-hint">When syndicated, the RSS feed for this set will be available at: <strong>{$_site.top_level_url}feeds/rss/{$set.feed_nonce}/{$set.name}.xml</strong></div>
     </div>
     
     <div class="edit-form-row">
       <div class="form-section-label">Syndicate as Atom</div>
       {boolean name="set_syndicate_as_atom" id="set-syndicate-as-atom" value=$set_syndicate_as_atom}
-      <div class="form-hint">When syndicated, the Atom feed for this set will be available at: <strong>http://{$_site.domain}{$domain}feeds/atom/{$set.feed_nonce}/{$set.name}.xml</strong></div>
+      <div class="form-hint">When syndicated, the Atom feed for this set will be available at: <strong>{$_site.top_level_url}feeds/atom/{$set.feed_nonce}/{$set.name}.xml</strong></div>
     </div>
     
     <div class="edit-form-row">
@@ -25,7 +25,7 @@
     <div class="edit-form-row">
       <div class="form-section-label">Syndicate as JSON</div>
       {boolean name="set_syndicate_as_json" id="set-syndicate-as-json" value=$set_syndicate_as_json}
-      <div class="form-hint">When syndicated, the JSON feed for this set will be available at: <strong>http://{$_site.domain}{$domain}feeds/json/{$set.feed_nonce}/{$set.name}.json</strong></div>
+      <div class="form-hint">When syndicated, the JSON feed for this set will be available at: <strong>{$_site.top_level_url}feeds/json/{$set.feed_nonce}/{$set.name}.json</strong></div>
     </div>
     
     <div class="form-section-label-full">Feed settings</div>

@@ -788,14 +788,16 @@ class SmartestImage extends SmartestFile{
             
 	        case "absolute_web_path":
             case "absolute_uri":
-            // TODO: change the HTTP/HTTPS bit here
-	        return 'http://'.$_SERVER['HTTP_HOST'].$this->getWebPath();
+	        if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+	            return $GLOBALS['_site']->getCanonicalOrigin().$this->getWebPath();
+	        }
+	        return (SmartestSite::currentRequestIsHttps() ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$this->getWebPath();
 	        
 	        case "og_meta":
-            // $request_data = SmartestPersistentObject::get('request_data');
-            // $domain = $request_data->g('domain');
-            // TODO: Adjust protocol to https where it is in use
-	        return '<meta name="og:image" value="http://'.$_SERVER['HTTP_HOST'].$this->getWebPath().'" />';
+	        $absolute_path = isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite
+	            ? $GLOBALS['_site']->getCanonicalOrigin().$this->getWebPath()
+	            : (SmartestSite::currentRequestIsHttps() ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$this->getWebPath();
+	        return '<meta name="og:image" value="'.$absolute_path.'" />';
             
             case "css_dimensions":
             return 'width:'.$this->getWidth().'px ;height:'.$this->getHeight().'px; ';

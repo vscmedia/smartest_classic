@@ -519,6 +519,8 @@ class SmartestResponse{
                 }
 	                
                 if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
+                    $this->enforceSiteSslPolicy($GLOBALS['_site']);
+
                     if(isset($use_page_site_lookup) && $use_page_site_lookup){
                         $this->defineCmsPageSiteConstants($GLOBALS['_site']);
                     }
@@ -545,7 +547,9 @@ class SmartestResponse{
         }
         
         if(isset($GLOBALS['_site']) && $GLOBALS['_site'] instanceof SmartestSite){
-            define('SM_PROTOCOL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) ? 'https://' : 'http://');
+            $this->enforceSiteSslPolicy($GLOBALS['_site']);
+
+            define('SM_PROTOCOL', $GLOBALS['_site']->getCanonicalProtocol().'://');
             define('SM_SITE_HOST', $GLOBALS['_site']->getDomain());
             define('SM_QUINCE_DOMAIN', $this->_controller->getCurrentRequest()->getDomain());
         }
@@ -723,6 +727,18 @@ class SmartestResponse{
 
         if(!defined('SM_CMS_PAGE_SITE_UNIQUE_ID')){
             define('SM_CMS_PAGE_SITE_UNIQUE_ID', $site->getUniqueId());
+        }
+
+    }
+
+    protected function enforceSiteSslPolicy(SmartestSite $site){
+
+        if(!$this->isSystemClass() && $site->requiresHttps() && !SmartestSite::currentRequestIsHttps()){
+            SmartestLog::getInstance('site')->log("Refused an insecure HTTP request for HTTPS-only site '".$site->getDomain()."'.", SM_LOG_WARNING);
+            header('HTTP/1.1 403 Forbidden');
+            header('Cache-Control: no-store');
+            header('Content-Length: 0');
+            exit;
         }
 
     }

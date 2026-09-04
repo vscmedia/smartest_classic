@@ -12,7 +12,7 @@
         <p><?sm:field name="site_blurb":?></p>
         <p>Use Smartest to edit this page, add to the navigation, publish articles, and shape the site from here.</p>
       </div>
-      <p class="home-actions"><a class="button" href="/posts">Read the blog</a></p>
+      <p class="home-actions"><?sm:link to="page:blog-list-page" with="Read the blog" class="button":?></p>
     </section>
 
   </div>
