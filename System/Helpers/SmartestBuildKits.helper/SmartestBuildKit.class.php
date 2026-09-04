@@ -235,9 +235,10 @@ class SmartestBuildKit implements ArrayAccess{
     public function execute(SmartestSite $site, SmartestUser $user, $options){
 
         if(!is_array($options)){
-            throw new SmartestException('Buildkit parameters not supplied.');
+            throw new SmartestBuildKitException('Buildkit parameters not supplied.');
         }
 
+        $this->logBuildKit("Execution starting for site '".$site->getName()."' (#".$site->getId().") as user #".$user->getId().'.');
         $site->save();
         SmartestBuildKitsHelper::clearRegisteredObjects();
 
@@ -253,6 +254,7 @@ class SmartestBuildKit implements ArrayAccess{
             $this->executeSection('templates', 'setup_templates', 'templates_options', 'BUILDKIT_EXECUTE_TEMPLATES', $options);
             $this->executeSection('data_structures', 'setup_data_structures', 'data_structures_options', 'BUILDKIT_EXECUTE_DATA_STRUCTURES', $options);
             $this->executeSection('page_structures', 'setup_page_structures', 'page_structures_options', 'BUILDKIT_EXECUTE_PAGE_STRUCTURES', $options);
+            $this->logBuildKit("Execution completed for site '".$site->getName()."' (#".$site->getId().').');
 
         }finally{
 
@@ -271,27 +273,46 @@ class SmartestBuildKit implements ArrayAccess{
         $this->defineExecutionConstant($constant_name, $execute);
 
         if(!$execute){
+            $this->logBuildKit("Section '".$option_key."' skipped.");
             return;
         }
 
         $function_name = 'buildkit_'.$this->getShortName().'_'.$function_suffix;
         $section_file = $this->getDirectory().$function_suffix.'.function.php';
         $combined_file = $this->getDirectory().'setup_functions.php';
+        $this->logBuildKit("Section '".$option_key."' starting; expecting function '".$function_name."'.");
 
         if(is_file($section_file)){
+            $this->logBuildKit("Section '".$option_key."' loading ".$section_file.'.');
             include_once $section_file;
         }elseif(is_file($combined_file)){
+            $this->logBuildKit("Section '".$option_key."' loading ".$combined_file.'.');
             include_once $combined_file;
         }else{
-            throw new SmartestException('Installing '.$option_key.' for buildkit \''.$this->getLabel().'\' failed because no file containing function \''.$function_name.'\' could be found.');
+            throw new SmartestBuildKitException('Installing '.$option_key.' for buildkit \''.$this->getLabel().'\' failed because no file containing function \''.$function_name.'\' could be found.');
         }
 
         if(function_exists($function_name)){
             $function_options = isset($options[$options_key]) && is_array($options[$options_key]) ? $options[$options_key] : array();
-            $function_name($this, $GLOBALS['_buildkit_executing_site'], $GLOBALS['_buildkit_executing_user'], $function_options);
+            try{
+                $function_name($this, $GLOBALS['_buildkit_executing_site'], $GLOBALS['_buildkit_executing_user'], $function_options);
+                $this->logBuildKit("Section '".$option_key."' completed.");
+            }catch(Throwable $e){
+                $detail = $this->describeThrowable($e);
+                $this->logBuildKit("Section '".$option_key."' failed: ".$detail, SM_LOG_ERROR);
+                throw SmartestBuildKitException::fromThrowable("Installing ".$option_key." for buildkit '".$this->getLabel()."' failed", $e, $this->getShortName(), $option_key);
+            }
         }else{
-            throw new SmartestException('Installing '.$option_key.' for buildkit \''.$this->getLabel().'\' failed because function \''.$function_name.'\' is not defined.');
+            throw new SmartestBuildKitException('Installing '.$option_key.' for buildkit \''.$this->getLabel().'\' failed because function \''.$function_name.'\' is not defined.');
         }
+    }
+
+    protected function logBuildKit($message, $level=SM_LOG_DEBUG){
+        SmartestBuildKitsHelper::logBuildKit("Build Kit '".$this->getLabel()."': ".$message, $level);
+    }
+
+    protected function describeThrowable(Throwable $e){
+        return get_class($e).': '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine();
     }
 
     protected function defineExecutionConstant($name, $value){

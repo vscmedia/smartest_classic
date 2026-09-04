@@ -2,6 +2,11 @@
 
 class SmartestBuildKitsHelper{
 
+    public static function logBuildKit($message, $level=SM_LOG_DEBUG){
+        $log_name = isset($GLOBALS['_buildkit_execution_log']) && strlen((string) $GLOBALS['_buildkit_execution_log']) ? (string) $GLOBALS['_buildkit_execution_log'] : 'system';
+        SmartestLog::getInstance($log_name)->log('Build Kit API: '.$message, $level);
+    }
+
     public static function prepareRequestParamsForBuildKit($request_params, SmartestBuildKit $buildkit){
 
         if($request_params instanceof SmartestParameterHolder){
@@ -94,26 +99,28 @@ class SmartestBuildKitsHelper{
         $buildkit = self::getExecutingBuildKit();
         $alh = new SmartestAssetsLibraryHelper;
         $full_path = $buildkit->getDirectory().'Resources/'.$filename;
+        self::logBuildKit("Creating resource file '".$filename."' as '".$label."'".(strlen((string) $file_type_code) ? " with type ".$file_type_code : ' with type inferred from suffix').'.');
 
         if(!is_file($full_path)){
-            throw new SmartestException("Build Kit resource file '".$full_path."' does not exist.");
+            throw new SmartestBuildKitException("Build Kit resource file '".$full_path."' does not exist.");
         }
 
         if(strlen((string) $file_type_code)){
             $file_type = $alh->getTypeInfoFromTypeCode($file_type_code);
             if(!is_array($file_type)){
-                throw new SmartestException("Build Kit resource file '".$filename."' uses unsupported file type '".$file_type_code."'.");
+                throw new SmartestBuildKitException("Build Kit resource file '".$filename."' uses unsupported file type '".$file_type_code."'.");
             }
         }else{
             $suffix = strtolower(SmartestStringHelper::getDotSuffix($filename));
             $file_type = $alh->getTypeInfoBySuffix($suffix);
             if(!is_array($file_type)){
-                throw new SmartestException("Build Kit resource file '".$filename."' has an unknown suffix '".$suffix."'.");
+                throw new SmartestBuildKitException("Build Kit resource file '".$filename."' has an unknown suffix '".$suffix."'.");
             }
             $file_type_code = $file_type['id'];
         }
 
         if(isset($file_type['storage']['type']) && $file_type['storage']['type'] == 'database'){
+            self::logBuildKit("Resource file '".$filename."' will be saved as database-backed text asset.");
             return self::createTextFragmentFile($filename, SmartestFileSystemHelper::load($full_path, true), $label, $file_type_code);
         }
 
@@ -126,21 +133,24 @@ class SmartestBuildKitsHelper{
         $site = self::getExecutingSite();
         $alh = new SmartestAssetsLibraryHelper;
         $file_type_info = $alh->getTypeInfoFromTypeCode($file_type_code);
+        self::logBuildKit("Preparing disk-backed asset '".$label."' for site #".$site->getId()." from '".$full_file_path."'.");
 
         if(!is_array($file_type_info) || !isset($file_type_info['storage']['location'])){
-            throw new SmartestException("Build Kit could not create file because asset type '".$file_type_code."' does not define a storage location.");
+            throw new SmartestBuildKitException("Build Kit could not create file because asset type '".$file_type_code."' does not define a storage location.");
         }
 
         $dir = SM_ROOT_DIR.$file_type_info['storage']['location'];
+        self::logBuildKit("Resolved storage directory for '".$label."' to '".$dir."'.");
 
         if(!is_dir($dir)){
+            self::logBuildKit("Storage directory '".$dir."' does not exist; attempting to create it.", SM_LOG_WARNING);
             if(!@mkdir($dir, 0777, true)){
-                throw new SmartestException("Build Kit could not create file storage directory '".$dir."'.");
+                throw new SmartestBuildKitException("Build Kit could not create file storage directory '".$dir."'.");
             }
         }
 
         if(!is_writable($dir)){
-            throw new SmartestException("Build Kit cannot write to file storage directory '".$dir."'.");
+            throw new SmartestBuildKitException("Build Kit cannot write to file storage directory '".$dir."'.");
         }
 
         if(!strlen((string) $desired_filename)){
@@ -151,8 +161,9 @@ class SmartestBuildKitsHelper{
         $new_file_path = SmartestFileSystemHelper::getUniqueFileName($dir.$desired_filename);
 
         if(!strlen((string) $new_file_path)){
-            throw new SmartestException("Build Kit could not determine a unique destination path for '".$desired_filename."'.");
+            throw new SmartestBuildKitException("Build Kit could not determine a unique destination path for '".$desired_filename."'.");
         }
+        self::logBuildKit("Destination for '".$label."' resolved to '".$new_file_path."'.");
 
         $url = SmartestFileSystemHelper::getFileName($new_file_path);
 
@@ -166,7 +177,7 @@ class SmartestBuildKitsHelper{
         }
 
         if(!$copied){
-            throw new SmartestException("Build Kit could not ".$operation." '".$full_file_path."' to '".$new_file_path."'.");
+            throw new SmartestBuildKitException("Build Kit could not ".$operation." '".$full_file_path."' to '".$new_file_path."'.");
         }
 
         $asset = new SmartestAsset;
@@ -180,6 +191,7 @@ class SmartestBuildKitsHelper{
         $asset->setType($file_type_code);
         $asset->setUrl($url);
         $asset->save();
+        self::logBuildKit("Created disk-backed asset #".$asset->getId()." '".$asset->getLabel()."' at '".$asset->getUrl()."'.");
 
         return $asset;
     }
@@ -188,6 +200,7 @@ class SmartestBuildKitsHelper{
 
         $user = self::getExecutingUser();
         $site = self::getExecutingSite();
+        self::logBuildKit("Creating database-backed text asset '".$label."' from '".$filename."' for site #".$site->getId().'.');
 
         $asset = new SmartestAsset;
         $asset->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
@@ -202,6 +215,7 @@ class SmartestBuildKitsHelper{
         $asset->getTextFragment()->setContent((string) $file_contents);
         $asset->connectTextFragmentOnSave();
         $asset->save();
+        self::logBuildKit("Created database-backed text asset #".$asset->getId()." '".$asset->getLabel()."'.");
 
         return $asset;
     }
@@ -213,6 +227,7 @@ class SmartestBuildKitsHelper{
         $group = new SmartestAssetGroup;
 
         if($group->findBy('name', $name, $site->getId())){
+            self::logBuildKit("Reusing existing file group #".$group->getId()." '".$label."' for site #".$site->getId().'.');
             return $group;
         }
 
@@ -230,6 +245,7 @@ class SmartestBuildKitsHelper{
         }
 
         $group->save();
+        self::logBuildKit("Created file group #".$group->getId()." '".$label."' for site #".$site->getId().'.');
 
         return $group;
     }
@@ -252,10 +268,11 @@ class SmartestBuildKitsHelper{
 
         if($file_id && $group instanceof SmartestAssetGroup){
             $group->addAssetById($file_id, false);
+            self::logBuildKit("Added asset #".$file_id." to file group #".$group->getId().'.');
             return true;
         }
 
-        return false;
+        throw new SmartestBuildKitException('Build Kit could not add a file to a file group because the file or group could not be resolved.');
     }
 
     public static function replaceTokensInFile($file, $replacements=array()){
@@ -263,30 +280,39 @@ class SmartestBuildKitsHelper{
         $asset = self::resolveAsset($file);
 
         if(!$asset instanceof SmartestAsset){
-            return false;
+            throw new SmartestBuildKitException('Build Kit could not replace tokens because the target file could not be resolved.');
         }
 
         $replacements = is_array($replacements) ? $replacements : array();
         $replacements = array_merge(self::getRegisteredObjectTokenReplacements(), $replacements);
 
         if(!count($replacements)){
+            self::logBuildKit("No token replacements were needed for asset #".$asset->getId().'.');
             return true;
         }
+
+        self::logBuildKit("Replacing ".count($replacements)." token(s) in asset #".$asset->getId()." '".$asset->getLabel()."'.");
 
         if($asset->usesTextFragment()){
             $content = $asset->getTextFragment()->getContent();
             $asset->getTextFragment()->setContent(self::applyTokenReplacements($content, $replacements));
             $asset->connectTextFragmentOnSave();
             $asset->save();
+            self::logBuildKit("Replaced tokens in database-backed asset #".$asset->getId().'.');
             return true;
         }
 
         if($asset->usesLocalFile() && is_file($asset->getFullPathOnDisk()) && is_writable($asset->getFullPathOnDisk())){
             $content = SmartestFileSystemHelper::load($asset->getFullPathOnDisk(), true);
-            return SmartestFileSystemHelper::save($asset->getFullPathOnDisk(), self::applyTokenReplacements($content, $replacements), true);
+            $saved = SmartestFileSystemHelper::save($asset->getFullPathOnDisk(), self::applyTokenReplacements($content, $replacements), true);
+
+            if($saved){
+                self::logBuildKit("Replaced tokens in disk-backed asset #".$asset->getId()." at '".$asset->getFullPathOnDisk()."'.");
+                return true;
+            }
         }
 
-        return false;
+        throw new SmartestBuildKitException("Build Kit could not replace tokens in asset #".$asset->getId()." because its file is missing or not writable.");
     }
 
     public static function defineTextAttachment($text_asset, $attachment_name, $attached_asset, $metadata=array()){
@@ -297,15 +323,15 @@ class SmartestBuildKitsHelper{
         $metadata = is_array($metadata) ? $metadata : array();
 
         if(!$text_asset instanceof SmartestAsset || !$text_asset->usesTextFragment()){
-            throw new SmartestException("Build Kit could not define attachment '".$attachment_name."' because no valid text asset was supplied.");
+            throw new SmartestBuildKitException("Build Kit could not define attachment '".$attachment_name."' because no valid text asset was supplied.");
         }
 
         if(!$attached_asset instanceof SmartestAsset){
-            throw new SmartestException("Build Kit could not define attachment '".$attachment_name."' because no valid attached asset was supplied.");
+            throw new SmartestBuildKitException("Build Kit could not define attachment '".$attachment_name."' because no valid attached asset was supplied.");
         }
 
         if(!strlen($attachment_name)){
-            throw new SmartestException("Build Kit could not define an attachment with no name.");
+            throw new SmartestBuildKitException("Build Kit could not define an attachment with no name.");
         }
 
         $textfragment = $text_asset->getTextFragment();
@@ -357,6 +383,7 @@ class SmartestBuildKitsHelper{
         }
 
         $attachment->save();
+        self::logBuildKit("Defined attachment '".$attachment_name."' on text asset #".$text_asset->getId()." using attached asset #".$attached_asset->getId().'.');
         return $attachment;
     }
 
@@ -380,6 +407,7 @@ class SmartestBuildKitsHelper{
         $menu = new SmartestDropdown;
 
         if($menu->findBy('name', $name)){
+            self::logBuildKit("Reusing dropdown menu #".$menu->getId()." '".$label."'.");
             return $menu;
         }
 
@@ -388,6 +416,7 @@ class SmartestBuildKitsHelper{
         $menu->setLanguage('eng');
         $menu->setDatatype('SM_DATATYPE_SL_TEXT');
         $menu->save();
+        self::logBuildKit("Created dropdown menu #".$menu->getId()." '".$label."'.");
 
         if(is_array($options)){
             foreach($options as $option){
@@ -409,7 +438,7 @@ class SmartestBuildKitsHelper{
         $menu = self::resolveDropdown($menu);
 
         if(!$menu instanceof SmartestDropdown){
-            throw new SmartestException("Build Kit could not create dropdown option because no valid dropdown menu was supplied.");
+            throw new SmartestBuildKitException("Build Kit could not create dropdown option because no valid dropdown menu was supplied.");
         }
 
         $value = strlen((string) $value) ? $value : $label;
@@ -419,6 +448,7 @@ class SmartestBuildKitsHelper{
         $option->setDropdownId($menu->getId());
         $option->setOrderIndex($menu->getNextOptionOrderIndex());
         $option->save();
+        self::logBuildKit("Created dropdown option #".$option->getId()." '".$label."' for menu #".$menu->getId().'.');
 
         return $option;
     }
@@ -430,21 +460,24 @@ class SmartestBuildKitsHelper{
         $du = new SmartestDataUtility;
 
         if(!strlen((string) $singular_name) || !strlen((string) $plural_name)){
-            throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create a model without both singular and plural names.");
+            throw new SmartestBuildKitException("Build Kit '".$buildkit->getLabel()."' tried to create a model without both singular and plural names.");
         }
 
         if($du->sharedModelExistsWithName($singular_name) || $du->sharedModelExistsWithPluralName($plural_name)){
-            throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create a model that conflicts with an existing shared model.");
+            throw new SmartestBuildKitException("Build Kit '".$buildkit->getLabel()."' tried to create a model that conflicts with an existing shared model.");
         }
 
         if($model = self::resolveModelByIdentifierForSite($singular_name, $site)){
+            self::logBuildKit("Reusing model #".$model->getId()." '".$model->getName()."' for site #".$site->getId().'.');
             return $model;
         }
 
         if($model = self::resolveModelByIdentifierForSite($plural_name, $site)){
+            self::logBuildKit("Reusing model #".$model->getId()." '".$model->getName()."' for site #".$site->getId().'.');
             return $model;
         }
 
+        self::logBuildKit("Creating model '".$singular_name."'/'".$plural_name."' for site #".$site->getId().'.');
         $model = new SmartestModel;
         $model->setType('SM_ITEMCLASS_MODEL');
         $model->setWebId(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
@@ -458,6 +491,7 @@ class SmartestBuildKitsHelper{
         $model->setCreatedFromBuildkit($buildkit->getShortName());
         $model->save();
         $du->flushModelsCache();
+        self::logBuildKit("Created model #".$model->getId()." '".$model->getName()."' for site #".$site->getId().'.');
 
         return $model;
     }
@@ -468,23 +502,25 @@ class SmartestBuildKitsHelper{
         $property_varname = SmartestStringHelper::toVarName($name);
 
         if(!strlen($property_varname)){
-            throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create a model property with no name.");
+            throw new SmartestBuildKitException("Build Kit '".$buildkit->getLabel()."' tried to create a model property with no name.");
         }
 
         if(isset($GLOBALS['reserved_keywords']) && in_array($property_varname, $GLOBALS['reserved_keywords'])){
-            throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create model property '".$name."', which is a reserved PHP keyword.");
+            throw new SmartestBuildKitException("Build Kit '".$buildkit->getLabel()."' tried to create model property '".$name."', which is a reserved PHP keyword.");
         }
 
         if(!SmartestDataUtility::isValidType($type, 'itemproperty')){
-            throw new SmartestException("Build Kit '".$buildkit->getLabel()."' tried to create a model property with invalid datatype '".$type."'.");
+            throw new SmartestBuildKitException("Build Kit '".$buildkit->getLabel()."' tried to create a model property with invalid datatype '".$type."'.");
         }
 
         foreach($model->getProperties() as $existing_property){
             if($existing_property->getVarName() == $property_varname){
+                self::logBuildKit("Reusing model property #".$existing_property->getId()." '".$property_varname."' on model #".$model->getId().'.');
                 return $existing_property;
             }
         }
 
+        self::logBuildKit("Creating model property '".$property_varname."' of type '".$type."' on model #".$model->getId().'.');
         $property = new SmartestItemProperty;
         $property->setWebId(SmartestStringHelper::random(16, SM_RANDOM_ALPHANUMERIC));
         $property->setItemclassId($model->getId());
@@ -501,6 +537,7 @@ class SmartestBuildKitsHelper{
         $property->save();
         SmartestCache::clear('model_properties_'.$model->getId(), true);
         $model->refreshProperties();
+        self::logBuildKit("Created model property #".$property->getId()." '".$property_varname."' on model #".$model->getId().'.');
 
         return $property;
     }
@@ -528,6 +565,7 @@ class SmartestBuildKitsHelper{
         $item->getItem()->setCreated(time());
         $item->getItem()->setCreatedbyUserid($user->getId());
         $item->save();
+        self::logBuildKit("Created item #".$item->getId()." '".$name."' for model #".$model->getId().'.');
 
         return $item;
     }
@@ -538,7 +576,7 @@ class SmartestBuildKitsHelper{
         $model = self::resolveModel($model);
 
         if(!$model instanceof SmartestModel){
-            throw new SmartestException("Build Kit could not create set '".$label."' because the model was not recognized.");
+            throw new SmartestBuildKitException("Build Kit could not create set '".$label."' because the model was not recognized.");
         }
 
         $name = SmartestStringHelper::toVarName($label);
@@ -567,7 +605,7 @@ class SmartestBuildKitsHelper{
     public static function createTag($label, $name=null){
 
         if(!strlen((string) $label)){
-            throw new SmartestException('Build Kit tried to create a tag with no label.');
+            throw new SmartestBuildKitException('Build Kit tried to create a tag with no label.');
         }
 
         $name = strlen((string) $name) ? SmartestStringHelper::toSlug($name) : SmartestStringHelper::toSlug($label);
@@ -606,7 +644,7 @@ class SmartestBuildKitsHelper{
         $set = self::resolveCmsItemSet($set);
 
         if(!$set instanceof SmartestCmsItemSet || $set->getType() != 'DYNAMIC'){
-            return false;
+            throw new SmartestBuildKitException('Build Kit could not create a set rule because the set could not be resolved or is not dynamic.');
         }
 
         if($operator === null || $operator === ''){
@@ -629,14 +667,17 @@ class SmartestBuildKitsHelper{
 
         if(isset($existing[0]) && is_array($existing[0])){
             $condition->hydrate($existing[0]);
+            self::logBuildKit("Reusing set rule #".$condition->getId()." on set #".$set->getId().'.');
             return $condition;
         }
 
+        self::logBuildKit("Creating set rule on set #".$set->getId()." for property #".$property_id.'.');
         $condition->setSetId($set->getId());
         $condition->setItempropertyId($property_id);
         $condition->setOperator($operator);
         $condition->setValue($value);
         $condition->save();
+        self::logBuildKit("Created set rule #".$condition->getId()." on set #".$set->getId().'.');
 
         return $condition;
     }
@@ -651,7 +692,7 @@ class SmartestBuildKitsHelper{
         }
 
         if(!$parent instanceof SmartestPage || !$parent->getId()){
-            throw new SmartestException("Build Kit could not create page '".$title."' because no parent page could be found.");
+            throw new SmartestBuildKitException("Build Kit could not create page '".$title."' because no parent page could be found.");
         }
 
         $template_name = self::resolveTemplateName($template);
@@ -666,6 +707,7 @@ class SmartestBuildKitsHelper{
 
         if($existing instanceof SmartestPage){
             $modified = false;
+            self::logBuildKit("Reusing page #".$existing->getId()." '".$existing->getTitle()."' for URL '".$url."'.");
 
             if((int) $existing->getId() != (int) $parent->getId() && (int) $existing->getParent() != (int) $parent->getId()){
                 $existing->setParent($parent->getId());
@@ -689,6 +731,7 @@ class SmartestBuildKitsHelper{
             return $existing;
         }
 
+        self::logBuildKit("Creating page '".$title."' under parent page #".$parent->getId()." with URL '".$url."'.");
         $page = new SmartestPage;
         $page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
         $page->setTitle($title);
@@ -713,6 +756,7 @@ class SmartestBuildKitsHelper{
         }
 
         $page->save();
+        self::logBuildKit("Created page #".$page->getId()." '".$title."' for site #".$site->getId().'.');
 
         return $page;
     }
@@ -724,7 +768,7 @@ class SmartestBuildKitsHelper{
         $parent = self::resolvePage($parent_page, $site);
 
         if(!$model instanceof SmartestModel){
-            throw new SmartestException("Build Kit could not create meta page '".$title."' because the model was not recognized.");
+            throw new SmartestBuildKitException("Build Kit could not create meta page '".$title."' because the model was not recognized.");
         }
 
         if(!$parent instanceof SmartestPage){
@@ -732,7 +776,7 @@ class SmartestBuildKitsHelper{
         }
 
         if(!$parent instanceof SmartestPage || !$parent->getId()){
-            throw new SmartestException("Build Kit could not create meta page '".$title."' because no parent page could be found.");
+            throw new SmartestBuildKitException("Build Kit could not create meta page '".$title."' because no parent page could be found.");
         }
 
         $template_name = self::resolveTemplateName($template);
@@ -747,9 +791,10 @@ class SmartestBuildKitsHelper{
 
         if($existing instanceof SmartestPage){
             $modified = false;
+            self::logBuildKit("Reusing meta page #".$existing->getId()." '".$existing->getTitle()."' for URL '".$url."'.");
 
             if($existing->getType() != 'ITEMCLASS'){
-                throw new SmartestException("Build Kit could not create meta page '".$title."' because the URL '".$url."' is already used by a normal page.");
+                throw new SmartestBuildKitException("Build Kit could not create meta page '".$title."' because the URL '".$url."' is already used by a normal page.");
             }
 
             if((int) $existing->getId() != (int) $parent->getId() && (int) $existing->getParent() != (int) $parent->getId()){
@@ -779,6 +824,7 @@ class SmartestBuildKitsHelper{
             return $existing;
         }
 
+        self::logBuildKit("Creating meta page '".$title."' for model #".$model->getId()." under parent page #".$parent->getId()." with URL '".$url."'.");
         $page = new SmartestPage;
         $page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
         $page->setTitle($title);
@@ -804,6 +850,7 @@ class SmartestBuildKitsHelper{
         }
 
         $page->save();
+        self::logBuildKit("Created meta page #".$page->getId()." '".$title."' for model #".$model->getId().'.');
 
         return $page;
     }
@@ -815,10 +862,13 @@ class SmartestBuildKitsHelper{
         $group = new SmartestPageGroup;
 
         if(!$group->findBy('name', $name, $site->getId())){
+            self::logBuildKit("Creating page group '".$name."' for site #".$site->getId().'.');
             $group->setName($name);
             $group->setVarname($name);
             $group->setLabel($label);
             $group->setSiteId($site->getId());
+        }else{
+            self::logBuildKit("Reusing page group #".$group->getId()." '".$name."' for site #".$site->getId().'.');
         }
 
         if(is_array($settings)){
@@ -832,6 +882,8 @@ class SmartestBuildKitsHelper{
         }else if(!$group->getId()){
             $group->save();
         }
+
+        self::logBuildKit("Page group '".$name."' is available as #".$group->getId().'.');
 
         return $group;
     }
@@ -852,10 +904,11 @@ class SmartestBuildKitsHelper{
 
         if($page instanceof SmartestPage && $page->getId()){
             $group->addPageById($page->getId());
+            self::logBuildKit("Added page #".$page->getId()." to page group #".$group->getId().'.');
             return true;
         }
 
-        return false;
+        throw new SmartestBuildKitException('Build Kit could not add a page to a page group because the page could not be resolved.');
     }
 
     public static function createPlaceholder($name, $type, $label='', $file_group=null){
@@ -864,15 +917,17 @@ class SmartestBuildKitsHelper{
         $name = SmartestStringHelper::toVarName($name);
 
         if(!strlen($name)){
-            throw new SmartestException('Build Kit tried to create a placeholder with no name.');
+            throw new SmartestBuildKitException('Build Kit tried to create a placeholder with no name.');
         }
 
         $placeholder = new SmartestPlaceholder;
 
         if($placeholder->exists($name, $site->getId())){
+            self::logBuildKit("Reusing placeholder #".$placeholder->getId()." '".$name."' for site #".$site->getId().'.');
             return $placeholder;
         }
 
+        self::logBuildKit("Creating placeholder '".$name."' of type '".$type."' for site #".$site->getId().'.');
         $placeholder->setLabel(strlen((string) $label) ? $label : $name);
         $placeholder->setName($name);
         $placeholder->setSiteId($site->getId());
@@ -880,6 +935,7 @@ class SmartestBuildKitsHelper{
         $placeholder->setType($type);
         self::applyAssetClassGroupFilter($placeholder, $file_group, 'SM_ASSETCLASS_FILTERTYPE_ASSETGROUP');
         $placeholder->save();
+        self::logBuildKit("Created placeholder #".$placeholder->getId()." '".$name."'.");
 
         return $placeholder;
     }
@@ -890,15 +946,17 @@ class SmartestBuildKitsHelper{
         $name = SmartestStringHelper::toVarName($name);
 
         if(!strlen($name)){
-            throw new SmartestException('Build Kit tried to create a container with no name.');
+            throw new SmartestBuildKitException('Build Kit tried to create a container with no name.');
         }
 
         $container = new SmartestContainer;
 
         if($container->exists($name, $site->getId())){
+            self::logBuildKit("Reusing container #".$container->getId()." '".$name."' for site #".$site->getId().'.');
             return $container;
         }
 
+        self::logBuildKit("Creating container '".$name."' for site #".$site->getId().'.');
         $container->setLabel(strlen((string) $label) ? $label : $name);
         $container->setName($name);
         $container->setSiteId($site->getId());
@@ -906,6 +964,7 @@ class SmartestBuildKitsHelper{
         $container->setType('SM_ASSETCLASS_CONTAINER');
         self::applyAssetClassGroupFilter($container, $template_group, 'SM_ASSETCLASS_FILTERTYPE_TEMPLATEGROUP');
         $container->save();
+        self::logBuildKit("Created container #".$container->getId()." '".$name."'.");
 
         return $container;
     }
@@ -922,9 +981,11 @@ class SmartestBuildKitsHelper{
         $field = new SmartestPageField;
 
         if($field->findBy('name', $name, $site->getId())){
+            self::logBuildKit("Reusing page field #".$field->getId()." '".$name."' for site #".$site->getId().'.');
             return $field;
         }
 
+        self::logBuildKit("Creating page field '".$name."' of type '".$type."' for site #".$site->getId().'.');
         $field->setLabel($name);
         $field->setSiteId($site->getId());
         $field->setType($type);
@@ -936,6 +997,7 @@ class SmartestBuildKitsHelper{
         }
 
         $field->save();
+        self::logBuildKit("Created page field #".$field->getId()." '".$name."'.");
 
         return $field;
     }
@@ -947,7 +1009,7 @@ class SmartestBuildKitsHelper{
         $item_space = new SmartestItemSpace;
 
         if(!strlen($name)){
-            throw new SmartestException('Build Kit tried to create an itemspace with no name.');
+            throw new SmartestBuildKitException('Build Kit tried to create an itemspace with no name.');
         }
 
         if($item_space->exists($name, $site->getId())){
@@ -1230,7 +1292,7 @@ class SmartestBuildKitsHelper{
         }
 
         if($value === null && $option->isRequired()){
-            throw new SmartestException("Required Build Kit option '".$key."' was not provided.");
+            throw new SmartestBuildKitException("Required Build Kit option '".$key."' was not provided.");
         }
 
         return $value;
@@ -1240,21 +1302,21 @@ class SmartestBuildKitsHelper{
         if(isset($GLOBALS['_buildkit_executing']) && $GLOBALS['_buildkit_executing'] instanceof SmartestBuildKit){
             return $GLOBALS['_buildkit_executing'];
         }
-        throw new SmartestException('Build Kit helper was called outside a Build Kit execution context.');
+        throw new SmartestBuildKitException('Build Kit helper was called outside a Build Kit execution context.');
     }
 
     protected static function getExecutingSite(){
         if(isset($GLOBALS['_buildkit_executing_site']) && $GLOBALS['_buildkit_executing_site'] instanceof SmartestSite){
             return $GLOBALS['_buildkit_executing_site'];
         }
-        throw new SmartestException('Build Kit helper was called without a valid site context.');
+        throw new SmartestBuildKitException('Build Kit helper was called without a valid site context.');
     }
 
     protected static function getExecutingUser(){
         if(isset($GLOBALS['_buildkit_executing_user']) && $GLOBALS['_buildkit_executing_user'] instanceof SmartestUser){
             return $GLOBALS['_buildkit_executing_user'];
         }
-        throw new SmartestException('Build Kit helper was called without a valid user context.');
+        throw new SmartestBuildKitException('Build Kit helper was called without a valid user context.');
     }
 
     protected static function getRegistry(){

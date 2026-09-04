@@ -6,6 +6,7 @@ mb_internal_encoding("UTF-8");
 require SM_ROOT_DIR.'System/Data/SmartestCache.class.php';
 require SM_ROOT_DIR.'System/Helpers/SmartestHelper.class.php';
 require SM_ROOT_DIR.'System/Base/Exceptions/SmartestException.class.php';
+require SM_ROOT_DIR.'System/Base/Exceptions/SmartestBuildKitException.class.php';
 require SM_ROOT_DIR.'System/Base/SmartestError.class.php';
 require SM_ROOT_DIR.'System/Base/SmartestErrorStack.class.php';
 require SM_ROOT_DIR.'System/Data/SmartestDatabase.class.php';
@@ -170,6 +171,11 @@ class SmartestResponse{
             }
 	        require SM_ROOT_DIR.'System/Install/Screens/index.php';
 	        exit;
+	    }catch(Throwable $e){
+            self::debugTrace('construct: install status check failed '.$e->getMessage());
+            SmartestLog::getInstance('installer')->log('Installation status check failed unexpectedly: '.get_class($e).': '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine(), SM_LOG_ERROR);
+            $this->_error_stack->recordError($e);
+            $this->_error_stack->display();
 	    }
 	    
 	    $filename = SmartestFileSystemHelper::include_group(
@@ -249,7 +255,7 @@ class SmartestResponse{
             );
             self::debugTrace('construct: public API group included');
             
-	    }catch(SmartestException $e){
+	    }catch(Throwable $e){
     		self::debugTrace('construct: object model setup failed '.$e->getMessage());
     		$this->_error_stack->recordError($e, false);
     	}

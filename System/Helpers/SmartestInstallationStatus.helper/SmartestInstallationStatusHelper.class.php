@@ -19,6 +19,8 @@ class SmartestInstallationStatusHelper{
             return;
         }
 
+        self::logInstall('Installation status check started. purge='.($purge ? 'true' : 'false').self::getRequestContextForLog().'.', SM_LOG_DEBUG);
+
         if(!$purge && (is_file(SM_ROOT_DIR.'Public/.htaccess') && (is_file(SM_ROOT_DIR.'Configuration/database.ini') || is_file(SM_ROOT_DIR.'Configuration/database.yml')))){
             $cached_status = SmartestCache::load('installation_status', true);
         }
@@ -33,6 +35,7 @@ class SmartestInstallationStatusHelper{
             // session_start();
             $system_data = SmartestYamlHelper::toParameterHolder($SYSTEM_INFO_FILE, false);
             $writable_files = self::getInstallationWritableLocations($system_data);
+            self::logInstall('Installer is checking '.count($writable_files).' required writable location(s).', SM_LOG_DEBUG);
             
             $errors = array();
             
@@ -43,6 +46,7 @@ class SmartestInstallationStatusHelper{
     		}
     		
     		if(count($errors)){
+                self::logInstall('Installer cannot continue because these paths are not writable: '.implode(', ', $errors).'.', SM_LOG_WARNING);
     		    throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_FILE_PERMS);
     		}
     		
@@ -55,10 +59,11 @@ class SmartestInstallationStatusHelper{
 
                 $action = $_POST['action'];
                 
-                SmartestLog::getInstance('installer')->log('The installer submitted action \''.$action.'\'.', SM_LOG_DEBUG);
+                self::logInstall('The installer submitted action \''.$action.'\'.', SM_LOG_DEBUG);
 
                 // Yes, yes, switch/case is ugly, but the whole point of this is not to rely on any of the actual Smartest code - just small and simple.
-                switch($action){
+                try{
+                    switch($action){
 
                     case 'createConfigs':
                     
@@ -276,6 +281,14 @@ class SmartestInstallationStatusHelper{
                     
                     break;
 
+                    }
+                    self::logInstall('Installer action \''.$action.'\' completed.', SM_LOG_DEBUG);
+                }catch(SmartestNotInstalledException $e){
+                    self::logInstall('Installer action \''.$action.'\' returned installation status '.$e->getInstallationStatus().'.', SM_LOG_DEBUG);
+                    throw $e;
+                }catch(Throwable $e){
+                    self::logInstall('Installer action \''.$action.'\' failed unexpectedly: '.self::describeThrowable($e), SM_LOG_ERROR);
+                    throw $e;
                 }
 
             }
@@ -333,6 +346,7 @@ class SmartestInstallationStatusHelper{
                 SmartestLog::getInstance('installer')->log('SmartestInstaller has a working database connection.', SM_LOG_DEBUG);
                 
                 $tables = $db->getTables();
+                self::logInstall('Database contains '.count($tables).' table(s) before schema check.', SM_LOG_DEBUG);
 
                 if(count($tables) < 1 || !in_array('Users', $tables) || !in_array('Sites', $tables)){
                     SmartestLog::getInstance('installer')->log('Trying to build database tables structure.', SM_LOG_DEBUG);
@@ -359,6 +373,7 @@ class SmartestInstallationStatusHelper{
                 }
                 
                 if(count($db->queryToArray("SELECT user_id FROM Users")) < 2){
+                    self::logInstall('Installer status: database exists but no initial Smartest user account has been created yet.', SM_LOG_DEBUG);
                     
                     if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
                         SmartestCache::save('installation_status', SM_INSTALLSTATUS_NO_USERS, -1, true);
@@ -378,12 +393,13 @@ class SmartestInstallationStatusHelper{
                     
                 } */
                 
-		                if(count($db->queryToArray("SELECT site_id FROM Sites")) < 1){
+                if(self::hasPendingFirstSiteBuildKit()){
+                    SmartestLog::getInstance('installer')->log('First site creation is pending and will be executed after the Smartest object model has loaded.', SM_LOG_DEBUG);
+                    return;
+                }
 
-		                    if(self::hasPendingFirstSiteBuildKit()){
-		                        SmartestLog::getInstance('installer')->log('First site creation is pending and will be executed after the Smartest object model has loaded.', SM_LOG_DEBUG);
-		                        return;
-		                    }
+		                if(count($db->queryToArray("SELECT site_id FROM Sites")) < 1){
+		                    self::logInstall('Installer status: database exists but no site has been created yet.', SM_LOG_DEBUG);
 
 		                    if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
 		                        SmartestCache::save('installation_status', SM_INSTALLSTATUS_NO_SITES, -1, true);
@@ -394,6 +410,7 @@ class SmartestInstallationStatusHelper{
 	                }
 
 	                if(count($db->queryToArray("SELECT page_id FROM Pages")) < 1 || count($db->queryToArray("SELECT setting_id FROM Settings")) < 1 || count($db->queryToArray("SELECT asset_id FROM Assets")) < 1){
+	                    self::logInstall('Installer status: site exists but required starter Pages, Settings or Assets rows are missing.', SM_LOG_WARNING);
 
 	                    if(is_writable(SM_ROOT_DIR."System/Cache/Data/")){
 	                        SmartestCache::save('installation_status', SM_INSTALLSTATUS_SITE_DATA_INVALID, -1, true);
@@ -410,6 +427,7 @@ class SmartestInstallationStatusHelper{
                     }
                 }
                 self::markInstallationComplete();
+                self::logInstall('Installation marked complete.', SM_LOG_DEBUG);
 
 	            }else{
                 
@@ -420,6 +438,7 @@ class SmartestInstallationStatusHelper{
                     
                 }
                 
+                self::logInstall('Installer status: database configuration has not been created yet.', SM_LOG_DEBUG);
                 throw new SmartestNotInstalledException(SM_INSTALLSTATUS_NO_CONFIG);
             }
 	    }
@@ -465,11 +484,11 @@ class SmartestInstallationStatusHelper{
         );
 
         if(SmartestCache::save(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, $pending, -1, true)){
-            SmartestLog::getInstance('installer')->log("Queued first site creation with Build Kit '".$buildkit_name."' for execution after Smartest runtime loading.", SM_LOG_DEBUG);
+            self::logInstall("Queued first site creation with Build Kit '".$buildkit_name."' for execution after Smartest runtime loading.", SM_LOG_DEBUG);
             return true;
         }
 
-        SmartestLog::getInstance('installer')->log('Could not queue first site creation Build Kit payload. Check write permissions for System/Cache/Data/.', SM_LOG_ERROR);
+        self::logInstall('Could not queue first site creation Build Kit payload. Check write permissions for System/Cache/Data/.', SM_LOG_ERROR);
         return false;
 
     }
@@ -489,13 +508,9 @@ class SmartestInstallationStatusHelper{
             return false;
         }
 
-        $db = SmartestDatabase::getInstance('SMARTEST');
+        self::logInstall("Pending first-site Build Kit '".$pending['buildkit']."' found; execution will continue in the normal runtime.", SM_LOG_DEBUG);
 
-        if(count($db->queryToArray('SELECT site_id FROM Sites'))){
-            SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
-            SmartestLog::getInstance('installer')->log('Cleared pending first-site Build Kit payload because at least one site already exists.', SM_LOG_WARNING);
-            return false;
-        }
+        $db = SmartestDatabase::getInstance('SMARTEST');
 
         if(!class_exists('SmartestBuildKitUtilities') && is_file(SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php')){
             require_once SM_ROOT_DIR.'System/Helpers/SmartestBuildKits.helper/SmartestBuildKitUtilities.class.php';
@@ -533,15 +548,44 @@ class SmartestInstallationStatusHelper{
         $site_params->setParameter('site_admin', $email);
         $site_params->setParameter('site_master_template', '_DEFAULT');
 
+        $previous_buildkit_log = isset($GLOBALS['_buildkit_execution_log']) ? $GLOBALS['_buildkit_execution_log'] : null;
+        $previous_site_creation_log = isset($GLOBALS['_site_creation_log']) ? $GLOBALS['_site_creation_log'] : null;
+        $GLOBALS['_buildkit_execution_log'] = 'installer';
+        $GLOBALS['_site_creation_log'] = 'installer';
+
         try{
             $sch = new SmartestSiteCreationHelper;
-            $site = $sch->createNewSiteFromBuildKit($site_params, $user, $buildkit, $pending['buildkit_params']);
+            $existing_site = self::getPendingFirstSiteIfAlreadyCreated($db, $pending);
+
+            if($existing_site instanceof SmartestSite){
+                self::logInstall("Resuming pending first-site Build Kit '".$buildkit->getLabel()."' on existing site '".$existing_site->getName()."'.", SM_LOG_WARNING);
+                $site = $sch->completeExistingSiteFromBuildKit($existing_site, $user, $buildkit, $pending['buildkit_params']);
+            }else{
+                $site = $sch->createNewSiteFromBuildKit($site_params, $user, $buildkit, $pending['buildkit_params']);
+            }
+
             SmartestCache::clear(self::PENDING_FIRST_SITE_BUILDKIT_CACHE_KEY, true);
             self::markInstallationComplete();
-            SmartestLog::getInstance('installer')->log("Created first site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."'.", SM_LOG_DEBUG);
-        }catch(Exception $buildkit_error){
-            SmartestLog::getInstance('installer')->log("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
-            throw new SmartestException("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage());
+            self::logInstall("Created first site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."'.", SM_LOG_DEBUG);
+        }catch(SmartestBuildKitException $buildkit_error){
+            self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$buildkit_error->getMessage(), SM_LOG_ERROR);
+            throw $buildkit_error;
+        }catch(Throwable $buildkit_error){
+            $detail = self::describeThrowable($buildkit_error);
+            self::logInstall("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail, SM_LOG_ERROR);
+            throw new SmartestException("Pending first-site Build Kit '".$buildkit->getLabel()."' failed: ".$detail);
+        }finally{
+            if($previous_buildkit_log === null){
+                unset($GLOBALS['_buildkit_execution_log']);
+            }else{
+                $GLOBALS['_buildkit_execution_log'] = $previous_buildkit_log;
+            }
+
+            if($previous_site_creation_log === null){
+                unset($GLOBALS['_site_creation_log']);
+            }else{
+                $GLOBALS['_site_creation_log'] = $previous_site_creation_log;
+            }
         }
 
         $controller_domain = isset($pending['controller_domain']) ? trim((string) $pending['controller_domain'], '/') : '';
@@ -551,27 +595,74 @@ class SmartestInstallationStatusHelper{
 
     }
 
+    protected static function getPendingFirstSiteIfAlreadyCreated(SmartestDatabase $db, $pending){
+
+        $rows = $db->queryToArray('SELECT site_id, site_name, site_domain FROM Sites ORDER BY site_id ASC');
+
+        if(!count($rows)){
+            return null;
+        }
+
+        $pending_name = isset($pending['site_name']) ? (string) $pending['site_name'] : '';
+        $pending_host = isset($pending['site_host']) ? (string) $pending['site_host'] : '';
+        $matched_id = null;
+
+        foreach($rows as $row){
+            $name_matches = !strlen($pending_name) || (isset($row['site_name']) && $row['site_name'] == $pending_name);
+            $host_matches = !strlen($pending_host) || (isset($row['site_domain']) && $row['site_domain'] == $pending_host);
+
+            if($name_matches && $host_matches){
+                $matched_id = $row['site_id'];
+                break;
+            }
+        }
+
+        if($matched_id === null && count($rows) == 1){
+            $matched_id = $rows[0]['site_id'];
+        }
+
+        if($matched_id !== null){
+            $site = new SmartestSite;
+
+            if($site->find($matched_id)){
+                return $site;
+            }
+        }
+
+        throw new SmartestException('A first-site Build Kit is pending, but an existing site could not be matched safely for resuming installation.');
+
+    }
+
     protected static function installationLooksComplete(){
 
         if(!is_file(SM_ROOT_DIR.'Public/.htaccess') || !(is_file(SM_ROOT_DIR.'Configuration/database.ini') || is_file(SM_ROOT_DIR.'Configuration/database.yml'))){
             return false;
         }
 
-        try{
-            $db = SmartestDatabase::getInstance('SMARTEST', true);
-            $tables = $db->getTables(true);
-        }catch(Exception $e){
+        if(self::hasPendingFirstSiteBuildKit()){
             return false;
         }
 
-        if(!in_array('Users', $tables) || !in_array('Sites', $tables)){
+        try{
+            $db = SmartestDatabase::getInstance('SMARTEST', true);
+            $tables = $db->getTables(true);
+        }catch(Throwable $e){
             return false;
+        }
+
+        foreach(array('Users', 'Sites', 'Pages', 'Settings', 'Assets') as $required_table){
+            if(!in_array($required_table, $tables)){
+                return false;
+            }
         }
 
         try{
             return count($db->queryToArray("SELECT user_id FROM Users LIMIT 2")) > 1
-                && count($db->queryToArray("SELECT site_id FROM Sites LIMIT 1")) > 0;
-        }catch(Exception $e){
+                && count($db->queryToArray("SELECT site_id FROM Sites LIMIT 1")) > 0
+                && count($db->queryToArray("SELECT page_id FROM Pages LIMIT 1")) > 0
+                && count($db->queryToArray("SELECT setting_id FROM Settings LIMIT 1")) > 0
+                && count($db->queryToArray("SELECT asset_id FROM Assets LIMIT 1")) > 0;
+        }catch(Throwable $e){
             return false;
         }
     }
@@ -724,5 +815,31 @@ class SmartestInstallationStatusHelper{
         }
 
         return $writable_files;
+    }
+
+    protected static function logInstall($message, $level=SM_LOG_DEBUG){
+        SmartestLog::getInstance('installer')->log($message, $level);
+    }
+
+    protected static function describeThrowable(Throwable $e){
+        return get_class($e).': '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine();
+    }
+
+    protected static function getRequestContextForLog(){
+        $parts = array();
+
+        if(isset($_SERVER['REQUEST_METHOD'])){
+            $parts[] = 'method='.$_SERVER['REQUEST_METHOD'];
+        }
+
+        if(isset($_SERVER['REQUEST_URI'])){
+            $parts[] = 'uri='.$_SERVER['REQUEST_URI'];
+        }
+
+        if(count($parts)){
+            return ' ['.implode(' ', $parts).']';
+        }
+
+        return '';
     }
 }

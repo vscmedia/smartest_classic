@@ -83,11 +83,12 @@ class SmartestSystemSettingHelper extends SmartestHelper{
 	
 	public static function getInstallId(){
 	    
-	    $ph = SmartestPersistentObject::get('prefs_helper');
+	    $ph = self::getPreferencesHelper();
 	    $value = $ph->getGlobalPreference('install_id', '0', '0');
 	    
 	    if(!strlen($value)){
-            $value = implode(':', str_split(substr(md5(SM_ROOT_DIR.$_SERVER["SERVER_ADDR"]), 0, 12), 2));
+            $server_addr = isset($_SERVER["SERVER_ADDR"]) ? $_SERVER["SERVER_ADDR"] : php_uname('n');
+            $value = implode(':', str_split(substr(md5(SM_ROOT_DIR.$server_addr), 0, 12), 2));
             $ph->setGlobalPreference('install_id', $value, '0', '0');
         }
         
@@ -97,7 +98,7 @@ class SmartestSystemSettingHelper extends SmartestHelper{
 	
 	public static function getSiteLogosFileGroupId(){
 	    
-	    $ph = SmartestPersistentObject::get('prefs_helper');
+	    $ph = self::getPreferencesHelper();
 	    $id = $ph->getGlobalPreference('default_site_logo_asset_group_id', '0', '0');
 	    
 	    if(!strlen($id)){
@@ -117,5 +118,18 @@ class SmartestSystemSettingHelper extends SmartestHelper{
         return $id;
 	    
 	}
+
+    protected static function getPreferencesHelper(){
+
+        $ph = SmartestPersistentObject::get('prefs_helper');
+
+        if(!$ph instanceof SmartestPreferencesHelper){
+            $ph = new SmartestPreferencesHelper;
+            SmartestPersistentObject::set('prefs_helper', $ph);
+        }
+
+        return $ph;
+
+    }
 	
 }

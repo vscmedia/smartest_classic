@@ -50,6 +50,11 @@ class SmartestSiteCreationHelper{
         }
 
         $ph = new SmartestPreferencesHelper;
+
+        if(!SmartestPersistentObject::get('prefs_helper')){
+            SmartestPersistentObject::set('prefs_helper', $ph);
+        }
+
         $is_first_site = !count(SmartestDatabase::getInstance('SMARTEST')->preparedQuery('SELECT site_id FROM Sites LIMIT 1'));
 
         $site = new SmartestSite;
@@ -63,8 +68,15 @@ class SmartestSiteCreationHelper{
         $site->setDomain($p->getParameter('site_domain'));
         $site->setAdminEmail($p->getParameter('site_admin'));
         $site->setAutomaticUrls('OFF');
-	    $site->save();
+        $site->save();
 	    $site->getUniqueId();
+	    self::logSiteCreation("Created site record #".$site->getId()." '".$site->getName()."' on domain '".$site->getDomain()."'.");
+
+        if($use_buildkit){
+            self::logSiteCreation("Completing site #".$site->getId()." with Build Kit '".$buildkit->getLabel()."'.");
+            return self::completeSiteWithBuildKit($site, $u, $buildkit, $prepared_params, $is_first_site);
+        }
+
         self::ensureCreatorSitePermissions($u, $site, $is_first_site);
         self::ensureDefaultSystemAssets($u, $site);
 	    SmartestLog::getInstance('system')->log("User {$u->__toString()} created a new site record: '{$site->getName()}/{$site->getDomain()}'", SM_LOG_DEBUG);
@@ -73,28 +85,6 @@ class SmartestSiteCreationHelper{
         $ph->setGlobalPreference('site_responsive_distinguish_mobile', '1', '0', $site->getId());
         $ph->setGlobalPreference('site_responsive_distinguish_tablet', '1', '0', $site->getId());
         $ph->setGlobalPreference('site_responsive_distinguish_oldpcs', '0', '0', $site->getId());
-
-        if($use_buildkit){
-
-            if($buildkit->getResponsiveModeEnabled()){
-                $responsive_options = $buildkit->getResponsiveModeOptions();
-                $ph->setGlobalPreference('enable_site_responsive_mode', '1', '0', $site->getId());
-                $ph->setGlobalPreference('site_responsive_distinguish_mobile', (int) $responsive_options['mobiles'], '0', $site->getId());
-                $ph->setGlobalPreference('site_responsive_distinguish_tablet', (int) $responsive_options['tablets'], '0', $site->getId());
-                $ph->setGlobalPreference('site_responsive_distinguish_oldpcs', (int) $responsive_options['oldpcs'], '0', $site->getId());
-            }
-
-            $ph->setGlobalPreference('enable_eu_cookie_compliance', $buildkit->getEUCookieModeEnabled() ? '1' : '0', '0', $site->getId());
-
-            self::createStandardPagesLayout($site, '', $u);
-            self::createSiteDirectory($site);
-
-            $site = $buildkit->execute($site, $u, $prepared_params);
-
-            SmartestLog::getInstance('system')->log("Executed Build Kit '".$buildkit->getLabel()."' for new site '".$site->getName()."'.", SM_LOG_DEBUG);
-
-            return $site;
-        }
 
         if($p->getParameter('site_master_template') == '_DEFAULT'){
 	        $master_template = '';
@@ -279,6 +269,89 @@ class SmartestSiteCreationHelper{
             return $this->createNewSite($p, $initial_user, $buildkit, $prepared_params);
         }
 
+        public function completeExistingSiteFromBuildKit(SmartestSite $site, $initial_user, SmartestBuildKit $buildkit, $prepared_params=array()){
+
+            if(!$initial_user instanceof SmartestUser){
+                if(SmartestSession::get('user') instanceof SmartestUser){
+                    $initial_user = SmartestSession::get('user');
+                }else{
+                    throw new SmartestException("Tried to complete site Build Kit without logged in user or valid user object");
+                }
+            }
+
+            if(!is_array($prepared_params)){
+                $prepared_params = array();
+            }
+
+            return self::completeSiteWithBuildKit($site, $initial_user, $buildkit, $prepared_params, self::siteIsOnlySite($site));
+
+        }
+
+        protected static function completeSiteWithBuildKit(SmartestSite $site, SmartestUser $user, SmartestBuildKit $buildkit, array $prepared_params, $is_first_site=false){
+
+            self::logSiteCreation("Build Kit site completion starting for site #".$site->getId()." using '".$buildkit->getLabel()."'.");
+
+            try{
+                $ph = new SmartestPreferencesHelper;
+
+                if(!SmartestPersistentObject::get('prefs_helper')){
+                    SmartestPersistentObject::set('prefs_helper', $ph);
+                }
+
+                self::logSiteCreation("Ensuring creator permissions for user #".$user->getId()." on site #".$site->getId().'.');
+                self::ensureCreatorSitePermissions($user, $site, $is_first_site);
+                self::logSiteCreation("Ensuring default system assets for site #".$site->getId().'.');
+                self::ensureDefaultSystemAssets($user, $site);
+                SmartestLog::getInstance('system')->log("User {$user->__toString()} created or resumed a site record: '{$site->getName()}/{$site->getDomain()}'", SM_LOG_DEBUG);
+
+                $ph->setGlobalPreference('enable_site_responsive_mode', '1', '0', $site->getId());
+                $ph->setGlobalPreference('site_responsive_distinguish_mobile', '1', '0', $site->getId());
+                $ph->setGlobalPreference('site_responsive_distinguish_tablet', '1', '0', $site->getId());
+                $ph->setGlobalPreference('site_responsive_distinguish_oldpcs', '0', '0', $site->getId());
+
+                if($buildkit->getResponsiveModeEnabled()){
+                    $responsive_options = $buildkit->getResponsiveModeOptions();
+                    $ph->setGlobalPreference('enable_site_responsive_mode', '1', '0', $site->getId());
+                    $ph->setGlobalPreference('site_responsive_distinguish_mobile', (int) $responsive_options['mobiles'], '0', $site->getId());
+                    $ph->setGlobalPreference('site_responsive_distinguish_tablet', (int) $responsive_options['tablets'], '0', $site->getId());
+                    $ph->setGlobalPreference('site_responsive_distinguish_oldpcs', (int) $responsive_options['oldpcs'], '0', $site->getId());
+                }
+
+                $ph->setGlobalPreference('enable_eu_cookie_compliance', $buildkit->getEUCookieModeEnabled() ? '1' : '0', '0', $site->getId());
+
+                self::logSiteCreation("Ensuring standard pages for site #".$site->getId().'.');
+                self::ensureStandardPagesLayout($site, '', $user);
+                self::logSiteCreation("Ensuring site directory for site #".$site->getId().'.');
+                self::createSiteDirectory($site);
+
+                self::logSiteCreation("Handing site #".$site->getId()." to Build Kit '".$buildkit->getLabel()."'.");
+                $site = $buildkit->execute($site, $user, $prepared_params);
+
+                SmartestLog::getInstance('system')->log("Executed Build Kit '".$buildkit->getLabel()."' for site '".$site->getName()."'.", SM_LOG_DEBUG);
+                self::logSiteCreation("Build Kit site completion finished for site #".$site->getId().'.');
+
+                return $site;
+
+            }catch(SmartestBuildKitException $e){
+                self::logSiteCreation("Build Kit site completion failed for site #".$site->getId().": ".$e->getMessage(), SM_LOG_ERROR);
+                throw $e;
+            }catch(Throwable $e){
+                self::logSiteCreation("Build Kit site completion failed for site #".$site->getId().": ".self::describeThrowable($e), SM_LOG_ERROR);
+                throw SmartestBuildKitException::fromThrowable("Completing site '".$site->getName()."' with Build Kit '".$buildkit->getLabel()."' failed", $e, $buildkit->getShortName());
+            }
+
+        }
+
+        protected static function siteIsOnlySite(SmartestSite $site){
+
+            try{
+                return !count(SmartestDatabase::getInstance('SMARTEST')->preparedQuery('SELECT site_id FROM Sites WHERE site_id != :site_id LIMIT 1', array('site_id' => $site->getId())));
+            }catch(Exception $e){
+                return false;
+            }
+
+        }
+
         protected static function ensureCreatorSitePermissions($user, SmartestSite $site, $is_first_site=false){
 
             if(!$user instanceof SmartestSystemUser){
@@ -287,10 +360,11 @@ class SmartestSiteCreationHelper{
             }
 
             if($is_first_site){
-                $user->addToken('root_permission', 'GLOBAL');
-                $user->addToken('site_access', 'GLOBAL');
-                $user->addToken('modify_user_permissions', 'GLOBAL');
-                $user->addToken('modify_user_own_permissions', 'GLOBAL');
+                foreach(array('root_permission', 'site_access', 'modify_user_permissions', 'modify_user_own_permissions') as $token){
+                    if(!$user->hasGlobalPermission($token)){
+                        $user->addToken($token, 'GLOBAL');
+                    }
+                }
                 SmartestLog::getInstance('system')->log("Granted first-site global root and site access permissions to user {$user->getId()}.", SM_LOG_DEBUG);
             }else{
                 if(!$user->hasGlobalPermission('site_access')){
@@ -305,6 +379,124 @@ class SmartestSiteCreationHelper{
             return true;
 
         }
+
+	    protected static function ensureStandardPagesLayout(SmartestSite $site, $master_template='', $initial_user=''){
+
+	        $home_page = self::loadPageById($site->getTopPageId());
+
+	        if(!$home_page instanceof SmartestPage){
+	            $home_page = self::findSitePageByName($site, 'home');
+	        }
+
+	        if(!$home_page instanceof SmartestPage){
+	            return self::createStandardPagesLayout($site, $master_template, $initial_user);
+	        }
+
+	        if($site->getTopPageId() != $home_page->getId()){
+	            $site->setTopPageId($home_page->getId());
+	            $site->save();
+	            SmartestLog::getInstance('system')->log("Reconnected existing home page {$home_page->getId()} as top page for site {$site->getId()}.", SM_LOG_WARNING);
+	        }
+
+	        self::ensureMissingSpecialPages($site, $home_page, $master_template, $initial_user);
+
+	        return $home_page;
+
+	    }
+
+	    protected static function ensureMissingSpecialPages(SmartestSite $site, SmartestPage $home_page, $master_template='', $initial_user=''){
+
+	        if($initial_user instanceof SmartestUser){
+	            $u = $initial_user;
+	        }else if(SmartestSession::get('user') instanceof SmartestUser){
+	            $u = SmartestSession::get('user');
+	        }else{
+	            $u = null;
+	        }
+
+	        $user_id = $u instanceof SmartestUser ? $u->getId() : 0;
+	        $special_pages = array(
+	            array('getter' => 'getErrorPageId', 'setter' => 'setErrorPageId', 'title' => 'Page not found', 'name' => 'error-404', 'order' => 1024, 'published' => true, 'meta' => 'The page you requested could not be found.'),
+	            array('getter' => 'getSearchPageId', 'setter' => 'setSearchPageId', 'title' => 'Search Results', 'name' => 'search', 'order' => 1022),
+	            array('getter' => 'getTagPageId', 'setter' => 'setTagPageId', 'title' => 'Tagged Content', 'name' => 'tag', 'order' => 1023),
+	            array('getter' => 'getUserPageId', 'setter' => 'setUserPageId', 'title' => 'User Profile', 'name' => 'user', 'order' => 1020),
+	            array('getter' => 'getHoldingPageId', 'setter' => 'setHoldingPageId', 'title' => 'Holding page', 'name' => 'error-503', 'order' => 1019),
+	        );
+
+	        foreach($special_pages as $definition){
+
+	            $page = self::loadPageById($site->{$definition['getter']}());
+
+	            if(!$page instanceof SmartestPage){
+	                $page = self::findSitePageByName($site, $definition['name']);
+	            }
+
+	            if(!$page instanceof SmartestPage){
+	                $page = new SmartestPage;
+	                $page->setTitle($definition['title']);
+	                $page->setName($definition['name']);
+	                $page->setSiteId($site->getId());
+	                $page->setDraftTemplate($master_template);
+	                $page->setLiveTemplate($master_template);
+	                $page->setParent($home_page->getId());
+	                $page->setWebid(SmartestStringHelper::random(32, SM_RANDOM_ALPHANUMERIC));
+	                $page->setCreatedbyUserid($user_id);
+	                $page->setOrderIndex($definition['order']);
+
+	                if(isset($definition['published']) && $definition['published']){
+	                    $page->setIsPublished('TRUE');
+	                }
+
+	                if(isset($definition['meta'])){
+	                    $page->setMetaDescription($definition['meta']);
+	                }
+
+	                $page->save();
+	                SmartestLog::getInstance('system')->log("Created missing special page '{$definition['name']}' for site {$site->getId()} (page ID {$page->getId()}).", SM_LOG_WARNING);
+	            }
+
+	            $site->{$definition['setter']}($page->getId());
+
+	        }
+
+	        $site->save();
+
+	    }
+
+	    protected static function loadPageById($page_id){
+
+	        $page_id = (int) $page_id;
+
+	        if($page_id){
+	            $page = new SmartestPage;
+
+	            if($page->find($page_id)){
+	                return $page;
+	            }
+	        }
+
+	        return null;
+
+	    }
+
+	    protected static function findSitePageByName(SmartestSite $site, $name){
+
+	        try{
+	            $rows = SmartestDatabase::getInstance('SMARTEST')->preparedQuery(
+	                'SELECT page_id FROM Pages WHERE page_site_id=:site_id AND page_name=:page_name ORDER BY page_id ASC LIMIT 1',
+	                array('site_id' => $site->getId(), 'page_name' => $name)
+	            );
+	        }catch(Exception $e){
+	            $rows = array();
+	        }
+
+	        if(isset($rows[0]['page_id'])){
+	            return self::loadPageById($rows[0]['page_id']);
+	        }
+
+	        return null;
+
+	    }
 
 	    public static function createStandardPagesLayout(SmartestSite $site, $master_template='', $initial_user=''){
 
@@ -420,8 +612,12 @@ class SmartestSiteCreationHelper{
 	            }
 	        }
 
-	        $site_dir_name = substr(SmartestStringHelper::toCamelCase($site->getName()), 0, 64);
-	        $site_dir = SmartestFileSystemHelper::getUniqueFileName(SM_ROOT_DIR.'Sites/'.$site_dir_name.'/');
+	        if(strlen((string) $site->getDirectoryName())){
+	            $site_dir = SM_ROOT_DIR.'Sites/'.trim($site->getDirectoryName(), '/').'/';
+	        }else{
+	            $site_dir_name = substr(SmartestStringHelper::toCamelCase($site->getName()), 0, 64);
+	            $site_dir = SmartestFileSystemHelper::getUniqueFileName(SM_ROOT_DIR.'Sites/'.$site_dir_name.'/');
+	        }
 
 	        if(!strlen((string) $site_dir)){
 	            throw new SmartestException("Could not determine a unique site directory for ".$site->getName().".");
@@ -517,6 +713,15 @@ class SmartestSiteCreationHelper{
         $ph->setGlobalPreference('default_user_profile_pic_asset_id', $asset->getId(), null, $site_id);
 
         return $asset;
+    }
+
+    protected static function logSiteCreation($message, $level=SM_LOG_DEBUG){
+        $log_name = isset($GLOBALS['_site_creation_log']) && strlen((string) $GLOBALS['_site_creation_log']) ? (string) $GLOBALS['_site_creation_log'] : 'system';
+        SmartestLog::getInstance($log_name)->log('Site Creation: '.$message, $level);
+    }
+
+    protected static function describeThrowable(Throwable $e){
+        return get_class($e).': '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine();
     }
 
 }

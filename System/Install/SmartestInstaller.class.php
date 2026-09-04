@@ -131,6 +131,8 @@ class SmartestInstaller{
     }
     
     public function createHtAccessFile($rewritebase, $force = false){
+
+        $rewritebase = $this->normalizeRewriteBase($rewritebase);
         
         if($force || !file_exists(SM_ROOT_DIR.'Public/.htaccess')){
             
@@ -147,6 +149,19 @@ class SmartestInstaller{
             }
         }
         
+    }
+
+    protected function normalizeRewriteBase($rewritebase){
+
+        $rewritebase = preg_replace('#/+#', '/', str_replace('\\', '/', trim((string) $rewritebase)));
+        $rewritebase = trim($rewritebase, '/');
+
+        if(!strlen($rewritebase)){
+            return '/';
+        }
+
+        return '/'.$rewritebase.'/';
+
     }
     
     public function moveEssentialFilesIntoPlace(){

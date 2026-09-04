@@ -2,13 +2,20 @@
 
 $urlp = explode('?', $_SERVER['REQUEST_URI']);
 $request = $urlp[0];
+$request_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$request_path = is_string($request_path) ? trim($request_path, '/') : '';
+$path_parts = strlen($request_path) ? explode('/', $request_path) : array();
+$smartest_index = array_search('smartest', $path_parts, true);
 
-if($request == '/'){
-    $controller_domain = '';
+if($smartest_index !== false){
+    $controller_domain = implode('/', array_slice($path_parts, 0, $smartest_index));
+}else{
+    $controller_domain = $request_path;
+}
+
+if($request == '/' || !strlen($controller_domain)){
     $show_cd = false;
 }else{
-    $controller_domain = substr($request, 1);
-    $controller_domain = substr($controller_domain, -1);
     $show_cd = true;
 }
 
@@ -69,8 +76,8 @@ if($stage->getParameter('db_connection_parameters')){
 
 <div class="form-row">
     <div class="form-row-label">URL Path</div>
-    http://<?php echo $_SERVER['HTTP_HOST']; ?>/<input type="text" name="controller_domain" style="width:150px" value="<?php echo substr($_SERVER['REQUEST_URI'], 1, -1); ?>" />/smartest
-    <div class="hint">You only need to put something in here if you are not running Smartest with its own host name, for example http://<?php echo $_SERVER['HTTP_HOST']; ?><strong>/running/in/a/folder/</strong>smartest</div>
+    http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'], ENT_QUOTES, 'UTF-8'); ?>/<input type="text" name="controller_domain" style="width:150px" value="<?php echo htmlspecialchars($controller_domain, ENT_QUOTES, 'UTF-8'); ?>" />/smartest
+    <div class="hint">You only need to put something in here if you are not running Smartest with its own host name, for example http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'], ENT_QUOTES, 'UTF-8'); ?><strong>/running/in/a/folder/</strong>smartest</div>
 </div>
 
 <?php else: ?>
