@@ -51,9 +51,15 @@ class SmartestSystemApplication extends SmartestBaseApplication{
             $this->send($global_ui_strings, '_l10n_global_strings');
         }
 	    
-	    if($this->getSite()){
-	        $this->setCookie('SMARTEST_LPID', $this->getSite()->getId(), 1);
-	        $this->send($this->getUser()->hasToken('modify_site_parameters'), '_user_allow_site_edit');
+        if($this->getRequest() && $this->getRequest()->getModule() == 'settings' && $this->getRequest()->getAction() == 'buildFirstSitePostInstaller'){
+            $site = SmartestSession::get('current_open_project');
+        }else{
+            $site = $this->getSite();
+        }
+
+	    if($site instanceof SmartestSite){
+	        $this->setCookie('SMARTEST_LPID', $site->getId(), 1);
+	        $this->send($this->getUser() && $this->getUser()->hasToken('modify_site_parameters'), '_user_allow_site_edit');
 	    }
 	    
 	    if(SmartestSession::get('user:isAuthenticatedToCms')){
@@ -103,7 +109,7 @@ class SmartestSystemApplication extends SmartestBaseApplication{
 	    }
 	    
     }
-    
+
     ///// Communicate with the user /////
 	
 	final public function addUserMessage($message, $type=1, $sticky=false){

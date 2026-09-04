@@ -177,6 +177,7 @@ class SmartestInstallationStatusHelper{
                     
                     $fve = new SmartestParameterHolder("Site creation form validator errors");
                     $direct_postinstaller_request = self::isPendingFirstSiteBuildKitExecutionRequest();
+                    self::logInstall("Installer createSite request detected. direct_postinstaller_request=".($direct_postinstaller_request ? 'true' : 'false').self::getRequestContextForLog().'.', SM_LOG_DEBUG);
                     
                     if(strlen($_POST['site_name']) < 3){
                         // problem with username
@@ -263,7 +264,7 @@ class SmartestInstallationStatusHelper{
                                     'buildkit_params' => $prepared_buildkit_params,
                                     'controller_domain' => $controller_domain,
                                 ));
-                                self::logInstall("Final installer form submitted directly to normal-runtime first-site creation action.", SM_LOG_DEBUG);
+                                self::logInstall("Final installer form submitted directly to normal-runtime first-site creation action. Build Kit execution request has been handed to SmartestPersistentObject.", SM_LOG_DEBUG);
                                 return;
                             }
 

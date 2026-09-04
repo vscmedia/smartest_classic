@@ -22,6 +22,7 @@ class Settings extends SmartestSystemApplication{
     public function buildFirstSitePostInstaller(){
 
         $token = $this->getRequestParameter('token');
+        SmartestLog::getInstance('installer')->log("Settings::buildFirstSitePostInstaller reached. execute=".$this->getRequestParameter('execute')."; action=".$this->getRequestParameter('action').'.', SM_LOG_DEBUG);
 
         try{
             if($this->getRequestParameter('execute') == '1' && $this->getRequestParameter('action') == 'createSite'){
