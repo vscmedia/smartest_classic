@@ -1,12 +1,16 @@
 # Smartest Classic
 
-Smartest Classic is a PHP publishing platform and content management system that began in 2006 as a collaboration between Marcus Gilroy-Ware and Eddie Tejeda. Motivated by the creative possibilities of the Hypertext medium, it was first built in the PHP 4 era, using Smarty 2, and it predates Composer, Symfony, namespaces, modern autoloading, and many of the conventions that later became normal in PHP applications.
+Smartest Classic is a PHP publishing platform and content management system that began in 2006 as a collaboration between [Marcus Gilroy-Ware](https://www.mjgw.net) and [Eddie Tejeda](https://eddietejeda.com/). Motivated by the creative possibilities of the Hypertext medium, it was first built in the PHP 4 era, using Smarty 2, and it predates Composer, Symfony, namespaces, modern autoloading, and many of the conventions that later became normal in PHP applications- even if these now been adopted.
 
-Even so, Smartest was built around strict code organisation from the start. In addition to its co-evolution with the Quince controller package, its structure was influenced by modern operating-system design: everything object-oriented, ultra-specific class names, unified libraries and toolkits with no code repetition, anticipate and cushion user errors, a separated system layer, a controller and presentation layer, application modules, reusable helpers, cached output, and - thanks to Quince - self-contained modules that can be moved in or out without breaking the rest of the application.
+Even so, Smartest was built around strict code organisation from the start. In addition to its co-evolution with the [Quince controller package](https://github.com/vscmedia/quince), its architecture was influenced by modern operating-system design: everything object-oriented, ultra-specific class names, unified libraries and toolkits with no code repetition, anticipate and cushion user errors, a separated system layer, a controller and presentation layer, application modules, reusable helpers, cached output, and - thanks to Quince - self-contained modules that can be moved in or out without breaking the rest of the application.
 
-Smartest was actively maintained and developed until around 2020, when its lead developers became too busy to continue the work. In 2026, the project was rescued with the help of generative AI and Codex, upgraded for modern PHP, Composer-managed dependencies, Smarty 5, PDO-style database access (work in progress), and a cleaner path toward long-term maintenance.
+Most important of all, as a technology it is culturally informed. Smartest is engineered to put the creative and cultural uses of the web as a medium to the forefront, rather than limiting CMS users to a text box with a save button.
 
-This repository is now offered to the world once again by its sponsor, [VSC Media International](https://www.vscmedia.com/) - not only for posterity, but because some of the problems Smartest was designed to solve are still real. Its flexible content architecture, full metadata engine, multiple sites in one install, page elements, templates, Build Kits automation, and strict separation between system code, project code, public files, and presentation files still offer a different set of trade-offs from WordPress, Drupal, Squarespace, and newer hosted builders.
+Smartest was actively maintained and developed until around 2020, when its lead developer took new responsibilties and became too busy to continue the work. In 2026, the project was rescued with the help of AI, upgraded for modern PHP, Composer-managed dependencies, Smarty 5, PDO-style database access (work in progress), and a cleaner path toward long-term maintenance.
+
+This repository is now offered to the world once again by its sponsor, [VSC Media](https://www.vscmedia.com/software/) - not only for posterity, but because some of the problems Smartest was designed to solve 20 years ago are still real and still important. Smartest's flexible content architecture, full metadata engine, multiple sites in one install, page elements, templates, Build Kits automation, and strict separation between system code, project code, public files, and presentation files still offer a different set of trade-offs from WordPress, Drupal, Squarespace, and newer hosted builders.
+
+More to the point: the web as a medium belongs to all of us, and as the internet's cultural life becomes ever more enclosed in remote platforms, having a CMS that is built around culture and creativity feels important enough make this project current, and available anew.
 
 Unlike the plugins model of Wordpress, Smartest is designed for clients and developers who know what they want, and won't force you to edit other people's code. You can start with very basic elements and easily incorporate flat HTML/CSS designs and javascript functionalities of your own creation. However, for users that find that freedom daunting, Smartest now includes a completed implementation of a long-planned feature: Build Kits, which are scripts that will rapidly build out a site for you, including all templates, media, CSS, Javascript, and data structures. You can read more about these below.
 
@@ -97,40 +101,6 @@ Smartest is designed to create its runtime configuration through the browser-bas
 
 The installer will ask for database connection details, create the required tables, create the first user, and prepare the first site. It may also generate a one-off permissions repair script in `/tmp` if it detects directories that the web server cannot write to.
 
-Server automation may perform the permissions and database-configuration parts before the browser installer is opened. In that case, create the empty database, fix the required writable locations, and either create `Configuration/database.yml` directly or place temporary database details here:
-
-```text
-System/Temporary/installer-database.yml
-```
-
-The temporary file may use the format shown in `System/Install/Samples/automated-database-sample.yml`. On the next browser request, Smartest will import that file into `Configuration/database.yml`, test the connection, delete the temporary file, log the import, create the database tables if needed, and continue the installer at Step 3: user account creation. A pre-created `Configuration/database.yml` does not mark Smartest as installed; the installer remains active until the first user and first site have been created.
-
-For specialised local development work only, this repository includes a helper script to bypass the installer:
-
-```bash
-Support/php8-local-bootstrap.sh --files-only
-```
-
-This can create ignored runtime files such as `Configuration/database.yml`, `Public/.htaccess`, and starter site directories, but it is not the normal installation path.
-
-The same script also has an optional database seeding mode for PHP 8 migration testing:
-
-```bash
-Support/php8-local-bootstrap.sh --seed-db
-```
-
-Useful environment variables include:
-
-```bash
-SM_LOCAL_HOSTNAME=smartest.localhost
-SM_DB_HOST=127.0.0.1
-SM_DB_NAME=smartest
-SM_DB_USER=smartest
-SM_DB_PASSWORD=change-this-password
-MYSQL_ADMIN_USER=root
-MYSQL_ADMIN_PASSWORD=
-```
-
 ## Fix Permissions
 
 Smartest writes to several locations at runtime: cache directories, logs, generated object model files, uploaded assets, site folders, presentation folders, and temporary files.
@@ -198,7 +168,7 @@ Important directories:
 
 ## Composer
 
-Smartest Classic now uses Composer for third-party PHP libraries and package-managed system libraries such as Quince. The Composer vendor directory is configured as:
+Smartest Classic now uses Composer for third-party PHP libraries and package-managed system libraries such as Quince. For historical reasons, the Composer vendor directory is configured as:
 
 ```json
 "vendor-dir": "System/Library/vendor"
